@@ -1,0 +1,169 @@
+services:
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./backend:/var/www/backend
+      - ./frontend:/var/www/frontend
+    depends_on:
+      - backend
+      - frontend
+    networks:
+      - mis-network
+
+  backend:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: mis-backend
+    expose:
+      - "9000"
+    volumes:
+      - ./backend:/var/www/backend
+    env_file: .env.backend
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - mis-network
+
+  reverb:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: mis-reverb
+    command: php /var/www/backend/artisan reverb:start
+    expose:
+      - "8080"
+    volumes:
+      - ./backend:/var/www/backend
+    env_file: .env.backend
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - mis-network
+
+  queue-worker:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: mis-queue-worker
+    command: php /var/www/backend/artisan queue:work --sleep=3 --tries=3
+    volumes:
+      - ./backend:/var/www/backend
+    env_file: .env.backend
+    depends_on:
+      - backend
+      - redis
+    networks:
+      - mis-network
+
+  scheduler:
+    build:
+      context: ./docker/php
+      dockerfile: Dockerfile
+    image: mis-scheduler
+    command: php /var/www/backend/artisan schedule:work
+    volumes:
+      - ./backend:/var/www/backend
+    env_file: .env.backend
+    depends_on:
+      - backend
+    networks:
+      - mis-network
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: ../docker/node/Dockerfile
+    image: mis-frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/var/www/frontend
+      - /var/www/frontend/node_modules
+      - /var/www/frontend/.next
+    env_file: .env.frontend
+    depends_on:
+      - backend
+    networks:
+      - mis-network
+
+  matching:
+    build:
+      context: ./docker/python
+      dockerfile: Dockerfile
+    image: mis-matching
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./matching-service:/app
+    env_file: .env.matching
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    networks:
+      - mis-network
+
+  postgres:
+    image: postgres:16-alpine
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: mis_project
+      POSTGRES_USER: mis_user
+      POSTGRES_PASSWORD: mis_secret
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mis_user -d mis_project"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mis-network
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    networks:
+      - mis-network
+
+  meilisearch:
+    image: getmeili/meilisearch:latest
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilidata:/meili_data
+    environment:
+      MEILI_MASTER_KEY: mis_meili_master_key
+    networks:
+      - mis-network
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+    networks:
+      - mis-network
+
+volumes:
+  pgdata:
+  redisdata:
+  meilidata:
+
+networks:
+  mis-network:
+    driver: bridge

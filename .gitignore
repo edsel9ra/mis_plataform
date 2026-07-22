@@ -1,0 +1,45 @@
+# Docker
+.env.backend
+.env.frontend
+.env.matching
+
+# Backend
+backend/vendor/
+backend/node_modules/
+backend/.env
+backend/.env.*
+backend/storage/framework/cache/data/*
+backend/storage/framework/sessions/*
+backend/storage/framework/views/*
+backend/storage/logs/*
+backend/bootstrap/cache/*
+backend/public/storage
+backend/storage/app/public/avatars
+!backend/storage/app/public/.gitkeep
+!backend/storage/framework/cache/.gitkeep
+!backend/storage/framework/sessions/.gitkeep
+!backend/storage/framework/views/.gitkeep
+!backend/storage/logs/.gitkeep
+
+# Frontend
+frontend/node_modules/
+frontend/.next/
+frontend/out/
+
+# Matching
+matching-service/__pycache__/
+matching-service/.venv/
+matching-service/venv/
+matching-service/*.egg-info/
+matching-service/.pytest_cache/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Logs
+*.log

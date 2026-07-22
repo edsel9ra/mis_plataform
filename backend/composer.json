@@ -1,0 +1,78 @@
+{
+    "name": "mis/backend",
+    "type": "project",
+    "description": "Mentorias Integrales Sistemicas - Backend",
+    "require": {
+        "php": "^8.4",
+        "laravel/framework": "^13.0",
+        "laravel/sanctum": "^4.0",
+        "laravel/reverb": "^1.0",
+        "laravel/socialite": "^5.0",
+        "laravel/scout": "^10.0",
+        "laravel/horizon": "^5.0",
+        "spatie/laravel-permission": "^6.0",
+        "spatie/laravel-translatable": "^6.0",
+        "spatie/laravel-activitylog": "^4.0",
+        "meilisearch/meilisearch-php": "^1.0",
+        "pusher/pusher-php-server": "^7.0",
+        "ext-pdo": "*",
+        "ext-pgsql": "*",
+        "ext-json": "*",
+        "ext-redis": "*",
+        "ext-sockets": "*"
+    },
+    "require-dev": {
+        "laravel/sail": "^1.0",
+        "pestphp/pest": "^4.0",
+        "pestphp/pest-plugin-laravel": "^4.0",
+        "laravel/tinker": "^3.0",
+        "fakerphp/faker": "^2.0",
+        "mockery/mockery": "^2.0",
+        "spatie/laravel-ignition": "^2.0 || dev-l13-compatibility"
+    },
+    "autoload": {
+        "psr-4": {
+            "App\\": "app/"
+        },
+        "classmap": [
+            "database/seeders",
+            "database/factories"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "post-autoload-dump": [
+            "Illuminate\\Foundation\\ComposerScripts::postAutoloadDump",
+            "@php artisan package:discover --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
+        ],
+        "post-root-package-install": [
+            "@php -r \"file_exists('.env') || copy('.env.example', '.env');\""
+        ],
+        "post-create-project-cmd": [
+            "@php artisan key:generate --ansi"
+        ]
+    },
+    "extra": {
+        "laravel": {
+            "dont-discover": []
+        }
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": "dist",
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "php-http/discovery": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
