@@ -15,13 +15,13 @@ logs:
 	docker compose logs -f
 
 backend:
-	docker compose exec backend bash
+	docker compose exec backend sh
 
 frontend:
 	docker compose exec frontend sh
 
 matching:
-	docker compose exec matching bash
+	docker compose exec matching sh
 
 shell:
 	docker compose exec backend php artisan tinker
@@ -60,7 +60,7 @@ meili:
 	docker compose exec backend php artisan scout:import "App\Models\User"
 
 npm-install:
-	docker compose exec frontend npm install
+	docker compose exec frontend pnpm install
 
 composer-install:
 	docker compose exec backend composer install

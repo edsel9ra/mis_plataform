@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, model_validator
 from typing import Dict, Optional
 from app.services.big_five import BigFiveScorer
 
@@ -12,6 +12,23 @@ class ScoreRequest(BaseModel):
     test_version: str = Field(default="ipip-neo-120", pattern="^(ipip-neo-120|ipip-neo-300)$")
     age: int = Field(default=30, ge=12, le=120)
     sex: str = Field(default="N", pattern="^[MFN]$")
+
+    @model_validator(mode="after")
+    def validate_answers(self):
+        expected = 120 if self.test_version == "ipip-neo-120" else 300
+
+        if len(self.answers) != expected:
+            raise ValueError(f"answers must contain exactly {expected} items")
+
+        invalid_questions = [question for question in self.answers.keys() if question < 1 or question > expected]
+        if invalid_questions:
+            raise ValueError("answer question ids are out of range")
+
+        invalid_answers = [answer for answer in self.answers.values() if answer < 1 or answer > 5]
+        if invalid_answers:
+            raise ValueError("answer values must be between 1 and 5")
+
+        return self
 
 
 class CompareRequest(BaseModel):
@@ -35,6 +52,9 @@ async def calculate_score(request: ScoreRequest):
 
 @router.post("/batch-score")
 async def batch_score(requests: list[ScoreRequest]):
+    if len(requests) > 50:
+        raise HTTPException(status_code=422, detail="batch size cannot exceed 50")
+
     results = []
     for req in requests:
         try:

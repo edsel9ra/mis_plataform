@@ -20,7 +20,12 @@ class CompanyController
         ]);
 
         $user = $request->user();
+
+        abort_unless($user->client_type === 'empresa', 403);
+        abort_if($user->company_id, 422, __('companies.already_exists'));
+
         $user->update(['client_type' => 'empresa', 'role' => 'company_admin']);
+        $user->syncApplicationRole('company_admin');
 
         $company = Company::create([
             ...$validated,
@@ -33,10 +38,12 @@ class CompanyController
         return response()->json($company, 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $company = Company::with(['admin', 'employees.user', 'plan'])
             ->findOrFail($id);
+
+        abort_unless($request->user()->canAccessCompany($company), 403);
 
         return response()->json($company);
     }
@@ -44,6 +51,8 @@ class CompanyController
     public function update(Request $request, string $id): JsonResponse
     {
         $company = Company::findOrFail($id);
+
+        abort_unless($request->user()->canManageCompany($company), 403);
 
         $validated = $request->validate([
             'legal_name' => ['sometimes', 'string', 'max:200'],

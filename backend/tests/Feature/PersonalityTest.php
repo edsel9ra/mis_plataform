@@ -25,7 +25,7 @@ it('returns existing assessment on retry', function () {
         ->postJson('/api/v1/personality/start-test');
 
     $response->assertOk()
-        ->assertJson(['test_version' => 'ipip-neo-120']);
+        ->assertJsonPath('assessment.test_version', 'ipip-neo-120');
 });
 
 it('rejects duplicate submission', function () {
@@ -33,7 +33,10 @@ it('rejects duplicate submission', function () {
 
     $response = $this->withToken($this->token)
         ->postJson('/api/v1/personality/submit-answers', [
-            'answers' => [],
+            'answers' => array_map(
+                fn (int $id) => ['id_question' => $id, 'id_select' => 3],
+                range(1, 120),
+            ),
             'test_version' => 'ipip-neo-120',
         ]);
 

@@ -1,5 +1,16 @@
 const API_URL = '/api/v1';
 
+export class ApiError extends Error {
+  constructor(
+    message: string,
+    public status: number,
+    public errors?: Record<string, string[]>,
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+}
+
 interface RequestOptions extends RequestInit {
   params?: Record<string, string | number | undefined>;
 }
@@ -9,6 +20,8 @@ class ApiClient {
 
   setToken(token: string | null) {
     this.token = token;
+    if (typeof window === 'undefined') return;
+
     if (token) {
       localStorage.setItem('auth_token', token);
     } else {
@@ -17,6 +30,8 @@ class ApiClient {
   }
 
   getToken(): string | null {
+    if (typeof window === 'undefined') return this.token;
+
     if (!this.token) {
       this.token = localStorage.getItem('auth_token');
     }
@@ -50,14 +65,23 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch(url, { ...fetchOptions, headers });
+    const response = await fetch(url, { ...fetchOptions, headers, credentials: 'include' });
+    const text = await response.text();
+    const payload = text ? safeJsonParse(text) : null;
 
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      if (response.status === 401 && typeof window !== 'undefined') {
+        window.dispatchEvent(new Event('auth:unauthorized'));
+      }
+
+      throw new ApiError(
+        payload?.message || payload?.error || `HTTP ${response.status}`,
+        response.status,
+        payload?.errors,
+      );
     }
 
-    return response.json();
+    return payload as T;
   }
 
   get<T>(endpoint: string, params?: Record<string, string | number | undefined>): Promise<T> {
@@ -74,6 +98,14 @@ class ApiClient {
 
   delete<T>(endpoint: string): Promise<T> {
     return this.request<T>(endpoint, { method: 'DELETE' });
+  }
+}
+
+function safeJsonParse(text: string): any {
+  try {
+    return JSON.parse(text);
+  } catch {
+    return { message: text };
   }
 }
 

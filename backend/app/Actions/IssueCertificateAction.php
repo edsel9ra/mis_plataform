@@ -20,9 +20,10 @@ class IssueCertificateAction
         $user = User::findOrFail($data['user_id']);
         $relationship = MentorshipRelationship::with('mentor')->findOrFail($data['relationship_id']);
 
+        $this->blockchainService->assertIssueAvailable();
+
         $metadata = array_merge($data['metadata'] ?? [], [
             'user_name' => $user->full_name,
-            'user_email' => $user->email,
             'mentor_name' => $relationship->mentor->full_name,
             'relationship_type' => $relationship->type,
             'issued_at' => now()->toIso8601String(),

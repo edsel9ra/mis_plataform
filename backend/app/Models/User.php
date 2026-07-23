@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
@@ -171,6 +172,47 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return in_array($this->role, [UserRole::Admin->value, UserRole::SuperAdmin->value]);
+    }
+
+    public function canAccessCompany(Company|string $company): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $companyId = $company instanceof Company ? $company->id : $company;
+
+        return $this->company_id === $companyId
+            || Company::where('id', $companyId)->where('admin_id', $this->id)->exists()
+            || Employee::where('company_id', $companyId)->where('user_id', $this->id)->exists();
+    }
+
+    public function canManageCompany(Company|string $company): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $companyId = $company instanceof Company ? $company->id : $company;
+
+        return Company::where('id', $companyId)->where('admin_id', $this->id)->exists();
+    }
+
+    public function syncApplicationRole(?string $role = null): void
+    {
+        $roleName = $role ?? $this->role;
+
+        if (!$roleName) {
+            return;
+        }
+
+        try {
+            if (Role::where('name', $roleName)->exists()) {
+                $this->syncRoles([$roleName]);
+            }
+        } catch (\Throwable) {
+            // Role tables may not exist yet during early setup commands.
+        }
     }
 
     public function getFullNameAttribute(): string

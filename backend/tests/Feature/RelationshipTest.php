@@ -52,7 +52,10 @@ it('rejects non-mentor as mentor', function () {
 });
 
 it('shows a relationship', function () {
-    $relationship = MentorshipRelationship::factory()->create();
+    $relationship = MentorshipRelationship::factory()->create([
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+    ]);
 
     $response = $this->withToken($this->token)
         ->getJson("/api/v1/relationships/{$relationship->id}");
@@ -61,7 +64,10 @@ it('shows a relationship', function () {
 });
 
 it('updates relationship status', function () {
-    $relationship = MentorshipRelationship::factory()->pending()->create();
+    $relationship = MentorshipRelationship::factory()->pending()->create([
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+    ]);
 
     $response = $this->withToken($this->token)
         ->putJson("/api/v1/relationships/{$relationship->id}/status", [
@@ -73,7 +79,10 @@ it('updates relationship status', function () {
 });
 
 it('deletes a relationship', function () {
-    $relationship = MentorshipRelationship::factory()->create();
+    $relationship = MentorshipRelationship::factory()->create([
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+    ]);
 
     $response = $this->withToken($this->token)
         ->deleteJson("/api/v1/relationships/{$relationship->id}");

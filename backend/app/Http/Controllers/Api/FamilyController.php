@@ -36,10 +36,12 @@ class FamilyController
         return response()->json($group->load('members'), 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $group = FamilyGroup::with(['head', 'members.user.personalityAssessment'])
             ->findOrFail($id);
+
+        abort_unless($this->canAccessFamily($request, $group), 403);
 
         return response()->json($group);
     }
@@ -47,6 +49,8 @@ class FamilyController
     public function update(Request $request, string $id): JsonResponse
     {
         $group = FamilyGroup::findOrFail($id);
+
+        abort_unless($this->canManageFamily($request, $group), 403);
 
         $validated = $request->validate([
             'family_name' => ['sometimes', 'string', 'max:100'],
@@ -62,6 +66,8 @@ class FamilyController
     public function addMember(Request $request, string $id): JsonResponse
     {
         $group = FamilyGroup::findOrFail($id);
+
+        abort_unless($this->canManageFamily($request, $group), 403);
 
         $validated = $request->validate([
             'full_name' => ['required', 'string', 'max:100'],
@@ -89,8 +95,11 @@ class FamilyController
         return response()->json($member, 201);
     }
 
-    public function removeMember(string $id, string $memberId): JsonResponse
+    public function removeMember(Request $request, string $id, string $memberId): JsonResponse
     {
+        $group = FamilyGroup::findOrFail($id);
+        abort_unless($this->canManageFamily($request, $group), 403);
+
         $member = FamilyMember::where('family_group_id', $id)
             ->where('id', $memberId)
             ->firstOrFail();
@@ -98,5 +107,21 @@ class FamilyController
         $member->delete();
 
         return response()->json(['message' => __('family.member_removed')]);
+    }
+
+    private function canAccessFamily(Request $request, FamilyGroup $group): bool
+    {
+        $user = $request->user();
+
+        return $user->isAdmin()
+            || $group->head_user_id === $user->id
+            || FamilyMember::where('family_group_id', $group->id)->where('user_id', $user->id)->exists();
+    }
+
+    private function canManageFamily(Request $request, FamilyGroup $group): bool
+    {
+        $user = $request->user();
+
+        return $user->isAdmin() || $group->head_user_id === $user->id;
     }
 }

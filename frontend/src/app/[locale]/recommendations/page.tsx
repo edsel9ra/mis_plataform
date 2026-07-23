@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,21 +55,24 @@ export default function RecommendationsPage() {
 
   if (error || !data) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <AlertTriangle className="h-12 w-12 text-amber-500" />
-        <h2 className="mt-4 text-xl font-bold text-gray-900">Completa tu test de personalidad</h2>
-        <p className="mt-2 text-gray-500">Necesitas completar el test para recibir recomendaciones.</p>
-        <Link href="/onboarding/test-personalidad">
-          <Button className="mt-6">Realizar Test</Button>
-        </Link>
-      </div>
+      <RequireAuth>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500" />
+          <h2 className="mt-4 text-xl font-bold text-gray-900">Completa tu test de personalidad</h2>
+          <p className="mt-2 text-gray-500">Necesitas completar el test para recibir recomendaciones.</p>
+          <Link href="/onboarding/test-personalidad">
+            <Button className="mt-6">Realizar Test</Button>
+          </Link>
+        </div>
+      </RequireAuth>
     );
   }
 
   const hasData = (arr: any[]) => arr && arr.length > 0;
 
   return (
-    <div>
+    <RequireAuth>
+      <div>
       <div className="mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Recomendaciones Personalizadas</h1>
         <p className="mt-1 text-gray-500">
@@ -230,6 +234,7 @@ export default function RecommendationsPage() {
           )}
         </section>
       </div>
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

@@ -8,6 +8,7 @@ backend/vendor/
 backend/node_modules/
 backend/.env
 backend/.env.*
+!backend/.env.example
 backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*
@@ -28,6 +29,8 @@ frontend/out/
 
 # Matching
 matching-service/__pycache__/
+matching-service/**/__pycache__/
+matching-service/**/*.pyc
 matching-service/.venv/
 matching-service/venv/
 matching-service/*.egg-info/

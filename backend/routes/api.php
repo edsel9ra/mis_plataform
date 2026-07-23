@@ -29,7 +29,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
-    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
 
     // Public
     Route::get('/mentors', [MentorController::class, 'index']);

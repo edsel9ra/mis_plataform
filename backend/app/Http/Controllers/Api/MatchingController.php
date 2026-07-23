@@ -11,7 +11,7 @@ class MatchingController
     public function suggestions(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,corporate'],
+            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
             'context_id' => ['required', 'string'],
             'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
         ]);
@@ -19,15 +19,20 @@ class MatchingController
         $user = $request->user();
 
         try {
-            $response = Http::timeout(30)->post(
-                config('services.matching.url') . '/api/v1/matching/suggestions',
-                [
-                    'user_id' => $user->id,
-                    'client_type' => $validated['client_type'],
-                    'context_id' => $validated['context_id'],
-                    'limit' => $validated['limit'] ?? 10,
-                ]
-            );
+            $response = Http::timeout(config('services.matching.timeout', 30))
+                ->withHeaders(array_filter([
+                    'X-Internal-API-Key' => config('services.matching.api_key'),
+                ]))
+                ->post(
+                    config('services.matching.url') . '/api/v1/matching/suggestions',
+                    [
+                        'user_id' => $user->id,
+                        'client_type' => $validated['client_type'],
+                        'context_id' => $validated['context_id'],
+                        'limit' => $validated['limit'] ?? 10,
+                    ]
+                )
+                ->throw();
 
             return response()->json($response->json());
         } catch (\Exception $e) {
@@ -42,22 +47,27 @@ class MatchingController
     {
         $validated = $request->validate([
             'mentor_id' => ['required', 'exists:users,id'],
-            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,corporate'],
+            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
             'context_id' => ['required', 'string'],
         ]);
 
         $user = $request->user();
 
         try {
-            $response = Http::timeout(30)->post(
-                config('services.matching.url') . '/api/v1/matching/calculate',
-                [
-                    'user_id' => $user->id,
-                    'mentor_id' => $validated['mentor_id'],
-                    'client_type' => $validated['client_type'],
-                    'context_id' => $validated['context_id'],
-                ]
-            );
+            $response = Http::timeout(config('services.matching.timeout', 30))
+                ->withHeaders(array_filter([
+                    'X-Internal-API-Key' => config('services.matching.api_key'),
+                ]))
+                ->post(
+                    config('services.matching.url') . '/api/v1/matching/calculate',
+                    [
+                        'user_id' => $user->id,
+                        'mentor_id' => $validated['mentor_id'],
+                        'client_type' => $validated['client_type'],
+                        'context_id' => $validated['context_id'],
+                    ]
+                )
+                ->throw();
 
             return response()->json($response->json());
         } catch (\Exception $e) {

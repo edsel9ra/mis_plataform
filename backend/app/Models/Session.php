@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,7 +11,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Session extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasFactory, HasUuids, SoftDeletes;
 
     protected $fillable = [
         'relationship_id',
@@ -51,15 +52,18 @@ class Session extends Model
             ->whereIn('status', ['completed', 'canceled']);
     }
 
-    public function scopeForUser($query, string $userId)
+    public function scopeForUser($query, User|string $user)
     {
-        return $query->whereHas('relationship', function ($q) use ($userId) {
-            $q->where('mentor_id', $userId)
-              ->orWhere(function ($sub) use ($userId) {
-                  $sub->where('source_type', 'user')
-                    ->where('source_id', $userId);
-              });
+        return $query->whereHas('relationship', function ($q) use ($user) {
+            $q->forUser($user);
         });
+    }
+
+    public function involvesUser(User|string $user): bool
+    {
+        return $this->relationship?->involvesUser($user)
+            ?? $this->relationship()->first()?->involvesUser($user)
+            ?? false;
     }
 
     public function relationship(): BelongsTo

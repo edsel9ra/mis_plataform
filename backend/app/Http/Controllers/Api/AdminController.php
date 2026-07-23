@@ -72,6 +72,7 @@ class AdminController
         $validated['password'] = Hash::make($validated['password']);
 
         $user = User::create($validated);
+        $user->syncApplicationRole();
 
         return response()->json(new UserResource($user), 201);
     }
@@ -97,6 +98,10 @@ class AdminController
         }
 
         $user->update($validated);
+
+        if (array_key_exists('role', $validated)) {
+            $user->syncApplicationRole($validated['role']);
+        }
 
         return response()->json(new UserResource($user));
     }

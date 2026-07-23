@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\MentorResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,20 +32,28 @@ class MentorController
             });
         }
 
-        $mentors = $query->with(['skills.skillTag', 'personalityAssessment'])
-            ->paginate($request->per_page ?? 20);
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
-        return response()->json($mentors);
+        $mentors = $query->with(['skills.skillTag'])
+            ->withCount(['mentorRelationships as active_mentees_count' => function ($q) {
+                $q->where('status', 'active');
+            }])
+            ->paginate($perPage);
+
+        return response()->json(MentorResource::collection($mentors));
     }
 
     public function show(string $id): JsonResponse
     {
         $mentor = User::where('role', 'mentor')
-            ->with(['skills.skillTag', 'personalityAssessment', 'mentorRelationships' => function ($q) {
+            ->with(['skills.skillTag', 'mentorRelationships' => function ($q) {
                 $q->whereIn('status', ['active', 'completed']);
+            }])
+            ->withCount(['mentorRelationships as active_mentees_count' => function ($q) {
+                $q->where('status', 'active');
             }])
             ->findOrFail($id);
 
-        return response()->json($mentor);
+        return response()->json(new MentorResource($mentor));
     }
 }

@@ -7,4 +7,5 @@ return [
     'logged_out' => 'Logged out successfully.',
     'invalid_provider' => 'Invalid authentication provider.',
     'provider_error' => 'Error authenticating with provider.',
+    'inactive' => 'The account is inactive.',
 ];

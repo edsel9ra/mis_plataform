@@ -8,8 +8,8 @@ use Illuminate\Support\Facades\Log;
 class IpfsService
 {
     private string $apiUrl;
-    private string $apiKey;
-    private string $secretKey;
+    private ?string $apiKey;
+    private ?string $secretKey;
 
     public function __construct()
     {
@@ -20,6 +20,10 @@ class IpfsService
 
     public function uploadCertificate(array $data): array
     {
+        if (!filled($this->apiKey) || !filled($this->secretKey)) {
+            throw new \RuntimeException(__('ipfs.not_configured'));
+        }
+
         $metadata = [
             'pinataContent' => $data,
             'pinataMetadata' => [

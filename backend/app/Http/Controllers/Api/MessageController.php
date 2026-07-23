@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
 use App\Models\Message;
+use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,16 +14,14 @@ class MessageController
     {
         $user = $request->user();
 
+        $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
+
         $messages = Message::whereHas('relationship', function ($query) use ($user) {
-            $query->where('mentor_id', $user->id)
-                ->orWhere(function ($q) use ($user) {
-                    $q->where('source_type', 'user')
-                      ->where('source_id', $user->id);
-                });
+            $query->forUser($user);
         })
         ->with('sender')
         ->latest()
-        ->paginate($request->per_page ?? 50);
+        ->paginate($perPage);
 
         return response()->json($messages);
     }
@@ -35,6 +34,9 @@ class MessageController
             'type' => ['sometimes', 'string', 'in:text,file,system'],
             'attachment_url' => ['nullable', 'string', 'max:2048'],
         ]);
+
+        $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
+        abort_unless($relationship->involvesUser($request->user()), 403);
 
         $message = Message::create([
             'relationship_id' => $validated['relationship_id'],
@@ -51,16 +53,21 @@ class MessageController
         return response()->json($message, 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $message = Message::with('sender')->findOrFail($id);
+        $message = Message::with(['sender', 'relationship'])->findOrFail($id);
+
+        abort_unless($message->relationship->involvesUser($request->user()), 403);
 
         return response()->json($message);
     }
 
-    public function markAsRead(string $id): JsonResponse
+    public function markAsRead(Request $request, string $id): JsonResponse
     {
-        $message = Message::findOrFail($id);
+        $message = Message::with('relationship')->findOrFail($id);
+
+        abort_unless($message->relationship->involvesUser($request->user()), 403);
+
         $message->update(['read_at' => now()]);
 
         return response()->json($message);

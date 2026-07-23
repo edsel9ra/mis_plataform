@@ -17,6 +17,9 @@ class ReviewController
             'comment' => ['nullable', 'string', 'max:1000'],
         ]);
 
+        $session = Session::findOrFail($validated['session_id']);
+        abort_unless($session->involvesUser($request->user()), 403);
+
         $exists = Review::where('session_id', $validated['session_id'])
             ->where('rater_id', $request->user()->id)
             ->exists();
@@ -35,8 +38,11 @@ class ReviewController
         return response()->json($review, 201);
     }
 
-    public function index(string $sessionId): JsonResponse
+    public function index(Request $request, string $sessionId): JsonResponse
     {
+        $session = Session::findOrFail($sessionId);
+        abort_unless($session->involvesUser($request->user()), 403);
+
         $reviews = Review::where('session_id', $sessionId)
             ->with('rater')
             ->get();

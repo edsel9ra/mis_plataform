@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\CreateSessionAction;
 use App\Http\Requests\Session\StoreSessionRequest;
 use App\Http\Resources\SessionResource;
+use App\Models\MentorshipRelationship;
 use App\Models\Session;
 use App\Services\GoogleMeetService;
 use Illuminate\Http\JsonResponse;
@@ -19,17 +20,24 @@ class SessionController
 
     public function index(Request $request): JsonResponse
     {
-        $sessions = Session::forUser($request->user()->id)
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+
+        $sessions = Session::forUser($request->user())
             ->with(['relationship.mentor', 'attendees.user'])
             ->orderBy('scheduled_at')
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
         return response()->json($sessions);
     }
 
     public function store(StoreSessionRequest $request): JsonResponse
     {
-        $session = $this->createSession->execute($request->validated());
+        $validated = $request->validated();
+        $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
+
+        abort_unless($relationship->involvesUser($request->user()), 403);
+
+        $session = $this->createSession->execute($validated);
 
         return response()->json(
             new SessionResource($session),
@@ -37,7 +45,7 @@ class SessionController
         );
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $session = Session::with([
             'relationship.mentor',
@@ -45,6 +53,8 @@ class SessionController
             'attendees.user',
             'reviews',
         ])->findOrFail($id);
+
+        abort_unless($session->involvesUser($request->user()), 403);
 
         return response()->json(new SessionResource($session));
     }
@@ -59,6 +69,9 @@ class SessionController
         ]);
 
         $session = Session::findOrFail($id);
+
+        abort_unless($session->involvesUser($request->user()), 403);
+
         $session->update($validated);
 
         return response()->json(new SessionResource($session->fresh()));
@@ -73,14 +86,19 @@ class SessionController
         ]);
 
         $session = Session::findOrFail($id);
+
+        abort_unless($session->involvesUser($request->user()), 403);
+
         $session->update($validated);
 
         return response()->json(new SessionResource($session->fresh()));
     }
 
-    public function generateMeetLink(string $id): JsonResponse
+    public function generateMeetLink(Request $request, string $id): JsonResponse
     {
         $session = Session::findOrFail($id);
+
+        abort_unless($session->involvesUser($request->user()), 403);
 
         if ($session->meet_link) {
             return response()->json(['meet_link' => $session->meet_link]);
@@ -100,9 +118,11 @@ class SessionController
         return response()->json(['meet_link' => $session->meet_link]);
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $session = Session::findOrFail($id);
+
+        abort_unless($session->involvesUser($request->user()), 403);
 
         if ($session->meet_event_id) {
             $this->googleMeetService->deleteEvent($session->meet_event_id);

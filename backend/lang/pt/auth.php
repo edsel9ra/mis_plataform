@@ -7,4 +7,5 @@ return [
     'logged_out' => 'Sessão encerrada com sucesso.',
     'invalid_provider' => 'Provedor de autenticação inválido.',
     'provider_error' => 'Erro ao autenticar com o provedor.',
+    'inactive' => 'A conta está inativa.',
 ];

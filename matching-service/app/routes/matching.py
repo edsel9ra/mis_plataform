@@ -10,13 +10,13 @@ matcher = MentorshipMatcher()
 class CalculateRequest(BaseModel):
     user_id: str
     mentor_id: str
-    client_type: str = Field(pattern="^(personal|familiar|grupal|corporate)$")
+    client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
     context_id: Optional[str] = None
 
 
 class SuggestionsRequest(BaseModel):
     user_id: str
-    client_type: str = Field(pattern="^(personal|familiar|grupal|corporate)$")
+    client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
     context_id: Optional[str] = None
     limit: int = Field(default=10, ge=1, le=50)
 

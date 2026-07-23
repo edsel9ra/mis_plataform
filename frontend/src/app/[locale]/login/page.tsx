@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '@/lib/schemas/auth';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -37,8 +38,14 @@ export default function LoginPage() {
     }
   };
 
-  const handleOAuth = (provider: string) => {
-    window.location.href = `/api/v1/auth/${provider}/redirect`;
+  const handleOAuth = async (provider: string) => {
+    setServerError('');
+    try {
+      const { url } = await api.get<{ url: string }>(`/auth/${provider}/redirect`);
+      window.location.assign(url);
+    } catch (err) {
+      setServerError(err instanceof Error ? err.message : t('common.error'));
+    }
   };
 
   return (
@@ -89,7 +96,7 @@ export default function LoginPage() {
               key={provider}
               type="button"
               variant="outline"
-              onClick={() => handleOAuth(provider)}
+              onClick={() => void handleOAuth(provider)}
             >
               {provider}
             </Button>

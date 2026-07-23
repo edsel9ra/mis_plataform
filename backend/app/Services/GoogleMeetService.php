@@ -7,11 +7,11 @@ use Illuminate\Support\Facades\Log;
 
 class GoogleMeetService
 {
-    private string $accessToken;
+    private ?string $accessToken = null;
 
     public function __construct()
     {
-        $this->accessToken = $this->getAccessToken();
+        // Token is loaded lazily so listing/viewing sessions does not require Google credentials.
     }
 
     public function createMeetEvent(string $title, \DateTime $startTime, int $durationMinutes): array
@@ -38,7 +38,7 @@ class GoogleMeetService
             ],
         ];
 
-        $response = Http::withToken($this->accessToken)
+        $response = Http::withToken($this->accessToken())
             ->post('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', $event);
 
         if (!$response->successful()) {
@@ -57,8 +57,13 @@ class GoogleMeetService
 
     public function deleteEvent(string $eventId): void
     {
-        Http::withToken($this->accessToken)
+        Http::withToken($this->accessToken())
             ->delete("https://www.googleapis.com/calendar/v3/calendars/primary/events/{$eventId}");
+    }
+
+    private function accessToken(): string
+    {
+        return $this->accessToken ??= $this->getAccessToken();
     }
 
     private function getAccessToken(): string
@@ -75,9 +80,9 @@ class GoogleMeetService
 
         $credentials = json_decode(file_get_contents($credentialsPath), true);
 
-        $jwtHeader = base64url_encode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
+        $jwtHeader = $this->base64UrlEncode(json_encode(['alg' => 'RS256', 'typ' => 'JWT']));
         $now = time();
-        $jwtPayload = base64url_encode(json_encode([
+        $jwtPayload = $this->base64UrlEncode(json_encode([
             'iss' => $credentials['client_email'],
             'scope' => 'https://www.googleapis.com/auth/calendar https://www.googleapis.com/auth/calendar.events',
             'aud' => 'https://oauth2.googleapis.com/token',
@@ -89,7 +94,7 @@ class GoogleMeetService
         $signature = '';
         openssl_sign("{$jwtHeader}.{$jwtPayload}", $signature, $credentials['private_key'], 'sha256WithRSAEncryption');
 
-        $jwt = "{$jwtHeader}.{$jwtPayload}." . base64url_encode($signature);
+        $jwt = "{$jwtHeader}.{$jwtPayload}." . $this->base64UrlEncode($signature);
 
         $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
             'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
@@ -101,5 +106,10 @@ class GoogleMeetService
         }
 
         return $response->json()['access_token'];
+    }
+
+    private function base64UrlEncode(string $value): string
+    {
+        return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
     }
 }

@@ -46,7 +46,11 @@ it('creates a session', function () {
 });
 
 it('shows a session', function () {
-    $session = Session::factory()->create();
+    $relationship = MentorshipRelationship::factory()->create([
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+    ]);
+    $session = Session::factory()->create(['relationship_id' => $relationship->id]);
 
     $response = $this->withToken($this->token)
         ->getJson("/api/v1/sessions/{$session->id}");
@@ -55,7 +59,11 @@ it('shows a session', function () {
 });
 
 it('updates session status', function () {
-    $session = Session::factory()->create();
+    $relationship = MentorshipRelationship::factory()->create([
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+    ]);
+    $session = Session::factory()->create(['relationship_id' => $relationship->id]);
 
     $response = $this->withToken($this->token)
         ->putJson("/api/v1/sessions/{$session->id}/status", [

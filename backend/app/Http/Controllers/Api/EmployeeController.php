@@ -12,8 +12,10 @@ use Illuminate\Support\Str;
 
 class EmployeeController
 {
-    public function index(string $companyId): JsonResponse
+    public function index(Request $request, string $companyId): JsonResponse
     {
+        abort_unless($request->user()->canManageCompany($companyId), 403);
+
         $employees = Employee::where('company_id', $companyId)
             ->with('user')
             ->paginate(20);
@@ -24,6 +26,8 @@ class EmployeeController
     public function invite(Request $request, string $companyId): JsonResponse
     {
         $company = Company::findOrFail($companyId);
+
+        abort_unless($request->user()->canManageCompany($company), 403);
 
         $validated = $request->validate([
             'email' => ['required', 'email', 'unique:users,email'],
@@ -43,7 +47,9 @@ class EmployeeController
             'client_type' => 'empresa',
             'role' => 'employee',
             'company_id' => $company->id,
+            'is_active' => false,
         ]);
+        $user->syncApplicationRole('employee');
 
         $employee = Employee::create([
             'company_id' => $company->id,
@@ -54,17 +60,18 @@ class EmployeeController
             'invited_at' => now(),
         ]);
 
-        // TODO: Send invitation email with temp password
+        // TODO: Send invitation email with temp password.
 
         return response()->json([
             'employee' => $employee->load('user'),
-            'temporary_password' => $tempPassword,
         ], 201);
     }
 
     public function update(Request $request, string $id): JsonResponse
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::with('company')->findOrFail($id);
+
+        abort_unless($request->user()->canManageCompany($employee->company), 403);
 
         $validated = $request->validate([
             'position' => ['nullable', 'string', 'max:100'],
@@ -77,9 +84,12 @@ class EmployeeController
         return response()->json($employee->load('user'));
     }
 
-    public function activate(string $id): JsonResponse
+    public function activate(Request $request, string $id): JsonResponse
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::with('company')->findOrFail($id);
+
+        abort_unless($request->user()->canManageCompany($employee->company), 403);
+
         $employee->update([
             'status' => 'active',
             'activated_at' => now(),
@@ -90,9 +100,12 @@ class EmployeeController
         return response()->json($employee->load('user'));
     }
 
-    public function deactivate(string $id): JsonResponse
+    public function deactivate(Request $request, string $id): JsonResponse
     {
-        $employee = Employee::findOrFail($id);
+        $employee = Employee::with('company')->findOrFail($id);
+
+        abort_unless($request->user()->canManageCompany($employee->company), 403);
+
         $employee->update(['status' => 'inactive']);
 
         $employee->user->update(['is_active' => false]);

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { RequireAuth } from '@/components/auth/RequireAuth';
 import { api } from '@/lib/api';
 
 interface Question {
@@ -88,7 +89,11 @@ export default function PersonalityTestPage() {
   }, [loading, error, totalQuestions, router]);
 
   if (loading) {
-    return <div className="flex h-screen items-center justify-center">{t('common.loading')}</div>;
+    return (
+      <RequireAuth>
+        <div className="flex h-screen items-center justify-center">{t('common.loading')}</div>
+      </RequireAuth>
+    );
   }
 
   if (error || totalQuestions === 0) {
@@ -97,24 +102,27 @@ export default function PersonalityTestPage() {
 
   if (Object.keys(answers).length === totalQuestions) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <div className="w-full max-w-lg text-center">
-          <h2 className="text-2xl font-bold">{t('personality.results')}</h2>
-          <p className="mt-4 text-gray-600">{t('personality.test_complete')}</p>
-          <button
-            onClick={handleSubmit}
-            disabled={submitting}
-            className="mt-8 rounded-lg bg-primary-600 px-6 py-3 text-white hover:bg-primary-700"
-          >
-            {submitting ? t('common.loading') : t('personality.see_results')}
-          </button>
+      <RequireAuth>
+        <div className="flex min-h-screen items-center justify-center px-4">
+          <div className="w-full max-w-lg text-center">
+            <h2 className="text-2xl font-bold">{t('personality.results')}</h2>
+            <p className="mt-4 text-gray-600">{t('personality.test_complete')}</p>
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="mt-8 rounded-lg bg-primary-600 px-6 py-3 text-white hover:bg-primary-700"
+            >
+              {submitting ? t('common.loading') : t('personality.see_results')}
+            </button>
+          </div>
         </div>
-      </div>
+      </RequireAuth>
     );
   }
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-12">
+    <RequireAuth>
+      <div className="mx-auto max-w-2xl px-4 py-12">
       <div className="mb-8">
         <div className="flex items-center justify-between text-sm text-gray-600">
           <span>{t('personality.question')} {current + 1} {t('personality.of')} {totalQuestions}</span>
@@ -153,6 +161,7 @@ export default function PersonalityTestPage() {
           </span>
         </div>
       </div>
-    </div>
+      </div>
+    </RequireAuth>
   );
 }

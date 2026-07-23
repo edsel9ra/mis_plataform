@@ -106,10 +106,15 @@ class PersonalityController
         ]);
 
         try {
-            $response = Http::timeout(30)->post(
-                config('services.matching.url') . '/api/v1/personality/score',
-                $validated,
-            );
+            $response = Http::timeout(config('services.matching.timeout', 30))
+                ->withHeaders(array_filter([
+                    'X-Internal-API-Key' => config('services.matching.api_key'),
+                ]))
+                ->post(
+                    config('services.matching.url') . '/api/v1/personality/score',
+                    $validated,
+                )
+                ->throw();
             $results = $response->json();
         } catch (\Exception $e) {
             return response()->json(['error' => $e->getMessage()], 500);

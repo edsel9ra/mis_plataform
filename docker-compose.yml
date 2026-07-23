@@ -3,7 +3,7 @@ services:
     image: nginx:alpine
     ports:
       - "80:80"
-      - "443:443"
+    restart: unless-stopped
     volumes:
       - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
       - ./backend:/var/www/backend
@@ -11,6 +11,13 @@ services:
     depends_on:
       - backend
       - frontend
+      - reverb
+      - matching
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost/up >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - mis-network
 
@@ -19,6 +26,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     image: mis-backend
+    restart: unless-stopped
     expose:
       - "9000"
     volumes:
@@ -37,6 +45,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     image: mis-reverb
+    restart: unless-stopped
     command: php /var/www/backend/artisan reverb:start
     expose:
       - "8080"
@@ -54,6 +63,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     image: mis-queue-worker
+    restart: unless-stopped
     command: php /var/www/backend/artisan queue:work --sleep=3 --tries=3
     volumes:
       - ./backend:/var/www/backend
@@ -69,6 +79,7 @@ services:
       context: ./docker/php
       dockerfile: Dockerfile
     image: mis-scheduler
+    restart: unless-stopped
     command: php /var/www/backend/artisan schedule:work
     volumes:
       - ./backend:/var/www/backend
@@ -83,6 +94,7 @@ services:
       context: ./frontend
       dockerfile: ../docker/node/Dockerfile
     image: mis-frontend
+    restart: unless-stopped
     ports:
       - "3000:3000"
     volumes:
@@ -100,11 +112,17 @@ services:
       context: ./docker/python
       dockerfile: Dockerfile
     image: mis-matching
+    restart: unless-stopped
     ports:
       - "8000:8000"
     volumes:
       - ./matching-service:/app
     env_file: .env.matching
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health', timeout=3).read()\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     depends_on:
       postgres:
         condition: service_healthy
@@ -115,10 +133,12 @@ services:
 
   postgres:
     image: postgres:16-alpine
+    restart: unless-stopped
     ports:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+      - ./docker/postgres/init:/docker-entrypoint-initdb.d:ro
     environment:
       POSTGRES_DB: mis_project
       POSTGRES_USER: mis_user
@@ -133,26 +153,39 @@ services:
 
   redis:
     image: redis:7-alpine
+    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - mis-network
 
   meilisearch:
     image: getmeili/meilisearch:latest
+    restart: unless-stopped
     ports:
       - "7700:7700"
     volumes:
       - meilidata:/meili_data
     environment:
       MEILI_MASTER_KEY: mis_meili_master_key
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:7700/health >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
     networks:
       - mis-network
 
   mailpit:
     image: axllent/mailpit:latest
+    restart: unless-stopped
     ports:
       - "1025:1025"
       - "8025:8025"

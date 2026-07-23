@@ -18,15 +18,20 @@ class SubmitPersonalityTestAction
         $age = $validated['age'] ?? ($user->birth_date?->age) ?? 30;
         $sex = $validated['sex'] ?? $user->sex ?? 'N';
 
-        $response = Http::timeout(30)->post(
-            config('services.matching.url') . '/api/v1/personality/score',
-            [
-                'answers' => $answersFormatted,
-                'test_version' => $validated['test_version'],
-                'age' => $age,
-                'sex' => $sex,
-            ]
-        );
+        $response = Http::timeout(config('services.matching.timeout', 30))
+            ->withHeaders(array_filter([
+                'X-Internal-API-Key' => config('services.matching.api_key'),
+            ]))
+            ->post(
+                config('services.matching.url') . '/api/v1/personality/score',
+                [
+                    'answers' => $answersFormatted,
+                    'test_version' => $validated['test_version'],
+                    'age' => $age,
+                    'sex' => $sex,
+                ]
+            )
+            ->throw();
 
         $results = $response->json();
 

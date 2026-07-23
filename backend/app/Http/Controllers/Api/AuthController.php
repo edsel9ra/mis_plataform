@@ -10,6 +10,7 @@ use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Password;
@@ -46,6 +47,12 @@ class AuthController
             ]);
         }
 
+        if (!$user->is_active) {
+            throw ValidationException::withMessages([
+                'email' => [__('auth.inactive')],
+            ]);
+        }
+
         $user->tokens()->delete();
         $token = $user->createToken('auth-token')->plainTextToken;
 
@@ -77,12 +84,12 @@ class AuthController
         return response()->json(['url' => $url]);
     }
 
-    public function handleProviderCallback(string $provider): JsonResponse
+    public function handleProviderCallback(string $provider): JsonResponse|RedirectResponse
     {
         try {
             $socialUser = Socialite::driver($provider)->stateless()->user();
         } catch (\Exception $e) {
-            return response()->json(['error' => __('auth.provider_error')], 400);
+            return $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')]);
         }
 
         $user = User::where('provider', $provider)
@@ -108,15 +115,13 @@ class AuthController
                     'client_type' => ClientType::Personal->value,
                     'role' => UserRole::Mentee->value,
                 ]);
+                $user->syncApplicationRole(UserRole::Mentee->value);
             }
         }
 
         $token = $user->createToken('auth-token')->plainTextToken;
 
-        return response()->json([
-            'user' => new UserResource($user),
-            'token' => $token,
-        ]);
+        return $this->redirectToFrontendOAuth(['token' => $token]);
     }
 
     public function refresh(Request $request): JsonResponse
@@ -137,5 +142,13 @@ class AuthController
         return response()->json([
             'status' => __($status),
         ]);
+    }
+
+    private function redirectToFrontendOAuth(array $params): RedirectResponse
+    {
+        $frontendUrl = rtrim(config('app.frontend_url'), '/');
+        $fragment = http_build_query($params);
+
+        return redirect()->away("{$frontendUrl}/oauth/callback#{$fragment}");
     }
 }

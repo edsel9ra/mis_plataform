@@ -19,19 +19,28 @@ class RelationshipController
     {
         $user = $request->user();
 
-        $relationships = MentorshipRelationship::forUser($user->id)
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+
+        $relationships = MentorshipRelationship::forUser($user)
             ->with(['mentor', 'sessions' => function ($q) {
                 $q->latest()->limit(5);
             }])
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
         return response()->json($relationships);
     }
 
     public function store(StoreRelationshipRequest $request): JsonResponse
     {
-        $relationship = $this->createRelationship->execute($request->validated());
+        $validated = $request->validated();
+
+        abort_unless(
+            MentorshipRelationship::userCanAccessSource($request->user(), $validated['source_type'], $validated['source_id']),
+            403,
+        );
+
+        $relationship = $this->createRelationship->execute($validated);
 
         return response()->json(
             new RelationshipResource($relationship),
@@ -39,7 +48,7 @@ class RelationshipController
         );
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $relationship = MentorshipRelationship::with([
             'mentor.personalityAssessment',
@@ -48,6 +57,8 @@ class RelationshipController
             'messages' => fn($q) => $q->latest()->limit(50),
             'certificates',
         ])->findOrFail($id);
+
+        abort_unless($relationship->involvesUser($request->user()), 403);
 
         return response()->json(new RelationshipResource($relationship));
     }
@@ -60,6 +71,8 @@ class RelationshipController
 
         $relationship = MentorshipRelationship::findOrFail($id);
 
+        abort_unless($relationship->involvesUser($request->user()), 403);
+
         $relationship->update([
             'status' => $validated['status'],
             'started_at' => $validated['status'] === 'active' ? now() : $relationship->started_at,
@@ -69,9 +82,12 @@ class RelationshipController
         return response()->json(new RelationshipResource($relationship->fresh()));
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $relationship = MentorshipRelationship::findOrFail($id);
+
+        abort_unless($relationship->involvesUser($request->user()), 403);
+
         $relationship->delete();
 
         return response()->json(['message' => __('relationships.deleted')]);

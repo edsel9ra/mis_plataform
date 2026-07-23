@@ -18,6 +18,12 @@ class SubscriptionController
             'payment_id' => ['nullable', 'string'],
         ]);
 
+        if (!empty($validated['payment_provider']) || !empty($validated['payment_id'])) {
+            throw ValidationException::withMessages([
+                'payment' => [__('subscriptions.payment_requires_webhook')],
+            ]);
+        }
+
         $user = $request->user();
         $plan = Plan::findOrFail($validated['plan_id']);
 
@@ -36,11 +42,12 @@ class SubscriptionController
             'subscriber_type' => 'user',
             'subscriber_id' => $user->id,
             'plan_id' => $plan->id,
-            'status' => 'active',
+            'status' => 'trial',
+            'trial_ends_at' => now()->addDays(14),
             'starts_at' => now(),
-            'ends_at' => now()->addMonth(),
-            'payment_provider' => $validated['payment_provider'] ?? null,
-            'payment_id' => $validated['payment_id'] ?? null,
+            'ends_at' => now()->addDays(14),
+            'payment_provider' => null,
+            'payment_id' => null,
         ]);
 
         $subscription->load('plan');
@@ -59,9 +66,16 @@ class SubscriptionController
         return response()->json($subscription);
     }
 
-    public function cancel(string $id): JsonResponse
+    public function cancel(Request $request, string $id): JsonResponse
     {
         $subscription = Subscription::findOrFail($id);
+
+        abort_unless(
+            $request->user()->isAdmin()
+                || ($subscription->subscriber_type === 'user' && $subscription->subscriber_id === $request->user()->id),
+            403,
+        );
+
         $subscription->update(['status' => 'canceled', 'ends_at' => now()]);
 
         return response()->json($subscription);

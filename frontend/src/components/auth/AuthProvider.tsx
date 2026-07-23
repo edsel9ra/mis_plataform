@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
 import { api } from '@/lib/api';
+import { queryClient } from '@/lib/query-client';
 
 interface PersonalityAssessment {
   id: string;
@@ -50,25 +51,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
+    const handleUnauthorized = () => {
+      api.setToken(null);
+      setUser(null);
+      queryClient.clear();
+    };
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
     const token = api.getToken();
     if (token) {
       api.get<User>('/profile')
         .then(setUser)
-        .catch(() => api.setToken(null))
+        .catch(handleUnauthorized)
         .finally(() => setIsLoading(false));
     } else {
       setIsLoading(false);
     }
+
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
   }, []);
 
   const login = async (email: string, password: string) => {
     const res = await api.post<{ user: User; token: string }>('/auth/login', { email, password });
+    queryClient.clear();
     api.setToken(res.token);
     setUser(res.user);
   };
 
   const register = async (data: RegisterData) => {
     const res = await api.post<{ user: User; token: string }>('/auth/register', data);
+    queryClient.clear();
     api.setToken(res.token);
     setUser(res.user);
   };
@@ -77,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     api.post('/auth/logout').catch(() => {});
     api.setToken(null);
     setUser(null);
+    queryClient.clear();
   };
 
   const refreshUser = async () => {

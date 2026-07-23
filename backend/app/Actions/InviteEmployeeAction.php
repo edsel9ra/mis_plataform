@@ -24,6 +24,7 @@ class InviteEmployeeAction
             'role' => UserRole::Employee->value,
             'is_active' => false,
         ]);
+        $user->syncApplicationRole(UserRole::Employee->value);
 
         return Employee::create([
             'user_id' => $user->id,
