@@ -17,6 +17,11 @@ class CohortMember extends Model
         'status',
     ];
 
+    public function scopeActive($query)
+    {
+        return $query->where('status', 'active');
+    }
+
     public function cohort(): BelongsTo
     {
         return $this->belongsTo(Cohort::class);

@@ -42,8 +42,30 @@ class Subscription extends Model
         return $this->belongsTo(Plan::class);
     }
 
+    public function scopeCurrent($query)
+    {
+        $now = now();
+
+        return $query->whereIn('status', ['trial', 'active'])
+            ->where(function ($query) use ($now) {
+                $query->whereNull('ends_at')->orWhere('ends_at', '>', $now);
+            })
+            ->where(function ($query) use ($now) {
+                $query->where('status', 'active')
+                    ->orWhereNull('trial_ends_at')
+                    ->orWhere('trial_ends_at', '>', $now);
+            });
+    }
+
     public function isActive(): bool
     {
-        return in_array($this->status, ['trial', 'active']);
+        if (!in_array($this->status, ['trial', 'active'], true)) {
+            return false;
+        }
+
+        $now = now();
+
+        return (!$this->ends_at || $this->ends_at->isAfter($now))
+            && ($this->status !== 'trial' || !$this->trial_ends_at || $this->trial_ends_at->isAfter($now));
     }
 }

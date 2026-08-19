@@ -1,22 +1,29 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Alert } from '@/components/ui/alert';
+import { localePath } from '@/i18n/paths';
+
+const platformAdminRoles = new Set(['super_admin', 'admin']);
 
 export default function OAuthCallbackPage() {
   const t = useTranslations();
+  const locale = useLocale();
   const router = useRouter();
   const { refreshUser } = useAuth();
   const [error, setError] = useState('');
+  const handled = useRef(false);
 
   useEffect(() => {
+    if (handled.current) return;
+    handled.current = true;
+
     const params = new URLSearchParams(window.location.hash.replace(/^#/, ''));
-    const token = params.get('token');
+    window.history.replaceState(null, '', `${window.location.pathname}${window.location.search}`);
     const oauthError = params.get('error');
 
     if (oauthError) {
@@ -24,16 +31,23 @@ export default function OAuthCallbackPage() {
       return;
     }
 
-    if (!token) {
+    if (!params.get('success')) {
       setError(t('common.error'));
       return;
     }
 
-    api.setToken(token);
     refreshUser()
-      .then(() => router.replace('/dashboard'))
+      .then((user) => {
+        if (!user.id || !user.role) {
+          setError(t('common.error'));
+          return;
+        }
+
+        const destination = platformAdminRoles.has(user.role) ? '/admin' : '/dashboard';
+        router.replace(localePath(destination, locale));
+      })
       .catch(() => setError(t('common.error')));
-  }, [refreshUser, router, t]);
+  }, [locale, refreshUser, router, t]);
 
   if (error) {
     return (

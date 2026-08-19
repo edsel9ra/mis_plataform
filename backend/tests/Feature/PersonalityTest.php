@@ -2,11 +2,12 @@
 
 use App\Models\PersonalityAssessment;
 use App\Models\User;
+use Illuminate\Support\Facades\Http;
 
 uses()->group('personality');
 
 beforeEach(function () {
-    $this->user = User::factory()->create();
+    $this->user = User::factory()->create(['birth_date' => now()->subYears(30)->toDateString()]);
     $this->token = $this->user->createToken('test')->plainTextToken;
 });
 
@@ -51,6 +52,92 @@ it('requires minimum 120 answers', function () {
         ]);
 
     $response->assertUnprocessable();
+});
+
+it('rejects duplicate question ids', function () {
+    Http::fake();
+
+    $answers = array_map(
+        fn (int $id) => ['id_question' => $id, 'id_select' => 3],
+        range(1, 119),
+    );
+    $answers[] = ['id_question' => 1, 'id_select' => 3];
+
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/personality/submit-answers', [
+            'answers' => $answers,
+            'test_version' => 'ipip-neo-120',
+        ]);
+
+    $response->assertUnprocessable();
+    Http::assertNothingSent();
+});
+
+it('rejects question ids outside the selected test range', function () {
+    Http::fake();
+
+    $answers = array_map(
+        fn (int $id) => ['id_question' => $id, 'id_select' => 3],
+        range(1, 119),
+    );
+    $answers[] = ['id_question' => 121, 'id_select' => 3];
+
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/personality/submit-answers', [
+            'answers' => $answers,
+            'test_version' => 'ipip-neo-120',
+        ]);
+
+    $response->assertUnprocessable();
+    Http::assertNothingSent();
+});
+
+it('submits exactly 120 valid answers to the matching service', function () {
+    Http::fake([
+        '*' => Http::response([
+            'factors' => ['O' => 50, 'C' => 51, 'E' => 52, 'A' => 53, 'N' => 54],
+            'facets' => [],
+            'raw_scores' => ['fixture' => true],
+            'test_version' => 'ipip-neo-120',
+        ]),
+    ]);
+
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/personality/submit-answers', [
+            'answers' => array_map(
+                fn (int $id) => ['id_question' => $id, 'id_select' => 3],
+                range(1, 120),
+            ),
+            'test_version' => 'ipip-neo-120',
+        ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('results.factors.O', 50);
+
+    Http::assertSent(function ($request) {
+        $payload = $request->data();
+
+        return str_ends_with($request->url(), '/api/v1/personality/score')
+            && $payload['test_version'] === 'ipip-neo-120'
+            && count($payload['answers']) === 120
+            && $payload['answers'][1] === 3
+            && $payload['answers'][120] === 3;
+    });
+});
+
+it('rejects calculate requests that do not match the selected test length', function () {
+    Http::fake();
+
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/personality/calculate', [
+            'answers' => array_fill(1, 119, 3),
+            'test_version' => 'ipip-neo-120',
+            'age' => 30,
+            'sex' => 'N',
+        ]);
+
+    $response->assertUnprocessable();
+    Http::assertNothingSent();
 });
 
 it('shows personality report', function () {

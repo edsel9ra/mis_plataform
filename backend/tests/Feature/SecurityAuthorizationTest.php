@@ -28,6 +28,77 @@ it('prevents accessing another user relationship by id', function () {
     $this->withToken($token)->deleteJson("/api/v1/relationships/{$relationship->id}")->assertForbidden();
 });
 
+it('allows organization insiders to view relationships but only managers to manage them', function () {
+    $companyAdmin = User::factory()->create(['client_type' => 'empresa', 'role' => 'company_admin']);
+    $employeeUser = User::factory()->create(['client_type' => 'empresa', 'role' => 'employee']);
+    $inactiveEmployee = User::factory()->create(['client_type' => 'empresa', 'role' => 'employee']);
+    $mentor = User::factory()->mentor()->create(['client_type' => 'empresa']);
+    $company = Company::create([
+        'legal_name' => 'Relationship Company',
+        'admin_id' => $companyAdmin->id,
+        'subscription_status' => 'trial',
+    ]);
+
+    Employee::create([
+        'company_id' => $company->id,
+        'user_id' => $employeeUser->id,
+        'status' => 'active',
+    ]);
+    Employee::create([
+        'company_id' => $company->id,
+        'user_id' => $inactiveEmployee->id,
+        'status' => 'inactive',
+    ]);
+
+    expect($inactiveEmployee->canAccessCompany($company))->toBeFalse();
+
+    $relationship = MentorshipRelationship::factory()->create([
+        'type' => 'empresa',
+        'source_type' => 'company',
+        'source_id' => $company->id,
+        'mentor_id' => $mentor->id,
+    ]);
+
+    $this->actingAs($employeeUser)
+        ->getJson("/api/v1/relationships/{$relationship->id}")
+        ->assertOk();
+    $this->actingAs($employeeUser)
+        ->putJson("/api/v1/relationships/{$relationship->id}/status", ['status' => 'paused'])
+        ->assertForbidden();
+    $this->actingAs($employeeUser)
+        ->deleteJson("/api/v1/relationships/{$relationship->id}")
+        ->assertForbidden();
+    $this->actingAs($employeeUser)
+        ->postJson('/api/v1/relationships', [
+            'type' => 'empresa',
+            'source_type' => 'company',
+            'source_id' => $company->id,
+            'mentor_id' => $mentor->id,
+        ])
+        ->assertForbidden();
+
+    $this->actingAs($inactiveEmployee)
+        ->getJson("/api/v1/relationships/{$relationship->id}")
+        ->assertForbidden();
+
+    $this->actingAs($mentor)
+        ->getJson("/api/v1/relationships/{$relationship->id}")
+        ->assertOk();
+    $this->actingAs($mentor)
+        ->putJson("/api/v1/relationships/{$relationship->id}/status", ['status' => 'paused'])
+        ->assertOk();
+    $this->actingAs($mentor)
+        ->deleteJson("/api/v1/relationships/{$relationship->id}")
+        ->assertForbidden();
+
+    $this->actingAs($companyAdmin)
+        ->putJson("/api/v1/relationships/{$relationship->id}/status", ['status' => 'completed'])
+        ->assertOk();
+    $this->actingAs($companyAdmin)
+        ->deleteJson("/api/v1/relationships/{$relationship->id}")
+        ->assertOk();
+});
+
 it('prevents accessing another user session by id', function () {
     $owner = User::factory()->create();
     $other = User::factory()->create();

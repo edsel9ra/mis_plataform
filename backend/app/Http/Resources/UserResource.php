@@ -20,6 +20,7 @@ class UserResource extends JsonResource
             'avatar' => $this->avatar,
             'role' => $this->role,
             'client_type' => $this->client_type,
+            'company_id' => $this->company_id,
             'locale' => $this->locale,
             'timezone' => $this->timezone,
             'is_active' => $this->is_active,

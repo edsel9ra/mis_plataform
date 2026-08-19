@@ -1,4 +1,4 @@
-import { forwardRef, type TextareaHTMLAttributes } from 'react';
+import { forwardRef, useId, type TextareaHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
@@ -8,7 +8,9 @@ interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
 
 export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, label, error, id, ...props }, ref) => {
-    const textareaId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const textareaId = id ?? label?.toLowerCase().replace(/\s+/g, '-') ?? generatedId;
+    const errorId = `${textareaId}-error`;
 
     return (
       <div className="space-y-1">
@@ -21,20 +23,20 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           id={textareaId}
           className={cn(
-            'block w-full rounded-lg border px-3 py-2 shadow-sm transition-colors resize-y',
+            'block w-full resize-y rounded-lg border bg-white px-3 py-2 text-gray-900 shadow-sm transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
-            'placeholder:text-gray-400',
+            'placeholder:text-gray-400 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
             error
               ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
               : 'border-gray-300',
             className,
           )}
-          aria-invalid={!!error}
-          aria-describedby={error ? `${textareaId}-error` : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           {...props}
         />
         {error && (
-          <p id={`${textareaId}-error`} className="text-sm text-red-600" role="alert">
+          <p id={errorId} className="text-sm text-red-600" role="alert">
             {error}
           </p>
         )}

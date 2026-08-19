@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Profile\UpdateAvatarRequest;
+use App\Http\Requests\Profile\UpdateLocaleRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
@@ -30,12 +32,8 @@ class ProfileController
         return response()->json(new UserProfileResource($user->fresh()));
     }
 
-    public function updateAvatar(Request $request): JsonResponse
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
     {
-        $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
-        ]);
-
         $user = $request->user();
 
         if ($user->avatar) {
@@ -48,11 +46,9 @@ class ProfileController
         return response()->json(['avatar' => $user->avatar]);
     }
 
-    public function updateLocale(Request $request): JsonResponse
+    public function updateLocale(UpdateLocaleRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'locale' => ['required', 'string', 'in:es,en,pt'],
-        ]);
+        $validated = $request->validated();
 
         $request->user()->update($validated);
 

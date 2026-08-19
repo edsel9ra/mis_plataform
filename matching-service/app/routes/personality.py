@@ -10,7 +10,7 @@ scorer = BigFiveScorer()
 class ScoreRequest(BaseModel):
     answers: Dict[int, int]
     test_version: str = Field(default="ipip-neo-120", pattern="^(ipip-neo-120|ipip-neo-300)$")
-    age: int = Field(default=30, ge=12, le=120)
+    age: int = Field(default=30, ge=12, le=110)
     sex: str = Field(default="N", pattern="^[MFN]$")
 
     @model_validator(mode="after")

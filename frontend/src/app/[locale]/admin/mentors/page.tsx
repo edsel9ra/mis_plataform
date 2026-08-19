@@ -10,13 +10,17 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageSpinner } from '@/components/ui/spinner';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface Mentor {
   id: string;
   name: string;
   last_name: string | null;
   email: string;
+  sex: string | null;
+  birth_date: string | null;
   client_type: string;
+  locale: string;
   personality_assessment: { completed_at: string | null; results?: { factors?: Record<string, number> } } | null;
   active_mentees_count: number;
   mentor_relationships: { id: string; status: string }[];
@@ -48,10 +52,15 @@ export default function AdminMentors() {
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
+  const [search, setSearch] = useState('');
+  const [typeFilter, setTypeFilter] = useState('');
 
   const { data, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ['admin-mentors'],
-    queryFn: () => api.get<PaginatedResponse>('/admin/mentors'),
+    queryKey: ['admin-mentors', search, typeFilter],
+    queryFn: () => api.get<PaginatedResponse>('/admin/mentors', {
+      search: search || undefined,
+      client_type: typeFilter || undefined,
+    }),
   });
 
   const createMutation = useMutation({
@@ -79,7 +88,10 @@ export default function AdminMentors() {
     setEditingId(mentor.id);
     setForm({
       name: mentor.name, last_name: mentor.last_name || '', email: mentor.email, password: '',
-      sex: 'N', birth_date: '', client_type: mentor.client_type, locale: 'es',
+      sex: ['M', 'F', 'N'].includes(mentor.sex ?? '') ? mentor.sex ?? 'N' : 'N',
+      birth_date: mentor.birth_date?.slice(0, 10) ?? '',
+      client_type: mentor.client_type,
+      locale: ['es', 'en', 'pt'].includes(mentor.locale) ? mentor.locale : 'es',
     });
     setShowModal(true);
   }
@@ -98,18 +110,32 @@ export default function AdminMentors() {
   if (isLoading) return <PageSpinner />;
 
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('admin.mentors')}</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-950">{t('admin.mentors')}</h1>
+          <p className="mt-1 text-sm text-gray-500">Gestiona mentores por tipo de cliente, perfil OCEAN y carga activa.</p>
+        </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">{data?.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
 
-      <div className="mt-6 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <Card className="border-0 shadow-sm ring-1 ring-slate-100">
+        <div className="flex flex-wrap gap-4">
+          <div className="min-w-[220px] flex-1">
+            <Input placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
+          </div>
+          <div className="w-44">
+            <Select options={TYPE_OPTIONS} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} />
+          </div>
+        </div>
+      </Card>
+
+      <div className="grid gap-6 sm:grid-cols-2 xl:grid-cols-3">
         {data?.data?.map((mentor) => (
-          <Card key={mentor.id}>
+          <Card key={mentor.id} className="border-0 shadow-sm ring-1 ring-slate-100 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl">
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
@@ -158,10 +184,11 @@ export default function AdminMentors() {
         <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeModal}>
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Editar Mentor' : 'Crear Mentor'}</h2>
+      <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); else setShowModal(true); }}>
+        <DialogContent aria-labelledby="admin-mentor-dialog-title">
+          <DialogHeader>
+            <DialogTitle id="admin-mentor-dialog-title">{editingId ? 'Editar Mentor' : 'Crear Mentor'}</DialogTitle>
+          </DialogHeader>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <Input label="Nombre" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} required />
@@ -182,16 +209,15 @@ export default function AdminMentors() {
               </div>
               <Input label="Fecha de nacimiento" type="date" value={form.birth_date}
                 onChange={e => setForm({ ...form, birth_date: e.target.value })} />
-              <div className="flex justify-end gap-3 pt-2">
+              <DialogFooter>
                 <Button variant="outline" type="button" onClick={closeModal}>{t('common.cancel')}</Button>
                 <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
                   {editingId ? t('common.save') : t('common.create')}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

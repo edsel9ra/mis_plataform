@@ -71,7 +71,7 @@ class MentorshipRelationship extends Model
               })
               ->orWhere(function ($sub) use ($userId) {
                   $sub->whereIn('source_type', self::sourceTypes('cohort'))
-                    ->whereIn('source_id', CohortMember::query()
+                    ->whereIn('source_id', CohortMember::active()
                         ->select('cohort_id')
                         ->where('user_id', $userId));
               })
@@ -80,7 +80,7 @@ class MentorshipRelationship extends Model
                     ->whereIn('source_id', Company::query()
                         ->select('id')
                         ->where('admin_id', $userId)
-                        ->orWhereIn('id', Employee::query()
+                        ->orWhereIn('id', Employee::active()
                             ->select('company_id')
                             ->where('user_id', $userId)));
               });
@@ -128,11 +128,39 @@ class MentorshipRelationship extends Model
         }
 
         if (in_array($sourceType, self::sourceTypes('cohort'), true)) {
-            return CohortMember::where('cohort_id', $sourceId)->where('user_id', $user->id)->exists();
+            return CohortMember::active()
+                ->where('cohort_id', $sourceId)
+                ->where('user_id', $user->id)
+                ->exists();
         }
 
         if (in_array($sourceType, self::sourceTypes('company'), true)) {
             return $user->canAccessCompany($sourceId);
+        }
+
+        return false;
+    }
+
+    public static function userCanManageSource(User $user, string $sourceType, string $sourceId): bool
+    {
+        if ($user->isAdmin()) {
+            return true;
+        }
+
+        if (in_array($sourceType, self::sourceTypes('user'), true)) {
+            return $sourceId === $user->id;
+        }
+
+        if (in_array($sourceType, self::sourceTypes('family_group'), true)) {
+            return FamilyGroup::where('id', $sourceId)->where('head_user_id', $user->id)->exists();
+        }
+
+        if (in_array($sourceType, self::sourceTypes('cohort'), true)) {
+            return Cohort::where('id', $sourceId)->where('created_by', $user->id)->exists();
+        }
+
+        if (in_array($sourceType, self::sourceTypes('company'), true)) {
+            return $user->canManageCompany($sourceId);
         }
 
         return false;

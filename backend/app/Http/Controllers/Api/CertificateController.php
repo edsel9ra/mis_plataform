@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\IssueCertificateAction;
+use App\Http\Requests\Certificate\IssueCertificateRequest;
 use App\Http\Resources\CertificateResource;
 use App\Models\Certificate;
 use App\Models\MentorshipRelationship;
@@ -27,16 +28,9 @@ class CertificateController
         return response()->json($certificates);
     }
 
-    public function issue(Request $request): JsonResponse
+    public function issue(IssueCertificateRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-            'relationship_id' => ['required', 'exists:mentorship_relationships,id'],
-            'type' => ['required', 'string', 'in:completion,skill,mentorship_hours'],
-            'title' => ['required', 'string', 'max:200'],
-            'description' => ['nullable', 'string'],
-            'metadata' => ['nullable', 'array'],
-        ]);
+        $validated = $request->validated();
 
         $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
         $recipient = User::findOrFail($validated['user_id']);
@@ -46,7 +40,13 @@ class CertificateController
         abort_unless($relationship->status === 'completed', 422, __('certificates.relationship_not_completed'));
         abort_unless($relationship->involvesUser($recipient), 422, __('certificates.user_not_in_relationship'));
 
-        $certificate = $this->issueCertificate->execute($validated);
+        try {
+            $certificate = $this->issueCertificate->execute($validated);
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return response()->json(['message' => $e->getMessage()], 503);
+        }
 
         return response()->json(new CertificateResource($certificate), 201);
     }
@@ -92,7 +92,13 @@ class CertificateController
 
         abort_unless($request->user()->isAdmin(), 403);
 
-        $this->blockchainService->revokeCertificate($certificate->ipfs_cid);
+        try {
+            $this->blockchainService->revokeCertificate($certificate->ipfs_cid);
+        } catch (\RuntimeException $e) {
+            report($e);
+
+            return response()->json(['message' => $e->getMessage()], 503);
+        }
 
         $certificate->update(['revoked' => true]);
 

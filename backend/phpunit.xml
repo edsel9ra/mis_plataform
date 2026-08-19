@@ -30,6 +30,8 @@
         <env name="DB_PASSWORD" value="mis_secret"/>
         <env name="MAIL_MAILER" value="array"/>
         <env name="QUEUE_CONNECTION" value="sync"/>
+        <env name="SCOUT_DRIVER" value="collection"/>
+        <env name="SCOUT_QUEUE" value="false"/>
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>

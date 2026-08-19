@@ -26,6 +26,8 @@ backend/storage/app/public/avatars
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+frontend/*.tsbuildinfo
+frontend/coverage/
 
 # Matching
 matching-service/__pycache__/
@@ -35,6 +37,8 @@ matching-service/.venv/
 matching-service/venv/
 matching-service/*.egg-info/
 matching-service/.pytest_cache/
+__pycache__/
+*.py[cod]
 
 # IDE
 .vscode/
@@ -46,3 +50,15 @@ matching-service/.pytest_cache/
 
 # Logs
 *.log
+
+# Node & PNPM
+node_modules/
+.pnpm-store/
+.next/
+dist/
+build/
+
+# Laravel
+/backend/vendor/
+/backend/storage/*.key
+/backend/.env

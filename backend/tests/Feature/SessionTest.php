@@ -32,7 +32,7 @@ it('creates a session', function () {
         'source_id' => $this->user->id,
     ]);
 
-    $response = $this->withToken($this->token)
+    $response = $this->withToken($mentor->createToken('test')->plainTextToken)
         ->postJson('/api/v1/sessions', [
             'relationship_id' => $relationship->id,
             'session_type' => 'individual',
@@ -59,13 +59,15 @@ it('shows a session', function () {
 });
 
 it('updates session status', function () {
+    $mentor = User::factory()->mentor()->create();
     $relationship = MentorshipRelationship::factory()->create([
+        'mentor_id' => $mentor->id,
         'source_type' => 'user',
         'source_id' => $this->user->id,
     ]);
     $session = Session::factory()->create(['relationship_id' => $relationship->id]);
 
-    $response = $this->withToken($this->token)
+    $response = $this->withToken($mentor->createToken('test')->plainTextToken)
         ->putJson("/api/v1/sessions/{$session->id}/status", [
             'status' => 'completed',
         ]);

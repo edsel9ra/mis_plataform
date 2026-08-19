@@ -2,38 +2,45 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Cohort\AddCohortMemberRequest;
+use App\Http\Requests\Cohort\StoreCohortRequest;
+use App\Http\Requests\Cohort\UpdateCohortRequest;
 use App\Models\Cohort;
 use App\Models\CohortMember;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class CohortController
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreCohortRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'max_members' => ['sometimes', 'integer', 'min:2', 'max:100'],
-        ]);
+        $validated = $request->validated();
 
-        $user = $request->user();
-        $user->update(['client_type' => 'grupal']);
+        $cohort = DB::transaction(function () use ($request, $validated) {
+            $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
+            $user->update(['client_type' => 'grupal']);
 
-        $cohort = Cohort::create([
-            'name' => $validated['name'],
-            'description' => $validated['description'] ?? null,
-            'max_members' => $validated['max_members'] ?? 20,
-            'status' => 'pending',
-        ]);
+            $cohort = Cohort::create([
+                'created_by' => $user->id,
+                'name' => $validated['name'],
+                'description' => $validated['description'] ?? null,
+                'max_members' => $validated['max_members'] ?? 20,
+                'status' => 'pending',
+            ]);
 
-        CohortMember::create([
-            'cohort_id' => $cohort->id,
-            'user_id' => $user->id,
-            'status' => 'active',
-        ]);
+            CohortMember::create([
+                'cohort_id' => $cohort->id,
+                'user_id' => $user->id,
+                'status' => 'active',
+            ]);
 
-        return response()->json($cohort->load('members.user'), 201);
+            return $cohort->load('members.user');
+        });
+
+        return response()->json($cohort, 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -41,42 +48,35 @@ class CohortController
         $cohort = Cohort::with(['members.user.personalityAssessment', 'plan'])
             ->findOrFail($id);
 
-        abort_unless($this->canAccessCohort($request, $cohort), 403);
+        Gate::authorize('view', $cohort);
 
         return response()->json($cohort);
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateCohortRequest $request, string $id): JsonResponse
     {
         $cohort = Cohort::findOrFail($id);
 
-        abort_unless($this->canAccessCohort($request, $cohort), 403);
+        Gate::authorize('manage', $cohort);
 
-        $validated = $request->validate([
-            'name' => ['sometimes', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'max_members' => ['sometimes', 'integer', 'min:2', 'max:100'],
-            'status' => ['sometimes', 'string', 'in:pending,active,completed'],
-        ]);
+        $validated = $request->validated();
 
         $cohort->update($validated);
 
         return response()->json($cohort);
     }
 
-    public function addMember(Request $request, string $id): JsonResponse
+    public function addMember(AddCohortMemberRequest $request, string $id): JsonResponse
     {
         $cohort = Cohort::findOrFail($id);
 
-        abort_unless($this->canAccessCohort($request, $cohort), 403);
+        Gate::authorize('manage', $cohort);
 
         if ($cohort->members()->count() >= $cohort->max_members) {
             return response()->json(['message' => __('cohorts.max_members_reached')], 422);
         }
 
-        $validated = $request->validate([
-            'user_id' => ['required', 'exists:users,id'],
-        ]);
+        $validated = $request->validated();
 
         $exists = CohortMember::where('cohort_id', $cohort->id)
             ->where('user_id', $validated['user_id'])
@@ -98,7 +98,7 @@ class CohortController
     public function removeMember(Request $request, string $id, string $memberId): JsonResponse
     {
         $cohort = Cohort::findOrFail($id);
-        abort_unless($this->canAccessCohort($request, $cohort), 403);
+        Gate::authorize('manage', $cohort);
 
         $member = CohortMember::where('cohort_id', $id)
             ->where('id', $memberId)
@@ -109,14 +109,4 @@ class CohortController
         return response()->json(['message' => __('cohorts.member_removed')]);
     }
 
-    private function canAccessCohort(Request $request, Cohort $cohort): bool
-    {
-        $user = $request->user();
-
-        return $user->isAdmin()
-            || CohortMember::where('cohort_id', $cohort->id)
-                ->where('user_id', $user->id)
-                ->where('status', 'active')
-                ->exists();
-    }
 }

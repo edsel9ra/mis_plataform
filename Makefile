@@ -1,4 +1,4 @@
-.PHONY: up down build restart logs backend frontend matching migrate seed test
+.PHONY: up down build restart logs backend frontend matching shell migrate seed fresh test-backend test-frontend test-matching queue reverb storage key cache meili npm-install composer-install
 
 up:
 	docker compose up -d
@@ -39,7 +39,10 @@ test-backend:
 	docker compose exec backend php artisan test
 
 test-frontend:
-	docker compose exec frontend npx playwright test
+	docker compose exec frontend pnpm test
+
+test-matching:
+	docker compose exec matching python -m pytest
 
 queue:
 	docker compose exec backend php artisan queue:work

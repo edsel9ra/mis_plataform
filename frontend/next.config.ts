@@ -2,11 +2,17 @@ import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
 
 const withNextIntl = createNextIntlPlugin();
+const apiInternalUrl = (process.env.API_INTERNAL_URL || 'http://nginx')
+  .replace(/\/$/, '')
+  .replace(/\/api$/, '');
 
 const config: NextConfig = {
   reactStrictMode: true,
   output: 'standalone',
   poweredByHeader: false,
+  experimental: {
+    optimizePackageImports: ['lucide-react', 'date-fns'],
+  },
   images: {
     remotePatterns: [
       { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
@@ -18,7 +24,7 @@ const config: NextConfig = {
     return [
       {
         source: '/api/:path*',
-        destination: `${process.env.API_INTERNAL_URL || 'http://nginx/api'}/:path*`,
+        destination: `${apiInternalUrl}/api/:path*`,
       },
     ];
   },

@@ -1,4 +1,4 @@
-import { forwardRef, type SelectHTMLAttributes } from 'react';
+import { forwardRef, useId, type SelectHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
@@ -10,7 +10,9 @@ interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(
   ({ className, label, error, id, options, placeholder, ...props }, ref) => {
-    const selectId = id || label?.toLowerCase().replace(/\s+/g, '-');
+    const generatedId = useId();
+    const selectId = id ?? label?.toLowerCase().replace(/\s+/g, '-') ?? generatedId;
+    const errorId = `${selectId}-error`;
 
     return (
       <div className="space-y-1">
@@ -23,14 +25,16 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ref={ref}
           id={selectId}
           className={cn(
-            'block w-full rounded-lg border px-3 py-2 shadow-sm transition-colors',
+            'block w-full rounded-lg border bg-white px-3 py-2 text-gray-900 shadow-sm transition-colors',
             'focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500',
+            'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
             error
               ? 'border-red-300 focus:ring-red-500 focus:border-red-500'
               : 'border-gray-300',
             className,
           )}
-          aria-invalid={!!error}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? errorId : undefined}
           {...props}
         >
           {placeholder && <option value="">{placeholder}</option>}
@@ -41,7 +45,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
           ))}
         </select>
         {error && (
-          <p className="text-sm text-red-600" role="alert">
+          <p id={errorId} className="text-sm text-red-600" role="alert">
             {error}
           </p>
         )}

@@ -11,13 +11,21 @@ class BigFiveScorer:
 
         formatted_answers = [{"id_question": k, "id_select": v} for k, v in answers.items()]
 
-        if sex not in ("M", "F"):
-            sex = "M"
-
         raw = scorer.compute(sex=sex, age=age, answers={"answers": formatted_answers})
 
         personalities = raw["person"]["result"]["personalities"]
-        trait_map = {"Openness": "O", "Conscientiousness": "C", "Extraversion": "E", "Agreeableness": "A", "Neuroticism": "N"}
+        trait_map = {
+            "openness": "O",
+            "Openness": "O",
+            "conscientiousness": "C",
+            "Conscientiousness": "C",
+            "extraversion": "E",
+            "Extraversion": "E",
+            "agreeableness": "A",
+            "Agreeableness": "A",
+            "neuroticism": "N",
+            "Neuroticism": "N",
+        }
 
         factors = {}
         facets = {}

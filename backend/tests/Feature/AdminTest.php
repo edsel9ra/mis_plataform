@@ -7,7 +7,7 @@ uses()->group('admin');
 
 beforeEach(function () {
     $this->seed(RolePermissionSeeder::class);
-    $this->admin = User::factory()->create(['role' => 'super_admin']);
+    $this->admin = User::factory()->superAdmin()->create();
     $this->admin->assignRole('super_admin');
     $this->token = $this->admin->createToken('test')->plainTextToken;
 });
@@ -29,6 +29,39 @@ it('filters users by client type', function () {
         ->getJson('/api/v1/admin/users?client_type=personal');
 
     $response->assertOk();
+});
+
+it('creates platform admins without client type', function () {
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/admin/users', [
+            'name' => 'Platform',
+            'email' => 'platform@example.com',
+            'password' => 'password123',
+            'role' => 'admin',
+            'locale' => 'es',
+        ]);
+
+    $response->assertCreated();
+
+    $this->assertDatabaseHas('users', [
+        'email' => 'platform@example.com',
+        'role' => 'admin',
+        'client_type' => null,
+    ]);
+});
+
+it('requires client type for non platform users', function () {
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/admin/users', [
+            'name' => 'Client',
+            'email' => 'client@example.com',
+            'password' => 'password123',
+            'role' => 'mentee',
+            'locale' => 'es',
+        ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['client_type']);
 });
 
 it('lists mentors', function () {

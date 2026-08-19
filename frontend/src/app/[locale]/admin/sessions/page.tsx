@@ -2,14 +2,17 @@
 
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { apiIsoToDatetimeLocal, datetimeLocalToApiIso } from '@/lib/datetime';
+import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageSpinner } from '@/components/ui/spinner';
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { CalendarClock, CheckCircle2, Clock } from 'lucide-react';
 
 interface Session {
   id: string;
@@ -21,9 +24,16 @@ interface Session {
   session_type: string;
   relationship_id: string;
   relationship: {
-    mentor: { id: string; name: string; last_name: string | null };
+    mentor: { id: string; name?: string; last_name?: string | null; full_name?: string };
     source: { name?: string; id?: string };
   };
+}
+
+interface RelationshipOption {
+  id: string;
+  type: string;
+  mentor?: { name?: string; last_name?: string | null; full_name?: string };
+  source?: { name?: string; full_name?: string; family_name?: string; legal_name?: string; id?: string };
 }
 
 interface PaginatedResponse {
@@ -46,28 +56,30 @@ const STATUS_OPTIONS = [
 ];
 
 const emptyForm = {
-  title: '', description: '', session_type: 'one_on_one',
+  title: '', description: '', session_type: 'individual',
   scheduled_at: '', duration_minutes: 60, status: 'scheduled' as string,
   relationship_id: '',
 };
 
 export default function AdminSessions() {
   const t = useTranslations();
+  const locale = useLocale();
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
+  const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(emptyForm);
 
   const { data, isLoading } = useQuery<PaginatedResponse>({
-    queryKey: ['admin-sessions', statusFilter, page],
+    queryKey: ['admin-sessions', statusFilter, search, page],
     queryFn: () => api.get<PaginatedResponse>('/admin/sessions', {
-      status: statusFilter || undefined, page,
+      status: statusFilter || undefined, search: search || undefined, page,
     }),
   });
 
-  const { data: relationshipsData } = useQuery<{ data: { id: string; mentor: { name: string } }[] }>({
+  const { data: relationshipsData } = useQuery<{ data: RelationshipOption[] }>({
     queryKey: ['admin-relationships-list'],
     queryFn: () => api.get('/relationships'),
   });
@@ -99,7 +111,7 @@ export default function AdminSessions() {
     setEditingId(session.id);
     setForm({
       title: session.title, description: session.description || '', session_type: session.session_type,
-      scheduled_at: session.scheduled_at.slice(0, 16), duration_minutes: session.duration_minutes,
+      scheduled_at: apiIsoToDatetimeLocal(session.scheduled_at), duration_minutes: session.duration_minutes,
       status: session.status, relationship_id: session.relationship_id,
     });
     setShowModal(true);
@@ -109,30 +121,62 @@ export default function AdminSessions() {
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const payload = { ...form, scheduled_at: datetimeLocalToApiIso(form.scheduled_at) };
     if (editingId) {
-      updateMutation.mutate({ id: editingId, data: form });
+      updateMutation.mutate({ id: editingId, data: payload });
     } else {
-      createMutation.mutate(form);
+      createMutation.mutate(payload);
     }
   }
 
   if (isLoading) return <PageSpinner />;
 
+  const sessionStats = [
+    { label: 'Programadas', value: data?.data?.filter((item) => item.status === 'scheduled').length ?? 0, icon: CalendarClock, color: 'bg-blue-50 text-blue-700' },
+    { label: 'En progreso', value: data?.data?.filter((item) => item.status === 'in_progress').length ?? 0, icon: Clock, color: 'bg-amber-50 text-amber-700' },
+    { label: 'Completadas', value: data?.data?.filter((item) => item.status === 'completed').length ?? 0, icon: CheckCircle2, color: 'bg-emerald-50 text-emerald-700' },
+  ];
+
   return (
-    <div>
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold text-gray-900">{t('admin.sessions')}</h1>
+    <div className="space-y-6 animate-fade-in">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-950">{t('admin.sessions')}</h1>
+          <p className="mt-1 text-sm text-gray-500">Programa, completa y audita sesiones creadas desde relaciones activas.</p>
+        </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-500">{data?.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
 
-      <Card className="mt-6">
+      <section className="grid gap-4 sm:grid-cols-3">
+        {sessionStats.map(({ label, value, icon: Icon, color }) => (
+          <Card key={label} className="border-0 shadow-sm ring-1 ring-slate-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-gray-500">{label}</p>
+                <p className="mt-2 text-2xl font-bold text-gray-950">{value}</p>
+              </div>
+              <span className={`rounded-2xl p-3 ${color}`}>
+                <Icon className="h-5 w-5" aria-hidden="true" />
+              </span>
+            </div>
+          </Card>
+        ))}
+      </section>
+
+      <Card className="border-0 shadow-sm ring-1 ring-slate-100">
         <CardHeader>
-          <div className="w-44">
+          <div className="flex flex-wrap gap-4">
+            <div className="min-w-[220px] flex-1">
+              <Input placeholder="Buscar sesion" value={search}
+                onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
+            </div>
+            <div className="w-44">
             <Select options={STATUS_OPTIONS} value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} />
+            </div>
           </div>
         </CardHeader>
 
@@ -153,13 +197,13 @@ export default function AdminSessions() {
                 <tr key={session.id} className="border-b hover:bg-gray-50">
                   <td className="px-4 py-3 font-medium text-gray-900">{session.title}</td>
                   <td className="px-4 py-3 text-gray-600">
-                    {session.relationship?.mentor?.name} {session.relationship?.mentor?.last_name ?? ''}
+                    {mentorName(session.relationship?.mentor)}
                   </td>
                   <td className="px-4 py-3">
                     <Badge variant={STATUS_BADGE[session.status] || 'default'}>{session.status}</Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-600">
-                    {new Date(session.scheduled_at).toLocaleDateString()}
+                    {new Date(session.scheduled_at).toLocaleDateString(locale)}
                   </td>
                   <td className="px-4 py-3 text-gray-600">{session.duration_minutes}m</td>
                   <td className="px-4 py-3">
@@ -198,19 +242,20 @@ export default function AdminSessions() {
         )}
       </Card>
 
-      {showModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50" onClick={closeModal}>
-          <div className="w-full max-w-lg rounded-xl bg-white p-6 shadow-xl" onClick={e => e.stopPropagation()}>
-            <h2 className="text-lg font-bold text-gray-900">{editingId ? 'Editar Sesión' : 'Crear Sesión'}</h2>
+      <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); else setShowModal(true); }}>
+        <DialogContent aria-labelledby="admin-session-dialog-title">
+          <DialogHeader>
+            <DialogTitle id="admin-session-dialog-title">{editingId ? 'Editar Sesión' : 'Crear Sesión'}</DialogTitle>
+          </DialogHeader>
             <form onSubmit={handleSubmit} className="mt-4 space-y-4">
               <Input label="Título" value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
               <Input label="Descripción" value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
               <div className="grid grid-cols-2 gap-4">
                 <Select label="Tipo" options={[
-                  { value: 'one_on_one', label: 'One-on-One' },
+                  { value: 'individual', label: 'Individual' },
+                  { value: 'family', label: 'Familiar' },
                   { value: 'group', label: 'Grupal' },
-                  { value: 'workshop', label: 'Taller' },
-                  { value: 'assessment', label: 'Evaluación' },
+                  { value: 'corporate', label: 'Corporativa' },
                 ]} value={form.session_type} onChange={e => setForm({ ...form, session_type: e.target.value })} />
                 <Select label="Estado" options={STATUS_OPTIONS.slice(1)} value={form.status}
                   onChange={e => setForm({ ...form, status: e.target.value })} />
@@ -221,20 +266,34 @@ export default function AdminSessions() {
                 <Input label="Duración (min)" type="number" value={form.duration_minutes}
                   onChange={e => setForm({ ...form, duration_minutes: Number(e.target.value) })} required />
               </div>
-              <Select label="Relación" options={(relationshipsData?.data || []).map((r: any) => ({
-                value: r.id, label: r.mentor?.name || r.id,
+              <Select label="Relación" options={(relationshipsData?.data || []).map((r) => ({
+                value: r.id, label: relationshipLabel(r),
               }))} value={form.relationship_id}
                 onChange={e => setForm({ ...form, relationship_id: e.target.value })} required />
-              <div className="flex justify-end gap-3 pt-2">
+              <DialogFooter>
                 <Button variant="outline" type="button" onClick={closeModal}>{t('common.cancel')}</Button>
                 <Button type="submit" loading={createMutation.isPending || updateMutation.isPending}>
                   {editingId ? t('common.save') : t('common.create')}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
+}
+
+function mentorName(mentor?: RelationshipOption['mentor']): string {
+  return mentor?.full_name || [mentor?.name, mentor?.last_name].filter(Boolean).join(' ') || 'Mentor';
+}
+
+function relationshipLabel(relationship: RelationshipOption): string {
+  const source = relationship.source?.name
+    || relationship.source?.full_name
+    || relationship.source?.family_name
+    || relationship.source?.legal_name
+    || relationship.source?.id
+    || relationship.type;
+
+  return `${mentorName(relationship.mentor)} · ${source}`;
 }

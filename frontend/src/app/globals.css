@@ -54,3 +54,115 @@
     outline-offset: 2px;
   }
 }
+
+@layer components {
+  .thinking-orb {
+    --orb-size: 2.5rem;
+    --orb-dot-size: 0.25rem;
+    position: relative;
+    display: inline-grid;
+    place-items: center;
+    width: var(--orb-size);
+    height: var(--orb-size);
+    color: currentColor;
+    isolation: isolate;
+  }
+
+  .thinking-orb::before {
+    content: '';
+    position: absolute;
+    inset: 18%;
+    border-radius: 9999px;
+    background: currentColor;
+    opacity: 0.08;
+    filter: blur(10px);
+    animation: thinking-orb-glow 1.8s ease-in-out infinite;
+  }
+
+  .thinking-orb__core {
+    width: calc(var(--orb-size) * 0.28);
+    height: calc(var(--orb-size) * 0.28);
+    border-radius: 9999px;
+    background: radial-gradient(circle at 35% 30%, #ffffff 0 8%, currentColor 28%, color-mix(in srgb, currentColor 42%, transparent) 68%, transparent 72%);
+    box-shadow: 0 0 calc(var(--orb-size) * 0.22) color-mix(in srgb, currentColor 45%, transparent);
+    animation: thinking-orb-breathe 1.8s ease-in-out infinite;
+  }
+
+  .thinking-orb__dot {
+    --orb-transform: translate(-50%, -50%);
+    --orb-delay: 0ms;
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: var(--orb-dot-size);
+    height: var(--orb-dot-size);
+    border-radius: 9999px;
+    background: currentColor;
+    box-shadow: 0 0 calc(var(--orb-dot-size) * 3) color-mix(in srgb, currentColor 35%, transparent);
+    opacity: 0.28;
+    transform: var(--orb-transform) scale(0.72);
+    animation: thinking-orb-pulse 1.45s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+    animation-delay: var(--orb-delay);
+  }
+
+  .thinking-orb[data-state='idle'] .thinking-orb__dot,
+  .thinking-orb[data-state='idle'] .thinking-orb__core,
+  .thinking-orb[data-state='idle']::before {
+    animation-duration: 2.6s;
+  }
+
+  .thinking-orb[data-state='success'] .thinking-orb__dot,
+  .thinking-orb[data-state='success'] .thinking-orb__core,
+  .thinking-orb[data-state='success']::before {
+    animation-duration: 0.95s;
+  }
+
+  @keyframes thinking-orb-pulse {
+    0%, 100% {
+      opacity: 0.18;
+      transform: var(--orb-transform) scale(0.54);
+    }
+
+    45%, 55% {
+      opacity: 0.96;
+      transform: var(--orb-transform) scale(1.1);
+    }
+  }
+
+  @keyframes thinking-orb-breathe {
+    0%, 100% {
+      opacity: 0.78;
+      transform: scale(0.92);
+    }
+
+    50% {
+      opacity: 1;
+      transform: scale(1.08);
+    }
+  }
+
+  @keyframes thinking-orb-glow {
+    0%, 100% {
+      opacity: 0.06;
+      transform: scale(0.9);
+    }
+
+    50% {
+      opacity: 0.16;
+      transform: scale(1.08);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .thinking-orb::before,
+    .thinking-orb__core,
+    .thinking-orb__dot {
+      animation: none !important;
+    }
+
+    .thinking-orb__dot {
+      opacity: 0.6;
+      transform: var(--orb-transform) scale(0.82);
+    }
+  }
+}

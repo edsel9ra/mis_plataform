@@ -2,38 +2,43 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Family\AddFamilyMemberRequest;
+use App\Http\Requests\Family\StoreFamilyGroupRequest;
+use App\Http\Requests\Family\UpdateFamilyGroupRequest;
 use App\Models\FamilyGroup;
 use App\Models\FamilyMember;
+use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 class FamilyController
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreFamilyGroupRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'family_name' => ['required', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
-        $user = $request->user();
-        $user->update(['client_type' => 'familiar']);
+        $group = DB::transaction(function () use ($request, $validated) {
+            $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
+            $user->update(['client_type' => 'familiar']);
 
-        $group = FamilyGroup::create([
-            'head_user_id' => $user->id,
-            'family_name' => $validated['family_name'],
-            'description' => $validated['description'] ?? null,
-        ]);
+            $group = FamilyGroup::create([
+                'head_user_id' => $user->id,
+                'family_name' => $validated['family_name'],
+                'description' => $validated['description'] ?? null,
+            ]);
 
-        // Add the creator as the first member
-        FamilyMember::create([
-            'family_group_id' => $group->id,
-            'user_id' => $user->id,
-            'full_name' => $user->full_name,
-            'relationship' => 'head',
-        ]);
+            FamilyMember::create([
+                'family_group_id' => $group->id,
+                'user_id' => $user->id,
+                'full_name' => $user->full_name,
+                'relationship' => 'head',
+            ]);
 
-        return response()->json($group->load('members'), 201);
+            return $group->load('members');
+        });
+
+        return response()->json($group, 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -46,35 +51,26 @@ class FamilyController
         return response()->json($group);
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateFamilyGroupRequest $request, string $id): JsonResponse
     {
         $group = FamilyGroup::findOrFail($id);
 
         abort_unless($this->canManageFamily($request, $group), 403);
 
-        $validated = $request->validate([
-            'family_name' => ['sometimes', 'string', 'max:100'],
-            'description' => ['nullable', 'string'],
-            'plan_id' => ['nullable', 'exists:plans,id'],
-        ]);
+        $validated = $request->validated();
 
         $group->update($validated);
 
         return response()->json($group);
     }
 
-    public function addMember(Request $request, string $id): JsonResponse
+    public function addMember(AddFamilyMemberRequest $request, string $id): JsonResponse
     {
         $group = FamilyGroup::findOrFail($id);
 
         abort_unless($this->canManageFamily($request, $group), 403);
 
-        $validated = $request->validate([
-            'full_name' => ['required', 'string', 'max:100'],
-            'age' => ['nullable', 'integer', 'min:0', 'max:120'],
-            'relationship' => ['nullable', 'string', 'max:50'],
-            'email' => ['nullable', 'email'],
-        ]);
+        $validated = $request->validated();
 
         $userId = null;
         if (!empty($validated['email'])) {

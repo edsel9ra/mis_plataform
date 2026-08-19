@@ -1,10 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
-interface Relationship {
+export interface Relationship {
   id: string;
   type: string;
   status: string;
+  source_type?: string;
+  source_id?: string;
   mentor: { id: string; full_name: string; avatar: string | null };
   created_at: string;
 }
@@ -12,14 +14,14 @@ interface Relationship {
 export function useRelationships() {
   return useQuery({
     queryKey: ['relationships'],
-    queryFn: () => api.get<{ data: Relationship[] }>('/relationships'),
+    queryFn: ({ signal }) => api.get<{ data: Relationship[] }>('/relationships', undefined, { signal }),
   });
 }
 
 export function useRelationship(id: string) {
   return useQuery({
     queryKey: ['relationships', id],
-    queryFn: () => api.get<Relationship>(`/relationships/${id}`),
+    queryFn: ({ signal }) => api.get<Relationship>(`/relationships/${id}`, undefined, { signal }),
     enabled: !!id,
   });
 }
@@ -37,6 +39,34 @@ export function useCreateRelationship() {
     }) => api.post<Relationship>('/relationships', data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['relationships'] });
+      queryClient.invalidateQueries({ queryKey: ['relationship-contexts'] });
     },
+  });
+}
+
+export interface RelationshipContext {
+  source_type: 'user' | 'family_group' | 'cohort' | 'company';
+  source_id: string;
+  type: 'personal' | 'familiar' | 'grupal' | 'empresa';
+  name: string;
+  plan: {
+    id: string;
+    name: string;
+    max_sessions_per_month: number;
+    max_members: number;
+    max_mentors: number;
+  } | null;
+  relationship: { id: string; status: 'pending' | 'active' } | null;
+}
+
+export function useRelationshipContexts(mentorId: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: ['relationship-contexts', mentorId],
+    queryFn: ({ signal }) => api.get<{ data: RelationshipContext[] }>(
+      '/relationship-contexts',
+      { mentor_id: mentorId },
+      { signal },
+    ),
+    enabled: enabled && Boolean(mentorId),
   });
 }

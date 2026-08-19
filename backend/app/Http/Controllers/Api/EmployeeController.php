@@ -2,86 +2,69 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\InviteEmployeeAction;
+use App\Http\Requests\Employee\InviteEmployeeRequest;
+use App\Http\Requests\Employee\UpdateEmployeeRequest;
+use App\Http\Resources\EmployeeResource;
 use App\Models\Company;
 use App\Models\Employee;
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class EmployeeController
 {
+    public function __construct(
+        private InviteEmployeeAction $inviteEmployee,
+    ) {}
+
     public function index(Request $request, string $companyId): JsonResponse
     {
         abort_unless($request->user()->canManageCompany($companyId), 403);
 
-        $employees = Employee::where('company_id', $companyId)
+        $query = Employee::where('company_id', $companyId);
+        $statusCounts = (clone $query)
+            ->selectRaw('status, count(*) as aggregate')
+            ->groupBy('status')
+            ->pluck('aggregate', 'status');
+        $employees = $query
             ->with('user')
             ->paginate(20);
 
-        return response()->json($employees);
+        return EmployeeResource::collection($employees)
+            ->additional([
+                'status_counts' => [
+                    'active' => (int) ($statusCounts['active'] ?? 0),
+                    'invited' => (int) ($statusCounts['invited'] ?? 0),
+                    'inactive' => (int) ($statusCounts['inactive'] ?? 0),
+                ],
+            ])
+            ->response();
     }
 
-    public function invite(Request $request, string $companyId): JsonResponse
+    public function invite(InviteEmployeeRequest $request, string $companyId): JsonResponse
     {
         $company = Company::findOrFail($companyId);
 
         abort_unless($request->user()->canManageCompany($company), 403);
 
-        $validated = $request->validate([
-            'email' => ['required', 'email', 'unique:users,email'],
-            'name' => ['required', 'string', 'max:100'],
-            'last_name' => ['nullable', 'string', 'max:100'],
-            'position' => ['nullable', 'string', 'max:100'],
-            'department' => ['nullable', 'string', 'max:100'],
-        ]);
-
-        $tempPassword = Str::password(12);
-
-        $user = User::create([
-            'name' => $validated['name'],
-            'last_name' => $validated['last_name'] ?? null,
-            'email' => $validated['email'],
-            'password' => Hash::make($tempPassword),
-            'client_type' => 'empresa',
-            'role' => 'employee',
-            'company_id' => $company->id,
-            'is_active' => false,
-        ]);
-        $user->syncApplicationRole('employee');
-
-        $employee = Employee::create([
-            'company_id' => $company->id,
-            'user_id' => $user->id,
-            'position' => $validated['position'] ?? null,
-            'department' => $validated['department'] ?? null,
-            'status' => 'invited',
-            'invited_at' => now(),
-        ]);
-
-        // TODO: Send invitation email with temp password.
+        $employee = $this->inviteEmployee->execute($company, $request->validated());
 
         return response()->json([
-            'employee' => $employee->load('user'),
+            'employee' => new EmployeeResource($employee->load('user')),
         ], 201);
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateEmployeeRequest $request, string $id): JsonResponse
     {
         $employee = Employee::with('company')->findOrFail($id);
 
         abort_unless($request->user()->canManageCompany($employee->company), 403);
 
-        $validated = $request->validate([
-            'position' => ['nullable', 'string', 'max:100'],
-            'department' => ['nullable', 'string', 'max:100'],
-            'manager_name' => ['nullable', 'string', 'max:100'],
-        ]);
+        $validated = $request->validated();
 
         $employee->update($validated);
 
-        return response()->json($employee->load('user'));
+        return response()->json(new EmployeeResource($employee->load('user')));
     }
 
     public function activate(Request $request, string $id): JsonResponse
@@ -97,7 +80,7 @@ class EmployeeController
 
         $employee->user->update(['is_active' => true]);
 
-        return response()->json($employee->load('user'));
+        return response()->json(new EmployeeResource($employee->load('user')));
     }
 
     public function deactivate(Request $request, string $id): JsonResponse
@@ -110,6 +93,6 @@ class EmployeeController
 
         $employee->user->update(['is_active' => false]);
 
-        return response()->json($employee->load('user'));
+        return response()->json(new EmployeeResource($employee->load('user')));
     }
 }

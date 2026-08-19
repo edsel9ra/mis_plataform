@@ -13,7 +13,7 @@ class MentorController
     {
         $query = User::where('role', 'mentor')->where('is_active', true);
 
-        if ($request->has('client_type')) {
+        if ($request->filled('client_type')) {
             $query->where('client_type', $request->client_type);
         }
 

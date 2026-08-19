@@ -13,16 +13,25 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+        $middleware->encryptCookies(except: [
+            env('SANCTUM_TOKEN_COOKIE', 'mis_auth_token'),
+            'mis_oauth_state_google',
+            'mis_oauth_state_linkedin',
+            'mis_oauth_state_github',
+        ]);
         $middleware->statefulApi();
         $middleware->api(prepend: [
             \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
+            \App\Http\Middleware\UseSanctumTokenCookie::class,
         ]);
 
         $middleware->alias([
+            'active' => \App\Http\Middleware\EnsureUserIsActive::class,
             'role' => \Spatie\Permission\Middleware\RoleMiddleware::class,
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
+        $middleware->redirectGuestsTo(null);
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //

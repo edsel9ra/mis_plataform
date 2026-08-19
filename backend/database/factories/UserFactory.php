@@ -13,7 +13,7 @@ class UserFactory extends Factory
     public function definition(): array
     {
         return [
-            'id' => Str::uuid(),
+            'id' => (string) Str::uuid(),
             'client_type' => 'personal',
             'role' => 'mentee',
             'name' => fake()->firstName(),
@@ -37,7 +37,16 @@ class UserFactory extends Factory
     public function admin(): static
     {
         return $this->state(fn(array $attr) => [
+            'client_type' => null,
             'role' => 'admin',
+        ]);
+    }
+
+    public function superAdmin(): static
+    {
+        return $this->state(fn(array $attr) => [
+            'client_type' => null,
+            'role' => 'super_admin',
         ]);
     }
 }

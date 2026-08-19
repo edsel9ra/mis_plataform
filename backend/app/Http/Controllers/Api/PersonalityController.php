@@ -3,17 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\SubmitPersonalityTestAction;
+use App\Http\Requests\Personality\CalculatePersonalityRequest;
 use App\Http\Requests\Personality\SubmitAnswersRequest;
 use App\Http\Resources\PersonalityAssessmentResource;
 use App\Models\PersonalityAssessment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use App\Services\PersonalityInterpretationService;
 
 class PersonalityController
 {
     public function __construct(
         private SubmitPersonalityTestAction $submitTest,
+        private PersonalityInterpretationService $interpretation,
     ) {}
 
     public function startTest(Request $request): JsonResponse
@@ -71,9 +74,10 @@ class PersonalityController
         try {
             $assessment = $this->submitTest->execute($user, $request->validated());
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'message' => __('personality.scoring_error'),
-                'error' => $e->getMessage(),
             ], 500);
         }
 
@@ -92,18 +96,13 @@ class PersonalityController
             'completed_at' => $assessment->completed_at,
             'factors' => $assessment->results['factors'] ?? [],
             'facets' => $assessment->results['facets'] ?? [],
-            'interpretation' => $this->interpretResults($assessment->results['factors'] ?? []),
+            'interpretation' => $this->interpretation->interpret($assessment->results['factors'] ?? []),
         ]);
     }
 
-    public function calculate(Request $request): JsonResponse
+    public function calculate(CalculatePersonalityRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'answers' => ['required', 'array'],
-            'test_version' => ['required', 'string', 'in:ipip-neo-120,ipip-neo-300'],
-            'age' => ['required', 'integer'],
-            'sex' => ['required', 'string', 'in:M,F,N'],
-        ]);
+        $validated = $request->validated();
 
         try {
             $response = Http::timeout(config('services.matching.timeout', 30))
@@ -117,7 +116,9 @@ class PersonalityController
                 ->throw();
             $results = $response->json();
         } catch (\Exception $e) {
-            return response()->json(['error' => $e->getMessage()], 500);
+            report($e);
+
+            return response()->json(['message' => __('personality.scoring_error')], 500);
         }
 
         return response()->json($results);
@@ -134,34 +135,4 @@ class PersonalityController
         return json_decode(file_get_contents($path), true);
     }
 
-    private function interpretResults(array $factors): array
-    {
-        $interpretation = [];
-
-        $labels = [
-            'O' => ['es' => 'Apertura a la Experiencia', 'en' => 'Openness', 'pt' => 'Abertura para Experiência'],
-            'C' => ['es' => 'Responsabilidad', 'en' => 'Conscientiousness', 'pt' => 'Conscienciosidade'],
-            'E' => ['es' => 'Extraversión', 'en' => 'Extraversion', 'pt' => 'Extroversão'],
-            'A' => ['es' => 'Amabilidad', 'en' => 'Agreeableness', 'pt' => 'Amabilidade'],
-            'N' => ['es' => 'Neuroticismo', 'en' => 'Neuroticism', 'pt' => 'Neuroticismo'],
-        ];
-
-        $locale = app()->getLocale();
-
-        foreach ($factors as $key => $value) {
-            $level = match (true) {
-                $value >= 70 => __('personality.level_high'),
-                $value >= 40 => __('personality.level_medium'),
-                default => __('personality.level_low'),
-            };
-
-            $interpretation[$key] = [
-                'trait' => $labels[$key][$locale] ?? $labels[$key]['es'],
-                'score' => $value,
-                'level' => $level,
-            ];
-        }
-
-        return $interpretation;
-    }
 }

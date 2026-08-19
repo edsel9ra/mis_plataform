@@ -1,27 +1,32 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 
-interface Session {
+export interface Session {
   id: string;
   title: string;
+  description?: string | null;
   session_type: string;
   status: string;
   scheduled_at: string;
   duration_minutes: number;
   meet_link: string | null;
+  relationship?: {
+    mentor?: { id: string; full_name: string; avatar: string | null } | null;
+  } | null;
 }
 
-export function useSessions() {
+export function useSessions(enabled = true) {
   return useQuery({
     queryKey: ['sessions'],
-    queryFn: () => api.get<{ data: Session[] }>('/sessions'),
+    queryFn: ({ signal }) => api.get<{ data: Session[] }>('/sessions', undefined, { signal }),
+    enabled,
   });
 }
 
 export function useSession(id: string) {
   return useQuery({
     queryKey: ['sessions', id],
-    queryFn: () => api.get<Session>(`/sessions/${id}`),
+    queryFn: ({ signal }) => api.get<Session>(`/sessions/${id}`, undefined, { signal }),
     enabled: !!id,
   });
 }

@@ -1,4 +1,6 @@
 import type { Metadata } from 'next';
+import { cookies } from 'next/headers';
+import { Inter } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale } from 'next-intl/server';
 import { AuthProvider } from '@/components/auth/AuthProvider';
@@ -6,6 +8,8 @@ import { QueryProvider } from '@/lib/query-provider';
 import './globals.css';
 
 const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://mis-platform.com';
+const authCookieName = process.env.AUTH_COOKIE_NAME || 'mis_auth_token';
+const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
 
 export const metadata: Metadata = {
   title: {
@@ -13,23 +17,32 @@ export const metadata: Metadata = {
     default: 'MIS - Mentorías Integrales Sistémicas',
   },
   description:
-    'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five, matching inteligente y certificaciones blockchain.',
+    'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five y recomendaciones personalizadas.',
   keywords: ['mentoría', 'mentoring', 'coaching', 'Big Five', 'neurociencia', 'desarrollo personal'],
   metadataBase: new URL(baseUrl),
+  alternates: {
+    canonical: '/',
+    languages: {
+      es: '/',
+      en: '/en',
+      pt: '/pt',
+    },
+  },
   openGraph: {
     title: 'MIS - Mentorías Integrales Sistémicas',
     description:
-      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five, matching inteligente y certificaciones blockchain.',
+      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five y recomendaciones personalizadas.',
     url: baseUrl,
     siteName: 'MIS',
     locale: 'es_ES',
+    alternateLocale: ['en_US', 'pt_BR'],
     type: 'website',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'MIS - Mentorías Integrales Sistémicas',
     description:
-      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five, matching inteligente y certificaciones blockchain.',
+      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five y recomendaciones personalizadas.',
   },
   robots: {
     index: true,
@@ -44,34 +57,29 @@ export default async function RootLayout({
 }) {
   const locale = await getLocale();
   const messages = await getMessages();
+  const initialHasAuthCookie = (await cookies()).has(authCookieName);
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'EducationalOrganization',
     name: 'MIS - Mentorías Integrales Sistémicas',
     description:
-      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five, matching inteligente y certificaciones blockchain.',
+      'Plataforma de mentoría basada en neurociencia con test de personalidad Big Five y recomendaciones personalizadas.',
     url: baseUrl,
   };
 
   return (
     <html lang={locale} dir="ltr" data-scroll-behavior="smooth">
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link
-          href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap"
-          rel="stylesheet"
-        />
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       </head>
-      <body className="min-h-screen bg-gray-50 font-sans antialiased">
+      <body className={`${inter.className} min-h-screen bg-gray-50 antialiased`}>
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
-            <AuthProvider>
+            <AuthProvider initialHasAuthCookie={initialHasAuthCookie}>
               {children}
             </AuthProvider>
           </QueryProvider>

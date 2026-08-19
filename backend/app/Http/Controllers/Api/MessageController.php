@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
+use App\Http\Requests\Message\StoreMessageRequest;
 use App\Models\Message;
 use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
@@ -26,14 +27,9 @@ class MessageController
         return response()->json($messages);
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreMessageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'relationship_id' => ['required', 'exists:mentorship_relationships,id'],
-            'content' => ['required', 'string', 'max:5000'],
-            'type' => ['sometimes', 'string', 'in:text,file,system'],
-            'attachment_url' => ['nullable', 'string', 'max:2048'],
-        ]);
+        $validated = $request->validated();
 
         $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
         abort_unless($relationship->involvesUser($request->user()), 403);

@@ -1,61 +1,99 @@
 'use client';
 
-import { useState } from 'react';
+import { useDeferredValue, useState } from 'react';
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { useQuery } from '@tanstack/react-query';
+import { useLocale, useTranslations } from 'next-intl';
+import { api } from '@/lib/api';
+import { AppShell } from '@/components/layout/AppShell';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { Input } from '@/components/ui/input';
+import { PageSpinner } from '@/components/ui/spinner';
+import { localePath } from '@/i18n/paths';
 
-const MOCK_MENTORS = [
-  { id: '1', name: 'Ana García', title: 'Mentora en Liderazgo', rating: 4.8, specialties: ['Liderazgo', 'Inteligencia Emocional'], ocean: { O: 78, C: 85, E: 72, A: 80, N: 35 } },
-  { id: '2', name: 'Carlos López', title: 'Mentor en Innovación', rating: 4.6, specialties: ['Innovación', 'Estrategia'], ocean: { O: 90, C: 75, E: 60, A: 70, N: 30 } },
-  { id: '3', name: 'María Torres', title: 'Mentora en Bienestar', rating: 4.9, specialties: ['Bienestar', 'Mindfulness'], ocean: { O: 65, C: 80, E: 55, A: 92, N: 28 } },
-];
+interface Mentor {
+  id: string;
+  full_name: string;
+  avatar: string | null;
+  bio: string | null;
+  client_type: string;
+  active_mentees_count?: number;
+  skills?: { skill_tag?: { name: string } }[];
+}
 
 export default function MentorsPage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const { user, isLoading: authLoading } = useAuth();
   const [search, setSearch] = useState('');
+  const deferredSearch = useDeferredValue(search);
 
-  const filtered = MOCK_MENTORS.filter((m) =>
-    m.name.toLowerCase().includes(search.toLowerCase())
-  );
+  const { data, isLoading } = useQuery<{ data: Mentor[] }>({
+    queryKey: ['mentors', deferredSearch, user?.client_type],
+    queryFn: () => api.get('/mentors', {
+      search: deferredSearch || undefined,
+      client_type: user?.client_type || undefined,
+    }),
+    enabled: !authLoading,
+  });
 
-  return (
+  if (authLoading || isLoading) return user ? <AppShell><PageSpinner /></AppShell> : <PageSpinner />;
+
+  const mentors = data?.data ?? [];
+  const content = (
     <div className="mx-auto max-w-7xl px-4 py-8">
       <h1 className="text-2xl font-bold text-gray-900">{t('nav.mentors')}</h1>
 
       <div className="mt-6">
-        <input
-          type="text"
+        <Input
+          placeholder={t('common.search')}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          placeholder={t('common.search')}
-          className="w-full max-w-md rounded-lg border border-gray-300 px-4 py-2 focus:border-primary-500 focus:outline-none"
+          className="max-w-md"
         />
       </div>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-        {filtered.map((mentor) => (
+        {mentors.map((mentor) => (
           <Link
             key={mentor.id}
-            href={`/mentors/${mentor.id}`}
-            className="rounded-xl border bg-white p-6 shadow-sm transition hover:shadow-md"
+            href={localePath(`/mentors/${mentor.id}`, locale)}
+            className="rounded-2xl border bg-white p-6 shadow-sm transition hover:-translate-y-1 hover:shadow-lg"
           >
             <div className="flex items-center gap-4">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary-100 text-lg font-bold text-primary-700">
-                {mentor.name.charAt(0)}
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl bg-primary-100 text-lg font-bold text-primary-700">
+                {mentor.avatar ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img src={mentor.avatar} alt="" className="h-full w-full object-cover" />
+                ) : (
+                  mentor.full_name.charAt(0)
+                )}
               </div>
               <div>
-                <h3 className="font-semibold text-gray-900">{mentor.name}</h3>
-                <p className="text-sm text-gray-500">{mentor.title}</p>
+                <h3 className="font-semibold text-gray-900">{mentor.full_name}</h3>
+                <p className="text-sm text-gray-500">{t(`client_types.${mentor.client_type}`)}</p>
               </div>
             </div>
+            {mentor.bio && <p className="mt-4 line-clamp-2 text-sm leading-6 text-gray-500">{mentor.bio}</p>}
             <div className="mt-4 flex flex-wrap gap-2">
-              {mentor.specialties.map((s) => (
-                <span key={s} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{s}</span>
+              {(mentor.skills ?? []).map((skill, index) => (
+                <span key={skill.skill_tag?.name ?? index} className="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">
+                  {skill.skill_tag?.name}
+                </span>
               ))}
             </div>
+            <p className="mt-4 text-xs font-medium text-gray-500">
+              {t('mentors.active_mentees')}: {mentor.active_mentees_count ?? 0}
+            </p>
           </Link>
         ))}
       </div>
+
+      {mentors.length === 0 && (
+        <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
+      )}
     </div>
   );
+
+  return user ? <AppShell>{content}</AppShell> : content;
 }

@@ -2,21 +2,21 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Matching\MatchingCalculateRequest;
+use App\Http\Requests\Matching\MatchingSuggestionsRequest;
+use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
 
 class MatchingController
 {
-    public function suggestions(Request $request): JsonResponse
+    public function suggestions(MatchingSuggestionsRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
-            'context_id' => ['required', 'string'],
-            'limit' => ['sometimes', 'integer', 'min:1', 'max:50'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
+        $this->authorizeContext($request, $validated);
 
         try {
             $response = Http::timeout(config('services.matching.timeout', 30))
@@ -36,22 +36,20 @@ class MatchingController
 
             return response()->json($response->json());
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'message' => __('matching.service_unavailable'),
-                'error' => $e->getMessage(),
             ], 503);
         }
     }
 
-    public function calculate(Request $request): JsonResponse
+    public function calculate(MatchingCalculateRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'mentor_id' => ['required', 'exists:users,id'],
-            'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
-            'context_id' => ['required', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
+        $this->authorizeContext($request, $validated);
 
         try {
             $response = Http::timeout(config('services.matching.timeout', 30))
@@ -71,10 +69,26 @@ class MatchingController
 
             return response()->json($response->json());
         } catch (\Exception $e) {
+            report($e);
+
             return response()->json([
                 'message' => __('matching.service_unavailable'),
-                'error' => $e->getMessage(),
             ], 503);
         }
+    }
+
+    private function authorizeContext(Request $request, array $validated): void
+    {
+        $sourceType = match ($validated['client_type']) {
+            'personal' => 'user',
+            'familiar' => 'family_group',
+            'grupal' => 'cohort',
+            'empresa' => 'company',
+        };
+
+        abort_unless(
+            MentorshipRelationship::userCanAccessSource($request->user(), $sourceType, $validated['context_id']),
+            403,
+        );
     }
 }

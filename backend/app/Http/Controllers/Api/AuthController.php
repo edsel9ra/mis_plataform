@@ -3,38 +3,56 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateUserAction;
-use App\Enums\ClientType;
-use App\Enums\UserRole;
+use App\Actions\ResolveOAuthUserAction;
+use App\Actions\StartTrialSubscriptionAction;
+use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
 use App\Http\Resources\UserResource;
+use App\Http\Resources\SubscriptionResource;
 use App\Models\User;
+use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Contracts\User as SocialiteUser;
+use Symfony\Component\HttpFoundation\Cookie;
+use Throwable;
 
 class AuthController
 {
+    private const OAUTH_PROVIDERS = ['google', 'linkedin', 'github'];
+
     public function __construct(
         private CreateUserAction $createUser,
+        private StartTrialSubscriptionAction $startTrialSubscription,
+        private ResolveOAuthUserAction $resolveOAuthUser,
     ) {}
 
     public function register(RegisterRequest $request): JsonResponse
     {
-        $user = $this->createUser->execute($request->validated());
+        $validated = $request->validated();
 
-        $token = $user->createToken('auth-token')->plainTextToken;
+        [$user, $subscription] = DB::transaction(function () use ($validated) {
+            $user = $this->createUser->execute($validated);
+            $subscription = $this->startTrialSubscription->execute($user, $validated['plan_id']);
+
+            return [$user, $subscription];
+        });
+
+        $token = $this->createAuthToken($user);
 
         $user->load('personalityAssessment');
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
-        ], 201);
+            'subscription' => new SubscriptionResource($subscription),
+        ], 201)->withCookie($this->authCookie($token));
     }
 
     public function login(LoginRequest $request): JsonResponse
@@ -53,90 +71,116 @@ class AuthController
             ]);
         }
 
-        $user->tokens()->delete();
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $this->createAuthToken($user);
 
         $user->load('personalityAssessment');
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
-        ]);
+        ])->withCookie($this->authCookie($token));
     }
 
     public function logout(Request $request): JsonResponse
     {
-        $request->user()->currentAccessToken()->delete();
+        $request->user()->currentAccessToken()?->delete();
 
-        return response()->json(['message' => __('auth.logged_out')]);
+        return response()->json(['message' => __('auth.logged_out')])
+            ->withCookie($this->forgetAuthCookie());
     }
 
-    public function redirectToProvider(string $provider): JsonResponse
+    public function redirectToProvider(Request $request, string $provider): JsonResponse
     {
-        $providers = ['google', 'linkedin', 'github'];
-
-        if (!in_array($provider, $providers)) {
+        if (!$this->isAllowedOAuthProvider($provider)) {
             return response()->json(['error' => __('auth.invalid_provider')], 400);
         }
 
-        $url = Socialite::driver($provider)->stateless()->redirect()->getTargetUrl();
+        $state = rtrim(strtr(base64_encode(random_bytes(32)), '+/', '-_'), '=');
+        $locale = $this->normalizeLocale($request->query('locale'));
+        $url = Socialite::driver($this->socialiteDriver($provider))
+            ->stateless()
+            ->with(['state' => $state])
+            ->redirect()
+            ->getTargetUrl();
 
-        return response()->json(['url' => $url]);
+        return response()->json(['url' => $url])
+            ->withCookie($this->oauthStateCookie($provider, "{$state}.{$locale}"));
     }
 
-    public function handleProviderCallback(string $provider): JsonResponse|RedirectResponse
+    public function handleProviderCallback(Request $request, string $provider): RedirectResponse
     {
+        if (!$this->isAllowedOAuthProvider($provider)) {
+            return $this->redirectToFrontendOAuth(['error' => __('auth.invalid_provider')]);
+        }
+
+        [$expectedState, $locale] = array_pad(explode('.', (string) $request->cookie($this->oauthStateCookieName($provider)), 2), 2, null);
+        $locale = $this->normalizeLocale($locale);
+        $actualState = (string) $request->query('state', '');
+
+        if (!$expectedState || !$actualState || !hash_equals($expectedState, $actualState)) {
+            return $this->oauthCallbackResponse(
+                $this->redirectToFrontendOAuth(['error' => __('auth.invalid_oauth_state')], $locale),
+                $provider,
+            );
+        }
+
+        if ($request->filled('error')) {
+            return $this->oauthCallbackResponse(
+                $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')], $locale),
+                $provider,
+            );
+        }
+
         try {
-            $socialUser = Socialite::driver($provider)->stateless()->user();
-        } catch (\Exception $e) {
-            return $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')]);
-        }
+            $socialUser = Socialite::driver($this->socialiteDriver($provider))->stateless()->user();
+            $user = $this->resolveOAuthUser->execute(
+                $provider,
+                $socialUser,
+                $this->providerEmailIsVerified($provider, $socialUser),
+                $locale,
+            );
 
-        $user = User::where('provider', $provider)
-            ->where('provider_id', $socialUser->getId())
-            ->first();
-
-        if (!$user) {
-            $user = User::where('email', $socialUser->getEmail())->first();
-
-            if ($user) {
-                $user->update([
-                    'provider' => $provider,
-                    'provider_id' => $socialUser->getId(),
-                    'avatar' => $socialUser->getAvatar(),
-                ]);
-            } else {
-                $user = User::create([
-                    'name' => $socialUser->getName() ?? $socialUser->getNickname(),
-                    'email' => $socialUser->getEmail(),
-                    'provider' => $provider,
-                    'provider_id' => $socialUser->getId(),
-                    'avatar' => $socialUser->getAvatar(),
-                    'client_type' => ClientType::Personal->value,
-                    'role' => UserRole::Mentee->value,
-                ]);
-                $user->syncApplicationRole(UserRole::Mentee->value);
+            if (!$user->is_active) {
+                return $this->oauthCallbackResponse(
+                    $this->redirectToFrontendOAuth(['error' => __('auth.inactive')], $locale),
+                    $provider,
+                );
             }
+
+            $token = $this->createAuthToken($user);
+        } catch (DomainException $exception) {
+            $translationKey = in_array($exception->getMessage(), [
+                'auth.oauth_email_unverified',
+                'auth.oauth_account_conflict',
+            ], true) ? $exception->getMessage() : 'auth.provider_error';
+
+            return $this->oauthCallbackResponse(
+                $this->redirectToFrontendOAuth(['error' => __($translationKey)], $locale),
+                $provider,
+            );
+        } catch (Throwable) {
+            return $this->oauthCallbackResponse(
+                $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')], $locale),
+                $provider,
+            );
         }
 
-        $token = $user->createToken('auth-token')->plainTextToken;
-
-        return $this->redirectToFrontendOAuth(['token' => $token]);
+        return $this->oauthCallbackResponse(
+            $this->redirectToFrontendOAuth(['success' => '1'], $locale)->withCookie($this->authCookie($token)),
+            $provider,
+        );
     }
 
     public function refresh(Request $request): JsonResponse
     {
         $user = $request->user();
-        $user->tokens()->delete();
-        $token = $user->createToken('auth-token')->plainTextToken;
+        $token = $this->createAuthToken($user);
 
-        return response()->json(['token' => $token]);
+        return response()->json(['message' => __('auth.refreshed')])
+            ->withCookie($this->authCookie($token));
     }
 
-    public function forgotPassword(Request $request): JsonResponse
+    public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $request->validate(['email' => 'required|email']);
-
         $status = Password::sendResetLink($request->only('email'));
 
         return response()->json([
@@ -144,11 +188,119 @@ class AuthController
         ]);
     }
 
-    private function redirectToFrontendOAuth(array $params): RedirectResponse
+    private function redirectToFrontendOAuth(array $params, ?string $locale = null): RedirectResponse
     {
-        $frontendUrl = rtrim(config('app.frontend_url'), '/');
+        $frontendUrl = rtrim(config('services.oauth.redirect_base_url'), '/');
+        $locale = $this->normalizeLocale($locale);
+        $localePrefix = $locale === config('app.locale') ? '' : "/{$locale}";
         $fragment = http_build_query($params);
 
-        return redirect()->away("{$frontendUrl}/oauth/callback#{$fragment}");
+        return redirect()->away("{$frontendUrl}{$localePrefix}/oauth/callback#{$fragment}");
+    }
+
+    private function createAuthToken(User $user): string
+    {
+        $user->tokens()->delete();
+
+        return $user->createToken('auth-token')->plainTextToken;
+    }
+
+    private function authCookie(string $token): Cookie
+    {
+        return cookie(
+            config('sanctum.auth_cookie', 'mis_auth_token'),
+            $token,
+            (int) config('sanctum.expiration', 60 * 24 * 7),
+            '/',
+            null,
+            $this->oauthCookieIsSecure(),
+            true,
+            false,
+            config('session.same_site', 'lax'),
+        );
+    }
+
+    private function forgetAuthCookie(): Cookie
+    {
+        return cookie()->forget(
+            config('sanctum.auth_cookie', 'mis_auth_token'),
+            '/',
+            null,
+        );
+    }
+
+    private function isAllowedOAuthProvider(string $provider): bool
+    {
+        return in_array($provider, self::OAUTH_PROVIDERS, true);
+    }
+
+    private function socialiteDriver(string $provider): string
+    {
+        return $provider === 'linkedin' ? 'linkedin-openid' : $provider;
+    }
+
+    private function oauthStateCookieName(string $provider): string
+    {
+        return "mis_oauth_state_{$provider}";
+    }
+
+    private function oauthStateCookie(string $provider, string $value): Cookie
+    {
+        return cookie(
+            $this->oauthStateCookieName($provider),
+            $value,
+            10,
+            "/api/v1/auth/{$provider}/callback",
+            null,
+            $this->oauthCookieIsSecure(),
+            true,
+            false,
+            'lax',
+        );
+    }
+
+    private function oauthCallbackResponse(RedirectResponse $response, string $provider): RedirectResponse
+    {
+        return $response->withCookie(cookie()->forget(
+            $this->oauthStateCookieName($provider),
+            "/api/v1/auth/{$provider}/callback",
+            null,
+        ));
+    }
+
+    private function oauthCookieIsSecure(): bool
+    {
+        return parse_url(config('services.oauth.redirect_base_url'), PHP_URL_SCHEME) === 'https'
+            || (bool) (config('session.secure') ?? app()->isProduction());
+    }
+
+    private function normalizeLocale(mixed $locale): string
+    {
+        return is_string($locale) && in_array($locale, config('app.available_locales'), true)
+            ? $locale
+            : config('app.locale');
+    }
+
+    private function providerEmailIsVerified(string $provider, SocialiteUser $socialUser): bool
+    {
+        if ($provider === 'github') {
+            // Socialite requests user:email and only maps GitHub's primary verified address.
+            return trim((string) $socialUser->getEmail()) !== '';
+        }
+
+        $raw = method_exists($socialUser, 'getRaw') && is_array($socialUser->getRaw())
+            ? $socialUser->getRaw()
+            : [];
+        $candidates = [
+            $raw['email_verified'] ?? null,
+            $raw['verified_email'] ?? null,
+            $raw['emailAddressVerified'] ?? null,
+            $socialUser->email_verified ?? null,
+            $socialUser->verified_email ?? null,
+        ];
+
+        return collect($candidates)->contains(
+            fn ($value) => filter_var($value, FILTER_VALIDATE_BOOL, FILTER_NULL_ON_FAILURE) === true,
+        );
     }
 }

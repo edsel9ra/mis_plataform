@@ -23,7 +23,8 @@ class RegisterRequest extends FormRequest
             'sex' => ['required', 'string', 'in:M,F,N'],
             'birth_date' => ['required', 'date', 'before:today'],
             'client_type' => ['required', 'string', 'in:' . implode(',', array_column(ClientType::cases(), 'value'))],
-            'locale' => ['nullable', 'string', 'in:es,en,pt'],
+            'plan_id' => ['required', 'uuid', 'exists:plans,id'],
+            'locale' => ['required', 'string', 'in:es,en,pt'],
         ];
     }
 }

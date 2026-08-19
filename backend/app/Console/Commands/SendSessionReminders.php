@@ -27,7 +27,9 @@ class SendSessionReminders extends Command
                 $users = $session->attendees->pluck('user');
 
                 foreach ($users as $user) {
-                    Notification::create([
+                    $notification = Notification::firstOrCreate([
+                        'dedupe_key' => "session_reminder:{$session->id}:{$user->id}:" . (int) $hoursUntil,
+                    ], [
                         'user_id' => $user->id,
                         'type' => 'session_reminder',
                         'data' => [
@@ -39,7 +41,9 @@ class SendSessionReminders extends Command
                         ],
                     ]);
 
-                    broadcast(new SessionReminder($session));
+                    if ($notification->wasRecentlyCreated) {
+                        broadcast(new SessionReminder($session));
+                    }
                 }
 
                 $this->info("Reminder sent for session {$session->id} ({$hoursUntil}h before)");

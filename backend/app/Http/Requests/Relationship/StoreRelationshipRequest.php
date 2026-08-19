@@ -16,7 +16,7 @@ class StoreRelationshipRequest extends FormRequest
         return [
             'type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
             'source_type' => ['required', 'string', 'in:user,family_group,cohort,company'],
-            'source_id' => ['required', 'string'],
+            'source_id' => ['required', 'uuid'],
             'mentor_id' => ['required', 'exists:users,id'],
             'objectives' => ['nullable', 'string'],
         ];

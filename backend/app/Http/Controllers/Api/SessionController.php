@@ -4,12 +4,15 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateSessionAction;
 use App\Http\Requests\Session\StoreSessionRequest;
+use App\Http\Requests\Session\UpdateSessionRequest;
+use App\Http\Requests\Session\UpdateSessionStatusRequest;
 use App\Http\Resources\SessionResource;
 use App\Models\MentorshipRelationship;
 use App\Models\Session;
 use App\Services\GoogleMeetService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
 
 class SessionController
 {
@@ -27,7 +30,7 @@ class SessionController
             ->orderBy('scheduled_at')
             ->paginate($perPage);
 
-        return response()->json($sessions);
+        return SessionResource::collection($sessions)->response();
     }
 
     public function store(StoreSessionRequest $request): JsonResponse
@@ -35,7 +38,7 @@ class SessionController
         $validated = $request->validated();
         $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
 
-        abort_unless($relationship->involvesUser($request->user()), 403);
+        abort_unless($request->user()->isAdmin() || $relationship->mentor_id === $request->user()->id, 403);
 
         $session = $this->createSession->execute($validated);
 
@@ -54,40 +57,35 @@ class SessionController
             'reviews',
         ])->findOrFail($id);
 
-        abort_unless($session->involvesUser($request->user()), 403);
+        Gate::authorize('view', $session);
 
         return response()->json(new SessionResource($session));
     }
 
-    public function update(Request $request, string $id): JsonResponse
+    public function update(UpdateSessionRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'title' => ['sometimes', 'string', 'max:200'],
-            'description' => ['nullable', 'string'],
-            'scheduled_at' => ['sometimes', 'date', 'after:now'],
-            'duration_minutes' => ['sometimes', 'integer', 'min:15', 'max:480'],
-        ]);
+        $validated = $request->validated();
 
         $session = Session::findOrFail($id);
 
-        abort_unless($session->involvesUser($request->user()), 403);
+        Gate::authorize('manage', $session);
 
         $session->update($validated);
 
         return response()->json(new SessionResource($session->fresh()));
     }
 
-    public function updateStatus(Request $request, string $id): JsonResponse
+    public function updateStatus(UpdateSessionStatusRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'status' => ['required', 'string', 'in:scheduled,in_progress,completed,canceled'],
-            'mentor_notes' => ['nullable', 'string'],
-            'mentee_notes' => ['nullable', 'string'],
-        ]);
+        $validated = $request->validated();
 
         $session = Session::findOrFail($id);
 
-        abort_unless($session->involvesUser($request->user()), 403);
+        if (array_key_exists('status', $validated) || array_key_exists('mentor_notes', $validated)) {
+            Gate::authorize('manage', $session);
+        } else {
+            Gate::authorize('view', $session);
+        }
 
         $session->update($validated);
 
@@ -98,7 +96,7 @@ class SessionController
     {
         $session = Session::findOrFail($id);
 
-        abort_unless($session->involvesUser($request->user()), 403);
+        Gate::authorize('manage', $session);
 
         if ($session->meet_link) {
             return response()->json(['meet_link' => $session->meet_link]);
@@ -122,7 +120,7 @@ class SessionController
     {
         $session = Session::findOrFail($id);
 
-        abort_unless($session->involvesUser($request->user()), 403);
+        Gate::authorize('manage', $session);
 
         if ($session->meet_event_id) {
             $this->googleMeetService->deleteEvent($session->meet_event_id);

@@ -56,3 +56,12 @@ it('fails with invalid locale', function () {
 it('requires authentication for profile', function () {
     $this->getJson('/api/v1/profile')->assertUnauthorized();
 });
+
+it('expires stale auth cookie on unauthorized profile request', function () {
+    $cookieName = config('sanctum.auth_cookie', 'mis_auth_token');
+
+    $this->withHeader('Cookie', "{$cookieName}=invalid-token")
+        ->getJson('/api/v1/profile')
+        ->assertUnauthorized()
+        ->assertCookieExpired($cookieName);
+});

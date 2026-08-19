@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\LearningPath\UpdateLearningProgressRequest;
 use App\Models\LearningPath;
 use App\Models\UserLearningProgress;
 use Illuminate\Http\JsonResponse;
@@ -42,12 +43,9 @@ class LearningPathController
         return response()->json($path);
     }
 
-    public function updateProgress(Request $request, string $id): JsonResponse
+    public function updateProgress(UpdateLearningProgressRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'progress' => ['required', 'numeric', 'between:0,100'],
-            'module_id' => ['nullable', 'exists:path_modules,id'],
-        ]);
+        $validated = $request->validated();
 
         $user = $request->user();
 

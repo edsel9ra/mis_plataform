@@ -1,27 +1,22 @@
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { ThinkingOrb } from '@/components/ui/thinking-orb';
 
 interface SpinnerProps {
   size?: 'sm' | 'md' | 'lg';
   className?: string;
 }
 
-const sizes = { sm: 'h-4 w-4', md: 'h-8 w-8', lg: 'h-12 w-12' };
-
 export function Spinner({ size = 'md', className }: SpinnerProps) {
   return (
-    <Loader2
-      className={cn('animate-spin text-primary-600', sizes[size], className)}
-      aria-hidden="true"
-    />
+    <ThinkingOrb size={size} className={cn('align-middle', className)} decorative />
   );
 }
 
 export function PageSpinner() {
   return (
-    <div className="flex min-h-[50vh] items-center justify-center" role="status">
-      <Spinner size="lg" />
-      <span className="sr-only">Loading...</span>
+    <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4" role="status">
+      <ThinkingOrb size="xl" decorative />
+      <p className="text-sm font-medium text-slate-500">Loading...</p>
     </div>
   );
 }

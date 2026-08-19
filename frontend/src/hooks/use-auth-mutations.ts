@@ -1,18 +1,11 @@
 import { useMutation } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import type { Subscription, User } from '@/components/auth/AuthProvider';
 import type { LoginFormData, RegisterFormData } from '@/lib/schemas/auth';
 
 interface AuthResponse {
-  user: {
-    id: string;
-    name: string;
-    email: string;
-    client_type: string;
-    role: string;
-    avatar: string | null;
-    locale: string;
-  };
-  token: string;
+  user: User;
+  subscription?: Subscription;
 }
 
 export function useLoginMutation() {
@@ -25,7 +18,7 @@ export function useLoginMutation() {
 export function useRegisterMutation() {
   return useMutation({
     mutationFn: (data: RegisterFormData) =>
-      api.post<AuthResponse>('/auth/register', data),
+      api.post<AuthResponse & { subscription: Subscription }>('/auth/register', data),
   });
 }
 

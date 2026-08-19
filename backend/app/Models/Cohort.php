@@ -14,6 +14,7 @@ class Cohort extends Model
     use HasUuids, SoftDeletes;
 
     protected $fillable = [
+        'created_by',
         'name',
         'description',
         'max_members',
@@ -24,6 +25,11 @@ class Cohort extends Model
     public function members(): HasMany
     {
         return $this->hasMany(CohortMember::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     public function memberUsers()

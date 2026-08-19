@@ -13,6 +13,8 @@ const sizes = { sm: 'h-8 w-8', md: 'h-10 w-10', lg: 'h-14 w-14' };
 export function Avatar({ className, src, alt = '', size = 'md', ...props }: AvatarProps) {
   if (src) {
     return (
+      // Remote avatar hosts are user-configurable, so a static Next Image allowlist is not viable here.
+      // eslint-disable-next-line @next/next/no-img-element
       <img
         src={src}
         alt={alt}

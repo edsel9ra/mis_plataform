@@ -53,7 +53,7 @@ export function Tabs({ defaultValue, value: controlledValue, onValueChange, chil
   );
 }
 
-interface TabsListProps extends HTMLAttributes<HTMLDivElement> {}
+type TabsListProps = HTMLAttributes<HTMLDivElement>;
 
 export function TabsList({ className, children, ...props }: TabsListProps) {
   return (

@@ -5,6 +5,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\MentorController;
 use App\Http\Controllers\Api\RelationshipController;
+use App\Http\Controllers\Api\RelationshipContextController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlanController;
@@ -18,9 +19,10 @@ use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\LearningPathController;
 use App\Http\Controllers\Api\ResourceController;
 use App\Http\Controllers\Api\ReviewController;
-use App\Http\Controllers\Api\MatchingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\EvaluationController;
+use App\Http\Controllers\Api\MentorDashboardController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -29,7 +31,7 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
-    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware('auth:sanctum');
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware(['auth:sanctum', 'active']);
 
     // Public
     Route::get('/mentors', [MentorController::class, 'index']);
@@ -38,7 +40,7 @@ Route::prefix('v1')->group(function () {
     Route::get('/plans/{id}', [PlanController::class, 'show']);
 
     // Authenticated
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         // Profile
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::put('/profile', [ProfileController::class, 'update']);
@@ -52,6 +54,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/personality/calculate', [PersonalityController::class, 'calculate']);
 
         // Relationships
+        Route::get('/relationship-contexts', [RelationshipContextController::class, 'index']);
         Route::post('/relationships', [RelationshipController::class, 'store']);
         Route::get('/relationships', [RelationshipController::class, 'index']);
         Route::get('/relationships/{id}', [RelationshipController::class, 'show']);
@@ -109,23 +112,29 @@ Route::prefix('v1')->group(function () {
         Route::get('/learning-paths/{id}', [LearningPathController::class, 'show']);
         Route::put('/learning-paths/{id}/progress', [LearningPathController::class, 'updateProgress']);
 
+        // Evaluations
+        Route::get('/evaluations', [EvaluationController::class, 'index']);
+        Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
+        Route::post('/evaluations/{id}/submit', [EvaluationController::class, 'submit']);
+        Route::get('/mentor/evaluation-results', [EvaluationController::class, 'mentorResults']);
+
+        Route::middleware('role:mentor')->prefix('mentor')->group(function () {
+            Route::get('/users', [MentorDashboardController::class, 'users']);
+            Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
+            Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
+        });
+
         // Resources
         Route::get('/resources', [ResourceController::class, 'index']);
         Route::get('/resources/{id}', [ResourceController::class, 'show']);
 
         // Certificates
         Route::get('/certificates', [CertificateController::class, 'index']);
-        Route::post('/certificates/issue', [CertificateController::class, 'issue']);
         Route::get('/certificates/{id}', [CertificateController::class, 'show']);
-        Route::get('/certificates/{id}/verify', [CertificateController::class, 'verify']);
 
         // Reviews
         Route::post('/reviews', [ReviewController::class, 'store']);
         Route::get('/reviews/session/{sessionId}', [ReviewController::class, 'index']);
-
-        // Matching
-        Route::post('/matching/suggestions', [MatchingController::class, 'suggestions']);
-        Route::post('/matching/calculate', [MatchingController::class, 'calculate']);
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
@@ -163,10 +172,17 @@ Route::prefix('v1')->group(function () {
             Route::put('/assessments/{id}', [AdminController::class, 'assessmentUpdate']);
             Route::delete('/assessments/{id}', [AdminController::class, 'assessmentDestroy']);
 
+            // Configurable evaluation catalog
+            Route::get('/evaluation-catalog', [AdminController::class, 'evaluationCatalog']);
+            Route::post('/evaluation-catalog', [AdminController::class, 'evaluationCatalogStore']);
+            Route::get('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogShow']);
+            Route::put('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogUpdate']);
+            Route::delete('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogDestroy']);
+            Route::get('/evaluation-results', [AdminController::class, 'evaluationResults']);
+
             // Plans, Reports, Certificates
             Route::match(['get', 'post'], '/plans', [AdminController::class, 'plans']);
             Route::get('/reports', [AdminController::class, 'reports']);
-            Route::post('/certificates/{id}/revoke', [CertificateController::class, 'revoke']);
         });
 
         // Recommendations (authenticated, not admin)

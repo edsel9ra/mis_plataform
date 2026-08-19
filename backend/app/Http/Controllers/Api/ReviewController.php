@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Review\StoreReviewRequest;
 use App\Models\Review;
 use App\Models\Session;
 use Illuminate\Http\JsonResponse;
@@ -9,13 +10,9 @@ use Illuminate\Http\Request;
 
 class ReviewController
 {
-    public function store(Request $request): JsonResponse
+    public function store(StoreReviewRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'session_id' => ['required', 'exists:sessions,id'],
-            'rating' => ['required', 'integer', 'between:1,5'],
-            'comment' => ['nullable', 'string', 'max:1000'],
-        ]);
+        $validated = $request->validated();
 
         $session = Session::findOrFail($validated['session_id']);
         abort_unless($session->involvesUser($request->user()), 403);
