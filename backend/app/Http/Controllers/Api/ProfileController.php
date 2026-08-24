@@ -9,6 +9,7 @@ use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProfileController
 {
@@ -37,11 +38,16 @@ class ProfileController
         $user = $request->user();
 
         if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+            $oldPath = parse_url($user->avatar, PHP_URL_PATH) ?: $user->avatar;
+            $oldPath = Str::startsWith($oldPath, '/storage/')
+                ? Str::after($oldPath, '/storage/')
+                : ltrim($oldPath, '/');
+
+            Storage::disk('public')->delete($oldPath);
         }
 
         $path = $request->file('avatar')->store('avatars', 'public');
-        $user->update(['avatar' => Storage::url($path)]);
+        $user->update(['avatar' => Storage::disk('public')->url($path)]);
 
         return response()->json(['avatar' => $user->avatar]);
     }

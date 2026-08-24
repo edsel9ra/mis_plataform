@@ -1,4 +1,4 @@
-FROM node:22-alpine
+FROM node:22.14.0-alpine3.21
 
 WORKDIR /var/www/frontend
 ENV NEXT_TELEMETRY_DISABLED=1

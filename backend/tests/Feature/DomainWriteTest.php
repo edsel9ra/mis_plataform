@@ -1,6 +1,8 @@
 <?php
 
 use App\Models\User;
+use App\Models\FamilyGroup;
+use App\Models\Plan;
 
 uses()->group('domain-writes');
 
@@ -45,5 +47,28 @@ it('creates a cohort with its creator as an active member', function () {
         'cohort_id' => $response->json('id'),
         'user_id' => $this->user->id,
         'status' => 'active',
+    ]);
+});
+
+it('does not let a family owner self-assign a paid plan', function () {
+    $family = FamilyGroup::create([
+        'head_user_id' => $this->user->id,
+        'family_name' => 'Protected Family',
+    ]);
+    $plan = Plan::create([
+        'client_type' => 'familiar',
+        'name' => ['es' => 'Family plan'],
+        'price_monthly' => 1,
+        'price_yearly' => 10,
+        'is_active' => true,
+    ]);
+
+    $this->withToken($this->token)
+        ->putJson("/api/v1/family-groups/{$family->id}", ['plan_id' => $plan->id])
+        ->assertUnprocessable();
+
+    $this->assertDatabaseHas('family_groups', [
+        'id' => $family->id,
+        'plan_id' => null,
     ]);
 });

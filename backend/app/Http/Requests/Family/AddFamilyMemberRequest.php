@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests\Family;
 
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class AddFamilyMemberRequest extends FormRequest
 {
+    use NormalizesEmail;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeEmailInput();
+    }
+
     public function authorize(): bool
     {
         return (bool) $this->user();

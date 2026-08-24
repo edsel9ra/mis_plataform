@@ -1,11 +1,16 @@
 'use client';
 
 import Link from 'next/link';
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useRouter } from 'next/navigation';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
+import { PageSpinner } from '@/components/ui/spinner';
 import { ArrowRight, Brain, Building2, Sparkles, User, Users } from 'lucide-react';
 import type { ClientType } from '@/lib/schemas/auth';
 
@@ -27,12 +32,29 @@ const types = [
 export default function RegisterPage() {
   const t = useTranslations();
   const locale = useLocale();
-  const { data: plansData } = useQuery<Plan[]>({
+  const router = useRouter();
+  const [requestedType, setRequestedType] = useState<string | null | undefined>(undefined);
+
+  useEffect(() => {
+    setRequestedType(new URLSearchParams(window.location.search).get('type'));
+  }, []);
+
+  const hasValidRequestedType = types.some(({ key }) => key === requestedType);
+
+  useEffect(() => {
+    if (hasValidRequestedType && requestedType) {
+      router.replace(localePath(`/register/${requestedType}`, locale));
+    }
+  }, [hasValidRequestedType, locale, requestedType, router]);
+
+  const { data: plansData, error } = useQuery<Plan[] | { data: Plan[] }>({
     queryKey: ['plans'],
-    queryFn: () => api.get<Plan[]>('/plans'),
+    queryFn: ({ signal }) => api.get<Plan[] | { data: Plan[] }>('/plans', undefined, { signal }),
   });
 
-  const plans = plansData ?? [];
+  const plans: Plan[] = Array.isArray(plansData) ? plansData as Plan[] : plansData?.data ?? [];
+
+  if (requestedType === undefined || hasValidRequestedType) return <PageSpinner />;
 
   return (
     <div className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
@@ -64,6 +86,7 @@ export default function RegisterPage() {
         </div>
 
         <div className="mt-10 grid gap-5 sm:grid-cols-2 lg:grid-cols-4">
+          {error && <Alert className="sm:col-span-2 lg:col-span-4" variant="error">{apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}</Alert>}
           {types.map(({ key, icon: Icon, color, border }) => {
             const plan = lowestPlanForType(plans, key);
 

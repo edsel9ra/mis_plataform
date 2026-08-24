@@ -13,7 +13,20 @@ class SkillTag extends Model
     protected $fillable = [
         'name',
         'category',
+        'is_active',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'is_active' => 'boolean',
+        ];
+    }
+
+    public function scopeActive($query)
+    {
+        return $query->where('is_active', true);
+    }
 
     public function userSkills(): HasMany
     {

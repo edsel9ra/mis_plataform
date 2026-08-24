@@ -1,4 +1,7 @@
+'use client';
+
 import { type CSSProperties, type HTMLAttributes } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 
 type ThinkingOrbSize = 'sm' | 'md' | 'lg' | 'xl';
@@ -37,12 +40,13 @@ export function ThinkingOrb({
   size = 'md',
   tone = 'primary',
   state = 'thinking',
-  label = 'Loading...',
+  label,
   decorative = false,
   className,
   style,
   ...props
 }: ThinkingOrbProps) {
+  const t = useTranslations();
   const tokens = sizeTokens[size];
   const orbStyle = {
     '--orb-size': tokens.orb,
@@ -72,7 +76,7 @@ export function ThinkingOrb({
           return <span key={`${ring.count}-${index}`} className="thinking-orb__dot" style={dotStyle} aria-hidden="true" />;
         })
       ))}
-      {!decorative && <span className="sr-only">{label}</span>}
+      {!decorative && <span className="sr-only">{label ?? t('common.loading')}</span>}
     </span>
   );
 }

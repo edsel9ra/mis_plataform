@@ -47,7 +47,7 @@ class AuthController
 
         $token = $this->createAuthToken($user);
 
-        $user->load('personalityAssessment');
+        $user->load(['personalityAssessment', 'skills.skillTag']);
 
         return response()->json([
             'user' => new UserResource($user),
@@ -57,7 +57,7 @@ class AuthController
 
     public function login(LoginRequest $request): JsonResponse
     {
-        $user = User::where('email', $request->email)->first();
+        $user = User::whereRaw('LOWER(email) = ?', [$request->email])->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             throw ValidationException::withMessages([
@@ -73,7 +73,7 @@ class AuthController
 
         $token = $this->createAuthToken($user);
 
-        $user->load('personalityAssessment');
+        $user->load(['personalityAssessment', 'skills.skillTag']);
 
         return response()->json([
             'user' => new UserResource($user),
@@ -109,23 +109,24 @@ class AuthController
     public function handleProviderCallback(Request $request, string $provider): RedirectResponse
     {
         if (!$this->isAllowedOAuthProvider($provider)) {
-            return $this->redirectToFrontendOAuth(['error' => __('auth.invalid_provider')]);
+            return $this->redirectToFrontendOAuth(['error' => 'invalid_provider']);
         }
 
         [$expectedState, $locale] = array_pad(explode('.', (string) $request->cookie($this->oauthStateCookieName($provider)), 2), 2, null);
         $locale = $this->normalizeLocale($locale);
+        app()->setLocale($locale);
         $actualState = (string) $request->query('state', '');
 
         if (!$expectedState || !$actualState || !hash_equals($expectedState, $actualState)) {
             return $this->oauthCallbackResponse(
-                $this->redirectToFrontendOAuth(['error' => __('auth.invalid_oauth_state')], $locale),
+                $this->redirectToFrontendOAuth(['error' => 'invalid_oauth_state'], $locale),
                 $provider,
             );
         }
 
         if ($request->filled('error')) {
             return $this->oauthCallbackResponse(
-                $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')], $locale),
+                $this->redirectToFrontendOAuth(['error' => 'provider_error'], $locale),
                 $provider,
             );
         }
@@ -141,7 +142,7 @@ class AuthController
 
             if (!$user->is_active) {
                 return $this->oauthCallbackResponse(
-                    $this->redirectToFrontendOAuth(['error' => __('auth.inactive')], $locale),
+                    $this->redirectToFrontendOAuth(['error' => 'inactive'], $locale),
                     $provider,
                 );
             }
@@ -154,12 +155,12 @@ class AuthController
             ], true) ? $exception->getMessage() : 'auth.provider_error';
 
             return $this->oauthCallbackResponse(
-                $this->redirectToFrontendOAuth(['error' => __($translationKey)], $locale),
+                $this->redirectToFrontendOAuth(['error' => str_replace('auth.', '', $translationKey)], $locale),
                 $provider,
             );
         } catch (Throwable) {
             return $this->oauthCallbackResponse(
-                $this->redirectToFrontendOAuth(['error' => __('auth.provider_error')], $locale),
+                $this->redirectToFrontendOAuth(['error' => 'provider_error'], $locale),
                 $provider,
             );
         }
@@ -181,7 +182,7 @@ class AuthController
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $status = Password::sendResetLink($request->only('email'));
+        $status = Password::sendResetLink($request->validated());
 
         return response()->json([
             'status' => __($status),
@@ -192,7 +193,7 @@ class AuthController
     {
         $frontendUrl = rtrim(config('services.oauth.redirect_base_url'), '/');
         $locale = $this->normalizeLocale($locale);
-        $localePrefix = $locale === config('app.locale') ? '' : "/{$locale}";
+        $localePrefix = $locale === config('app.fallback_locale', 'es') ? '' : "/{$locale}";
         $fragment = http_build_query($params);
 
         return redirect()->away("{$frontendUrl}{$localePrefix}/oauth/callback#{$fragment}");
@@ -278,7 +279,7 @@ class AuthController
     {
         return is_string($locale) && in_array($locale, config('app.available_locales'), true)
             ? $locale
-            : config('app.locale');
+            : config('app.fallback_locale', 'es');
     }
 
     private function providerEmailIsVerified(string $provider, SocialiteUser $socialUser): bool

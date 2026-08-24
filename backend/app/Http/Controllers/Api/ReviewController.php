@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Requests\Review\StoreReviewRequest;
+use App\Http\Resources\ReviewResource;
 use App\Models\Review;
 use App\Models\Session;
 use Illuminate\Http\JsonResponse;
@@ -16,6 +17,10 @@ class ReviewController
 
         $session = Session::findOrFail($validated['session_id']);
         abort_unless($session->involvesUser($request->user()), 403);
+
+        if ($session->status !== 'completed') {
+            return response()->json(['message' => __('reviews.session_not_completed')], 422);
+        }
 
         $exists = Review::where('session_id', $validated['session_id'])
             ->where('rater_id', $request->user()->id)
@@ -32,7 +37,7 @@ class ReviewController
             'comment' => $validated['comment'] ?? null,
         ]);
 
-        return response()->json($review, 201);
+        return response()->json(new ReviewResource($review), 201);
     }
 
     public function index(Request $request, string $sessionId): JsonResponse
@@ -44,6 +49,6 @@ class ReviewController
             ->with('rater')
             ->get();
 
-        return response()->json($reviews);
+        return ReviewResource::collection($reviews)->response();
     }
 }

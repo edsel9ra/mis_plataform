@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { loginSchema, type LoginFormData } from '@/lib/schemas/auth';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -45,7 +46,7 @@ export default function LoginPage() {
       const user = await login(data.email, data.password);
       router.push(localePath(platformAdminRoles.has(user.role) ? '/admin' : '/dashboard', locale));
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : t('common.error'));
+      setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
     }
   };
 
@@ -55,7 +56,7 @@ export default function LoginPage() {
       const { url } = await api.get<{ url: string }>(`/auth/${provider}/redirect`, { locale });
       window.location.assign(url);
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : t('common.error'));
+      setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
     }
   };
 

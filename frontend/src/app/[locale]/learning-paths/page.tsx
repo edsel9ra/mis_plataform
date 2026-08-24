@@ -3,6 +3,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Badge } from '@/components/ui/badge';
@@ -48,7 +49,7 @@ export default function LearningPathsPage() {
         {isLoading ? (
           <PageSpinner />
         ) : error ? (
-          <Alert variant="error">{t('common.load_error')}</Alert>
+          <Alert variant="error">{apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}</Alert>
         ) : paths.length === 0 ? (
           <Card className="border-dashed border-gray-300 bg-white text-center shadow-sm">
             <Route className="mx-auto h-10 w-10 text-primary-500" aria-hidden="true" />
@@ -71,7 +72,7 @@ export default function LearningPathsPage() {
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
                         <CardTitle>{localizedText(path.title, locale)}</CardTitle>
-                        {path.level && <p className="mt-1 text-sm text-gray-500">{path.level}</p>}
+                        {path.level && <p className="mt-1 text-sm text-gray-500">{learningLevelLabel(path.level, t)}</p>}
                       </div>
                       <Badge variant={progress >= 100 ? 'success' : progress > 0 ? 'primary' : 'default'}>
                         {progress >= 100 ? t('common.completed') : progress > 0 ? t('learning.in_progress') : t('learning.not_started')}
@@ -111,4 +112,15 @@ function localizedText(value: string | Record<string, string>, locale: string): 
   if (typeof value === 'string') return value;
 
   return value[locale] ?? value.es ?? value.en ?? value.pt ?? '';
+}
+
+function learningLevelLabel(level: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    beginner: t('learning_levels.beginner'),
+    intermediate: t('learning_levels.intermediate'),
+    advanced: t('learning_levels.advanced'),
+    expert: t('learning_levels.expert'),
+  };
+
+  return labels[level] ?? t('common.not_applicable');
 }

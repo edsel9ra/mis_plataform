@@ -130,6 +130,44 @@ describe('login', function () {
         $response->assertUnprocessable()
             ->assertJsonValidationErrors(['email']);
     });
+
+    it('normalizes email addresses when registering and logging in', function () {
+        $plan = Plan::create([
+            'client_type' => ClientType::Personal->value,
+            'name' => ['es' => 'Personal'],
+            'price_monthly' => 100,
+            'price_yearly' => 1000,
+            'is_active' => true,
+        ]);
+        $response = $this->postJson('/api/v1/auth/register', [
+            'name' => 'Case',
+            'email' => '  CASE@EXAMPLE.COM ',
+            'password' => 'Password123!',
+            'sex' => 'N',
+            'birth_date' => '1990-01-01',
+            'client_type' => ClientType::Personal->value,
+            'plan_id' => $plan->id,
+            'locale' => 'es',
+        ]);
+
+        $response->assertCreated();
+        $this->assertDatabaseHas('users', ['email' => 'case@example.com']);
+
+        $this->postJson('/api/v1/auth/login', [
+            'email' => 'CASE@EXAMPLE.COM',
+            'password' => 'Password123!',
+        ])->assertOk();
+    });
+});
+
+describe('password reset', function () {
+    it('exposes the forgot password endpoint without revealing account existence', function () {
+        $response = $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => 'UNKNOWN@EXAMPLE.COM',
+        ]);
+
+        $response->assertOk()->assertJsonStructure(['status']);
+    });
 });
 
 describe('authenticated actions', function () {

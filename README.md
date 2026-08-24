@@ -41,27 +41,39 @@ cd mis-project
 bash setup.sh
 ```
 
-El script `setup.sh` ejecuta automáticamente: build, subir servicios, instalar dependencias, generar APP_KEY, migrar y sembrar la base de datos.
+El script `setup.sh` crea `.env` y los tres archivos de servicio solo si no existen, genera secretos locales únicamente para placeholders y conserva los valores existentes. Después construye, inicia y espera la readiness de los servicios antes de instalar dependencias, migrar y sembrar la base de datos. `APP_KEY` se prepara desde el entorno de Compose; no se ejecuta `key:generate` sobre `backend/.env`.
+
+Para preparar únicamente la configuración local, sin iniciar Docker:
+
+```bash
+bash setup.sh --env-only
+```
 
 ## Instalación Manual
 
 ```bash
-# 1. Construir y levantar contenedores
-make build && make up
+# 1. Crear/validar entornos y construir contenedores
+make env
+make build
+make up
 
-# 2. Instalar dependencias
+# 2. Esperar las dependencias que tienen healthcheck
+bash wait-for-services.sh postgres redis meilisearch matching frontend
+
+# 3. Instalar dependencias
 make composer-install
 make npm-install
 
-# 3. Configurar Laravel
-make key
+# 4. Configurar Laravel
 make storage
+bash wait-for-services.sh backend
 
-# 4. Base de datos
+# 5. Base de datos
 make migrate
 make seed
 
-# 5. Verificar
+# 6. Verificar
+curl http://localhost/up
 curl http://localhost:8000/api/v1/health
 ```
 
@@ -70,14 +82,16 @@ curl http://localhost:8000/api/v1/health
 | Servicio | URL |
 |----------|-----|
 | Frontend | http://localhost:3000 |
-| Backend API | http://localhost:8000/api/v1 |
+| Laravel health | http://localhost/up |
+| Backend API | http://localhost/api/v1 (Nginx) |
+| Matching health | http://localhost:8000/api/v1/health |
 | Mailpit (emails) | http://localhost:8025 |
 | Meilisearch | http://localhost:7700 |
 
 ### Usuario Admin por Defecto
 
 - Email: `admin@mis.com`
-- Contraseña: `password`
+- Contraseña: `Password123!` (solo desarrollo; cámbiala inmediatamente)
 
 ## Comandos Disponibles
 
@@ -90,6 +104,9 @@ curl http://localhost:8000/api/v1/health
 | `make down` | Detener todos los servicios |
 | `make restart` | Reiniciar todos los servicios |
 | `make logs` | Ver logs de todos los servicios |
+| `make env` | Crear/validar archivos `.env` locales sin sobrescribirlos |
+| `make wait` | Esperar healthchecks/readiness de la pila |
+| `make production-config` | Validar Compose de producción con `.env.production` |
 
 ### Backend (Laravel)
 
@@ -99,7 +116,6 @@ curl http://localhost:8000/api/v1/health
 | `make migrate` | Ejecutar migraciones |
 | `make seed` | Sembrar datos |
 | `make fresh` | Migrar desde cero + seed |
-| `make key` | Generar APP_KEY |
 | `make storage` | Crear enlace de storage |
 | `make queue` | Iniciar worker de colas |
 | `make reverb` | Iniciar servidor WebSocket |
@@ -114,7 +130,7 @@ curl http://localhost:8000/api/v1/health
 | Comando | Descripción |
 |---------|-------------|
 | `make npm-install` | Instalar dependencias Node |
-| `make test-frontend` | Ejecutar tests E2E (Playwright) |
+| `make test-frontend` | Ejecutar tests unitarios (Vitest) |
 | `make frontend` | Shell del contenedor frontend |
 
 ### Matching Service (FastAPI)
@@ -122,6 +138,7 @@ curl http://localhost:8000/api/v1/health
 | Comando | Descripción |
 |---------|-------------|
 | `make matching` | Shell del contenedor matching |
+| `make test-matching` | Ejecutar tests del servicio matching |
 
 ## Estructura del Proyecto
 
@@ -174,14 +191,18 @@ mis-project/
 │
 ├── blockchain/contracts/       # CertificateRegistry.sol (Solidity ^0.8.20)
 │
-├── docker/                     # Dockerfiles (PHP, Node, Python)
+├── docker/                     # Dockerfiles, Nginx y PostgreSQL
 │   ├── php/Dockerfile
+│   ├── php/Dockerfile.production
 │   ├── node/Dockerfile
-│   └── python/Dockerfile
+│   ├── python/Dockerfile
+│   └── python/Dockerfile.production
 │
-├── docker-compose.yml          # 11 servicios
-├── Makefile                    # 20+ targets
+├── docker-compose.yml          # Stack de desarrollo
+├── docker-compose.production.yml # Stack de artefactos sin bind mounts
+├── Makefile                    # Targets operativos
 ├── setup.sh                    # Instalación automática
+├── wait-for-services.sh        # Readiness basada en healthchecks
 └── AGENTS.md                   # Guía para agentes de código
 ```
 
@@ -189,25 +210,27 @@ mis-project/
 
 | Servicio | Puerto | Descripción |
 |----------|--------|-------------|
-| nginx | 80, 443 | Proxy reverso y frontend |
+| nginx | 80 (desarrollo) | Proxy reverso y frontend |
 | backend | 9000 (interno) | API Laravel |
 | reverb | 8080 (interno) | WebSocket server |
 | queue-worker | — | Worker de colas Redis |
 | scheduler | — | Tareas programadas |
 | frontend | 3000 | Next.js dev server |
-| matching | 8000 | FastAPI matching service |
-| postgres | 5432 | PostgreSQL 16 |
-| redis | 6379 | Redis 7 |
-| meilisearch | 7700 | Motor de búsqueda |
-| mailpit | 1025, 8025 | Servidor SMTP de prueba |
+| matching | 8000 (desarrollo) | FastAPI matching service |
+| postgres | 5432 (desarrollo) | PostgreSQL 16 |
+| redis | 6379 (desarrollo) | Redis 7 |
+| meilisearch | 7700 (desarrollo) | Motor de búsqueda |
+| mailpit | 1025, 8025 (desarrollo) | Servidor SMTP de prueba |
 
 ## Variables de Entorno
 
-Las variables de entorno se definen en archivos `.env.*` para cada servicio:
+Las variables de entorno se definen en archivos `.env.*` para cada servicio. `.env.example` contiene únicamente la plantilla de Compose; los archivos sin sufijo `.example` están ignorados por Git.
 
 - `.env.backend` — Configuración de Laravel (DB, Redis, OAuth, IPFS, Blockchain, etc.)
 - `.env.frontend` — URLs del API y dominio público
 - `.env.matching` — API key y modo debug del matching service
+
+`setup.sh` genera los valores locales marcados como `__GENERATE_LOCAL_SECRET__` y nunca reemplaza un valor existente. Para producción se deben crear archivos separados, no versionados, usando `.env.production.example` como guía.
 
 ### Servicios Externos (requieren configuración)
 
@@ -243,7 +266,7 @@ Todos los endpoints están bajo `/api/v1/`.
 - **Sesiones**: CRUD `/sessions`, `POST /{id}/meet-link`
 - **Mensajes**: `GET|POST /messages`, `PUT /{id}/read`
 - **Certificados**: `GET /certificates`, `POST /certificates/issue`, `GET /{id}/verify`
-- **Matching**: `POST /matching/suggestions`, `POST /matching/calculate`
+- **Matching**: `POST /matching/suggestions`, `POST /matching/calculate` (el servicio devuelve `501` hasta disponer de datos de perfiles)
 
 ### Admin (requiere rol super_admin o admin)
 
@@ -258,8 +281,8 @@ Todos los endpoints están bajo `/api/v1/`.
 | `/api/v1/personality/score` | POST | Scoring IPIP-NEO |
 | `/api/v1/personality/batch-score` | POST | Scoring en lote |
 | `/api/v1/personality/compare/{id1}/{id2}` | GET | Comparar perfiles |
-| `/api/v1/matching/calculate` | POST | Calcular match |
-| `/api/v1/matching/suggestions` | POST | Sugerir mentores |
+| `/api/v1/matching/calculate` | POST | Reservado; devuelve `501` sin datos de Laravel |
+| `/api/v1/matching/suggestions` | POST | Reservado; devuelve `501` sin datos de Laravel |
 | `/api/v1/matching/analyze-profile` | POST | Analizar perfil |
 
 ### Pesos de Matching por Tipo de Cliente
@@ -271,6 +294,48 @@ Todos los endpoints están bajo `/api/v1/`.
 | Intereses | 0.20 | 0.25 | 0.15 | 0.15 |
 | Disponibilidad | 0.15 | 0.20 | 0.30 | 0.20 |
 | Historial | 0.10 | 0.15 | 0.20 | 0.20 |
+
+El servicio matching exige `X-Internal-API-Key` fuera de `/api/v1/health`, limita el tamaño de las peticiones y aplica un rate limit por IP. Se ejecuta con un único worker porque el rate limiter es deliberadamente acotado al proceso; `MATCHING_WORKERS` no debe superar `1`.
+
+## Producción
+
+El archivo `docker-compose.production.yml` no construye ni monta código fuente. Requiere imágenes de release referenciadas por digest en `.env.production` y archivos de entorno de producción no versionados:
+
+```bash
+cp .env.production.example .env.production
+cp .env.backend.example .env.backend.production
+cp .env.frontend.example .env.frontend.production
+cp .env.matching.example .env.matching.production
+# Completar los digests, secretos y rutas de env de producción fuera de Git.
+docker compose --env-file .env.production -f docker-compose.production.yml config --quiet
+docker compose --env-file .env.production -f docker-compose.production.yml up -d --wait
+```
+
+Las imágenes de aplicación se pueden construir desde la raíz con `docker/php/Dockerfile.production`, `docker/python/Dockerfile.production` y `docker/nginx/Dockerfile.production`; la imagen Node debe construirse con `--build-arg NEXT_BUILD=true` y `docker/node/Dockerfile` usando `frontend` como contexto. El pipeline debe publicar los artefactos y sustituir los digests del ejemplo.
+
+La terminación TLS debe realizarse en un ingress o proxy externo que reenvíe `Host`, `X-Forwarded-For` y `X-Forwarded-Proto`. Nginx escucha internamente en `8080` en producción y no publica puertos directamente. Activa HSTS únicamente cuando todo el dominio esté servido exclusivamente por HTTPS. `APP_DEBUG=false`, los headers de seguridad y la denegación de archivos ocultos ya están incluidos en la configuración de producción.
+
+## Operación
+
+Compose limita los logs `json-file` a 10 MiB por archivo y conserva cinco archivos en desarrollo, diez en producción. Para inspeccionar eventos recientes:
+
+```bash
+docker compose logs --since=1h
+docker compose ps
+```
+
+Realiza backups de PostgreSQL en almacenamiento cifrado y fuera del volumen Docker. Ejemplo de backup y restauración usando el entorno de producción:
+
+```bash
+mkdir -p backups
+docker compose --env-file .env.production -f docker-compose.production.yml exec -T postgres \
+  sh -c 'pg_dump -U "$POSTGRES_USER" -d "$POSTGRES_DB"' > backups/mis-$(date +%Y%m%d-%H%M%S).sql
+
+cat backups/mis.sql | docker compose --env-file .env.production -f docker-compose.production.yml exec -T postgres \
+  sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+```
+
+Prueba periódicamente la restauración, conserva las claves de aplicación y de base de datos en un gestor de secretos, y no incluyas los dumps en Git.
 
 ## Blockchain — CertificateRegistry
 
@@ -289,8 +354,11 @@ revoke(bytes32 hash)    // Revocar certificado
 # Backend — Pest (PHPUnit)
 make test-backend
 
-# Frontend — Playwright E2E
+# Frontend — Vitest
 make test-frontend
+
+# Matching — pytest
+make test-matching
 ```
 
 ## Tareas Programadas

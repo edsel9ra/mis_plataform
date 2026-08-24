@@ -2,11 +2,15 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { RequireAuth } from '@/components/auth/RequireAuth';
 import { ApiError, api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-keys';
 import { localePath } from '@/i18n/paths';
+import { Alert } from '@/components/ui/alert';
 
 interface Question {
   id: number;
@@ -29,6 +33,7 @@ export default function PersonalityTestPage() {
   const locale = useLocale();
   const router = useRouter();
   const { user, isLoading: authLoading, authError, refreshUser } = useAuth();
+  const queryClient = useQueryClient();
   const userId = user?.id;
   const [questions, setQuestions] = useState<Question[]>([]);
   const [select, setSelect] = useState<SelectOption[]>([]);
@@ -37,16 +42,18 @@ export default function PersonalityTestPage() {
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<Record<number, number>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   useEffect(() => {
     if (authLoading || authError || !userId) return;
 
     let isActive = true;
+    const controller = new AbortController();
 
     setLoading(true);
     setError(false);
 
-    api.post<StartTestResponse>('/personality/start-test').then(async (res) => {
+    api.post<StartTestResponse>('/personality/start-test', undefined, { signal: controller.signal }).then(async (res) => {
       if (!isActive) return;
 
       if (res?.assessment) {
@@ -77,6 +84,7 @@ export default function PersonalityTestPage() {
 
     return () => {
       isActive = false;
+      controller.abort();
     };
   }, [authError, authLoading, locale, refreshUser, router, userId]);
 
@@ -93,6 +101,7 @@ export default function PersonalityTestPage() {
 
   const handleSubmit = async () => {
     setSubmitting(true);
+    setSubmitError(null);
     try {
       const formatted = Object.entries(answers).map(([id_question, id_select]) => ({
         id_question: Number(id_question),
@@ -104,10 +113,13 @@ export default function PersonalityTestPage() {
         answers: formatted,
       });
 
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
+      queryClient.invalidateQueries({ queryKey: ['personality-report'] });
       await refreshUser();
       router.push(localePath('/dashboard', locale));
-    } catch {
-      alert(t('common.error'));
+    } catch (error) {
+      const message = apiErrorMessage(error, (key) => t(key));
+      setSubmitError(message || t('common.error'));
     } finally {
       setSubmitting(false);
     }
@@ -145,8 +157,9 @@ export default function PersonalityTestPage() {
               disabled={submitting}
               className="mt-8 rounded-lg bg-primary-600 px-6 py-3 text-white hover:bg-primary-700"
             >
-              {submitting ? t('common.loading') : t('personality.see_results')}
-            </button>
+               {submitting ? t('common.loading') : t('personality.see_results')}
+             </button>
+            {submitError && <Alert className="mt-4 text-left" variant="error">{submitError}</Alert>}
           </div>
         </div>
       </RequireAuth>

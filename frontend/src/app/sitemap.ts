@@ -1,7 +1,11 @@
 import type { MetadataRoute } from 'next';
+import { getSiteUrl } from '@/lib/site-url';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = process.env.NEXT_PUBLIC_URL || 'https://mis-platform.com';
+  const siteUrl = getSiteUrl();
+  if (!siteUrl) return [];
+
+  const baseUrl = siteUrl.toString().replace(/\/$/, '');
   const locales = ['es', 'en', 'pt'] as const;
 
   const routes = [

@@ -4,11 +4,14 @@ import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-keys';
 import { localePath } from '@/i18n/paths';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
 import { PageSpinner } from '@/components/ui/spinner';
 import {
   Users,
@@ -74,10 +77,9 @@ export default function RecommendationsPage() {
   const { user } = useAuth();
 
   const { data, isLoading, error } = useQuery<Recommendations>({
-    queryKey: ['personality-recommendations'],
+    queryKey: queryKeys.recommendations,
     queryFn: ({ signal }) => api.get<Recommendations>('/personality/recommendations', undefined, { signal }),
     enabled: !!user,
-    retry: 1,
   });
 
   if (isLoading) {
@@ -88,7 +90,17 @@ export default function RecommendationsPage() {
     );
   }
 
-  if (error || !data || !data.user_ocean) {
+  if (error) {
+    return (
+      <AppShell>
+        <Alert variant="error">
+          {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
+        </Alert>
+      </AppShell>
+    );
+  }
+
+  if (!data || !data.user_ocean) {
     return (
       <AppShell>
         <div className="flex flex-col items-center justify-center py-20 text-center">
@@ -187,7 +199,7 @@ export default function RecommendationsPage() {
                       <div className="flex flex-wrap gap-1">
                         {Object.entries(mentor.personality_assessment.results.factors).map(([k, v]) => (
                           <span key={k} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-                            {k}: {Math.round(v)}
+                             {oceanName(k, t)}: {Math.round(v)}
                           </span>
                         ))}
                       </div>
@@ -230,7 +242,7 @@ export default function RecommendationsPage() {
                       session.status === 'scheduled' ? 'primary' :
                       session.status === 'in_progress' ? 'warning' : 'default'
                     }>
-                      {session.status}
+                      {sessionStatusLabel(session.status, t)}
                     </Badge>
                   </div>
                 </Card>
@@ -313,5 +325,17 @@ function oceanName(key: string, t: ReturnType<typeof useTranslations>): string {
     N: t('personality.neuroticism'),
   };
 
-  return names[key] ?? key;
+  return names[key] ?? t('common.not_applicable');
+}
+
+function sessionStatusLabel(status: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    scheduled: t('session_statuses.scheduled'),
+    in_progress: t('session_statuses.in_progress'),
+    completed: t('session_statuses.completed'),
+    canceled: t('session_statuses.canceled'),
+    cancelled: t('session_statuses.cancelled'),
+  };
+
+  return labels[status] ?? t('common.not_applicable');
 }

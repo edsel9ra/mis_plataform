@@ -4,8 +4,10 @@ import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
+import { Alert } from '@/components/ui/alert';
 import { Spinner } from '@/components/ui/spinner';
 import {
   ArrowRight,
@@ -31,12 +33,13 @@ export default function AdminDashboard() {
   const t = useTranslations();
   const locale = useLocale();
 
-  const { data: reports, isLoading } = useQuery<ReportData>({
+  const { data: reports, isLoading, error } = useQuery<ReportData>({
     queryKey: ['admin-reports'],
-    queryFn: () => api.get<ReportData>('/admin/reports'),
+    queryFn: ({ signal }) => api.get<ReportData>('/admin/reports', undefined, { signal }),
   });
 
   if (isLoading) return <Spinner />;
+  if (error || !reports) return <Alert variant="error">{apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}</Alert>;
 
   const completionRate = reports?.total_sessions
     ? Math.round(((reports.completed_sessions ?? 0) / reports.total_sessions) * 100)
@@ -56,11 +59,11 @@ export default function AdminDashboard() {
           <div>
             <div className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-primary-100">
               <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
-              Panel operativo
+               {t('admin.operational_badge')}
             </div>
             <h1 className="mt-5 text-3xl font-bold tracking-tight sm:text-4xl">{t('admin.overview')}</h1>
             <p className="mt-3 max-w-2xl text-slate-300">
-              Supervisa usuarios, mentorias, sesiones y evaluaciones desde un unico centro de control.
+              {t('admin.operational_description')}
             </p>
           </div>
           <div className="rounded-2xl border border-white/10 bg-white/10 p-5 backdrop-blur">
@@ -84,7 +87,7 @@ export default function AdminDashboard() {
               </CardHeader>
               <p className="text-3xl font-bold text-gray-950">{value}</p>
               <span className="mt-4 inline-flex items-center text-sm font-semibold text-primary-600">
-                Ver detalle <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
+                 {t('admin.view_detail')} <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
               </span>
             </Card>
           </Link>
@@ -119,12 +122,12 @@ export default function AdminDashboard() {
 
         <Card className="border-0 shadow-sm ring-1 ring-slate-100">
           <CardHeader>
-            <CardTitle>Distribucion por rol</CardTitle>
+             <CardTitle>{t('admin.role_distribution')}</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {reports?.users_by_role?.map((item) => (
               <div key={item.role} className="flex items-center justify-between rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-                <span className="text-sm font-medium text-slate-700">{item.role}</span>
+                 <span className="text-sm font-medium text-slate-700">{roleLabel(item.role, t)}</span>
                 <span className="text-lg font-bold text-slate-950">{item.total}</span>
               </div>
             ))}
@@ -137,15 +140,28 @@ export default function AdminDashboard() {
           <div className="flex items-start gap-3">
             <Activity className="mt-1 h-6 w-6 text-primary-300" aria-hidden="true" />
             <div>
-              <h2 className="text-lg font-bold">Siguiente operacion recomendada</h2>
-              <p className="mt-1 text-sm text-slate-300">Revisa el catalogo de evaluaciones y completa sesiones programadas para alimentar los dashboards.</p>
+               <h2 className="text-lg font-bold">{t('admin.next_operation_title')}</h2>
+               <p className="mt-1 text-sm text-slate-300">{t('admin.next_operation_description')}</p>
             </div>
           </div>
           <Link href={localePath('/admin/evaluations', locale)} className="inline-flex items-center justify-center rounded-lg bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-primary-50">
-            Gestionar evaluaciones
+             {t('admin.manage_evaluations')}
           </Link>
         </div>
         </Card>
     </div>
   );
+}
+
+function roleLabel(role: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    super_admin: t('roles.super_admin'),
+    admin: t('roles.admin'),
+    company_admin: t('roles.company_admin'),
+    employee: t('roles.employee'),
+    mentor: t('roles.mentor'),
+    mentee: t('roles.mentee'),
+  };
+
+  return labels[role] ?? t('common.not_applicable');
 }

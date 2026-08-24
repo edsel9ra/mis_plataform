@@ -4,13 +4,18 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\ClientType;
 use App\Enums\UserRole;
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class StoreAdminUserRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     protected function prepareForValidation(): void
     {
+        $this->normalizeEmailInput();
+
         if ($this->isPlatformAdminRole($this->input('role'))) {
             $this->merge(['client_type' => null]);
         }

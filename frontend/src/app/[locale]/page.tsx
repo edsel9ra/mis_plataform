@@ -30,33 +30,33 @@ export default function HomePage() {
   const locale = useLocale();
 
   const metrics = [
-    { label: 'Perfil OCEAN', value: 'Big Five' },
-    { label: 'Matching', value: 'IA' },
-    { label: 'Rutas', value: '5+' },
+    { label: t('landing.metric_ocean'), value: t('landing.metric_ocean_value') },
+    { label: t('landing.metric_matching'), value: t('landing.metric_matching_value') },
+    { label: t('landing.metric_paths'), value: t('landing.metric_paths_value') },
   ];
 
   const capabilities = [
     {
-      title: 'Diagnostico neuroconductual',
-      description: 'Activa un perfil OCEAN y evaluaciones complementarias para priorizar necesidades reales.',
+      title: t('landing.diagnostic_title'),
+      description: t('landing.diagnostic_description'),
       icon: Brain,
     },
     {
-      title: 'Mentores compatibles',
-      description: 'Relaciona usuarios, familias, cohortes y empresas con mentores segun contexto y objetivos.',
+      title: t('landing.compatible_mentors_title'),
+      description: t('landing.compatible_mentors_description'),
       icon: Users,
     },
     {
-      title: 'Seguimiento accionable',
-      description: 'Sesiones, progreso, rutas de aprendizaje y recomendaciones conviven en un mismo flujo.',
+      title: t('landing.actionable_follow_up_title'),
+      description: t('landing.actionable_follow_up_description'),
       icon: LineChart,
     },
   ];
 
   const steps = [
-    'Crea tu perfil y selecciona el tipo de mentoría.',
-    'Completa Big Five para activar recomendaciones.',
-    'Agenda sesiones y avanza por rutas personalizadas.',
+    t('landing.step_profile'),
+    t('landing.step_personality'),
+    t('landing.step_sessions'),
   ];
 
   return (
@@ -98,24 +98,24 @@ export default function HomePage() {
                 {t('dashboard.ai_badge')}
               </div>
               <h1 className="mt-6 max-w-4xl text-4xl font-bold tracking-tight sm:text-5xl lg:text-6xl">
-                Mentoría integral con perfil OCEAN, IA y seguimiento real.
+                {t('landing.hero_title')}
               </h1>
               <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-                MIS conecta diagnóstico, mentores, sesiones y rutas de aprendizaje para convertir datos neuroconductuales en acciones concretas.
+                {t('landing.hero_description')}
               </p>
               <div className="mt-10 flex flex-col gap-3 sm:flex-row">
                 <Link
                   href={localePath('/register', locale)}
                   className="inline-flex items-center justify-center rounded-xl bg-primary-500 px-6 py-3 text-base font-semibold text-white shadow-lg shadow-primary-950/30 transition hover:-translate-y-0.5 hover:bg-primary-400"
                 >
-                  Comenzar ahora
+                  {t('landing.start_now')}
                   <ArrowRight className="ml-2 h-4 w-4" aria-hidden="true" />
                 </Link>
                 <Link
                   href={localePath('/mentors', locale)}
                   className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/10 px-6 py-3 text-base font-semibold text-white backdrop-blur transition hover:-translate-y-0.5 hover:bg-white/15"
                 >
-                  Explorar mentores
+                  {t('landing.explore_mentors')}
                 </Link>
               </div>
               <div className="mt-10 grid max-w-xl grid-cols-3 gap-3">
@@ -134,16 +134,16 @@ export default function HomePage() {
                 <div className="rounded-[1.5rem] bg-slate-950/80 p-5 ring-1 ring-white/10">
                   <div className="flex items-center justify-between">
                     <div>
-                      <p className="text-sm text-slate-400">Vista inteligente</p>
-                      <h2 className="mt-1 text-xl font-bold">Perfil activo</h2>
+                      <p className="text-sm text-slate-400">{t('landing.smart_view')}</p>
+                      <h2 className="mt-1 text-xl font-bold">{t('landing.active_profile')}</h2>
                     </div>
                     <ThinkingOrb size="lg" tone="inverse" decorative />
                   </div>
                   <div className="mt-6 grid gap-3">
                     {[
-                      { label: 'Apertura', value: 82, color: 'bg-violet-400' },
-                      { label: 'Responsabilidad', value: 76, color: 'bg-blue-400' },
-                      { label: 'Amabilidad', value: 88, color: 'bg-emerald-400' },
+                      { label: t('personality.openness'), value: 82, color: 'bg-violet-400' },
+                      { label: t('personality.conscientiousness'), value: 76, color: 'bg-blue-400' },
+                      { label: t('personality.agreeableness'), value: 88, color: 'bg-emerald-400' },
                     ].map((trait) => (
                       <div key={trait.label} className="rounded-2xl border border-white/10 bg-white/5 p-4">
                         <div className="flex items-center justify-between text-sm">
@@ -159,11 +159,11 @@ export default function HomePage() {
                   <div className="mt-5 grid gap-3 sm:grid-cols-2">
                     <div className="rounded-2xl bg-primary-500/15 p-4 text-primary-100 ring-1 ring-primary-300/20">
                       <CalendarCheck className="h-5 w-5" aria-hidden="true" />
-                      <p className="mt-3 text-sm font-semibold">Sesión recomendada</p>
+                       <p className="mt-3 text-sm font-semibold">{t('landing.recommended_session')}</p>
                     </div>
                     <div className="rounded-2xl bg-violet-500/15 p-4 text-violet-100 ring-1 ring-violet-300/20">
                       <GraduationCap className="h-5 w-5" aria-hidden="true" />
-                      <p className="mt-3 text-sm font-semibold">Ruta sugerida</p>
+                       <p className="mt-3 text-sm font-semibold">{t('landing.suggested_path')}</p>
                     </div>
                   </div>
                 </div>
@@ -175,8 +175,8 @@ export default function HomePage() {
         <section className="px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-7xl">
             <div className="max-w-2xl">
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">Sistema MIS</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">Todo el ciclo de mentoría en una sola plataforma.</h2>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">{t('landing.system_label')}</p>
+                <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{t('landing.cycle_title')}</h2>
             </div>
             <div className="mt-10 grid gap-6 md:grid-cols-3">
               {capabilities.map(({ title, description, icon: Icon }) => (
@@ -196,16 +196,16 @@ export default function HomePage() {
           <div className="mx-auto max-w-7xl">
             <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
               <div>
-                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">Elige tu contexto</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-600">{t('landing.context_heading')}</p>
                 <h2 className="mt-3 text-3xl font-bold tracking-tight text-slate-950 sm:text-4xl">{t('client_types.select_title')}</h2>
               </div>
-              <p className="max-w-xl text-sm leading-6 text-slate-600">Cada tipo activa rutas, sesiones y evaluaciones ajustadas al sistema que quieres desarrollar.</p>
+              <p className="max-w-xl text-sm leading-6 text-slate-600">{t('landing.context_description')}</p>
             </div>
             <div className="mt-10 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {clientTypes.map((type) => (
                 <Link
                   key={type}
-                  href={localePath(`/register?type=${type}`, locale)}
+                   href={localePath(`/register/${type}`, locale)}
                   className="group rounded-3xl border border-slate-200 bg-slate-50 p-6 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:bg-white hover:shadow-xl hover:shadow-slate-200/80"
                 >
                   <span className={`flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br ${clientTypeStyles[type]} text-white shadow-lg shadow-slate-200`}>
@@ -214,7 +214,7 @@ export default function HomePage() {
                   <h3 className="mt-5 text-lg font-bold text-slate-950">{t(`client_types.${type}`)}</h3>
                   <p className="mt-2 text-sm leading-6 text-slate-600">{t(`client_types.${type}_desc`)}</p>
                   <span className="mt-5 inline-flex items-center text-sm font-semibold text-primary-600">
-                    Configurar plan
+                     {t('landing.configure_plan')}
                     <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" aria-hidden="true" />
                   </span>
                 </Link>
@@ -226,9 +226,9 @@ export default function HomePage() {
         <section className="px-4 py-20 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-7xl gap-10 rounded-[2rem] bg-slate-950 p-6 text-white shadow-xl shadow-slate-200 sm:p-8 lg:grid-cols-[0.9fr_1.1fr] lg:p-10">
             <div>
-              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-200">Como funciona</p>
-              <h2 className="mt-3 text-3xl font-bold tracking-tight">De evaluación a acción.</h2>
-              <p className="mt-4 text-sm leading-6 text-slate-300">La plataforma evita diagnósticos aislados: convierte resultados en mentorías, sesiones y aprendizaje medible.</p>
+              <p className="text-sm font-semibold uppercase tracking-[0.18em] text-primary-200">{t('landing.how_it_works')}</p>
+              <h2 className="mt-3 text-3xl font-bold tracking-tight">{t('landing.evaluation_to_action')}</h2>
+              <p className="mt-4 text-sm leading-6 text-slate-300">{t('landing.how_description')}</p>
             </div>
             <div className="grid gap-4">
               {steps.map((step, index) => (
@@ -236,7 +236,7 @@ export default function HomePage() {
                   <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary-500 text-sm font-bold">{index + 1}</span>
                   <div>
                     <p className="font-semibold">{step}</p>
-                    <p className="mt-1 text-sm text-slate-400">Acompañado por recomendaciones y seguimiento dentro del dashboard.</p>
+                    <p className="mt-1 text-sm text-slate-400">{t('landing.step_support')}</p>
                   </div>
                 </div>
               ))}
@@ -251,12 +251,12 @@ export default function HomePage() {
                 <ShieldCheck className="h-6 w-6" aria-hidden="true" />
               </span>
               <div>
-                <h2 className="text-2xl font-bold text-slate-950">Comienza con un perfil seguro y accionable.</h2>
-                <p className="mt-2 text-sm leading-6 text-slate-600">Sesión protegida, datos centralizados y experiencia preparada para usuarios, mentores y administradores.</p>
+                <h2 className="text-2xl font-bold text-slate-950">{t('landing.secure_title')}</h2>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{t('landing.secure_description')}</p>
               </div>
             </div>
             <Link href={localePath('/register', locale)} className="inline-flex items-center justify-center rounded-xl bg-primary-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-primary-200 transition hover:bg-primary-700">
-              Crear cuenta
+              {t('landing.create_account')}
               <CheckCircle2 className="ml-2 h-4 w-4" aria-hidden="true" />
             </Link>
           </div>

@@ -12,4 +12,3 @@ pandas==2.2.3
 five-factor-e==1.13.1
 python-dotenv==1.0.1
 alembic==1.14.0
-pytest==8.3.5

@@ -1,0 +1,309 @@
+name: ${COMPOSE_PROJECT_NAME:-mis-project}
+
+x-default-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "10"
+
+services:
+  # Production is artifact-only: images are supplied by a release pipeline and
+  # must be referenced by digest. There are no source-code bind mounts here.
+  nginx:
+    image: ${NGINX_IMAGE:?NGINX_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    expose:
+      - "8080"
+    read_only: true
+    tmpfs:
+      - /var/cache/nginx:uid=101,gid=101,mode=0755
+      - /var/run:uid=101,gid=101,mode=0755
+      - /tmp:uid=101,gid=101,mode=1777
+    volumes:
+      - backend-storage:/var/www/backend/storage:ro
+    depends_on:
+      backend:
+        condition: service_healthy
+      frontend:
+        condition: service_healthy
+      reverb:
+        condition: service_started
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:8080/up >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  backend:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    read_only: true
+    tmpfs:
+      - /tmp
+    expose:
+      - "9000"
+    env_file:
+      - ${BACKEND_ENV_FILE:?BACKEND_ENV_FILE must point to an untracked production env file}
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: postgres
+      DB_DATABASE: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY is required}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - backend-storage:/var/www/backend/storage
+      - backend-cache:/var/www/backend/bootstrap/cache
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      meilisearch:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "php -r \"exit(is_file('/var/www/backend/vendor/autoload.php') ? 0 : 1);\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 18
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  reverb:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["php", "artisan", "reverb:start", "--host=0.0.0.0", "--port=8080"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    expose:
+      - "8080"
+    env_file:
+      - ${BACKEND_ENV_FILE:?BACKEND_ENV_FILE must point to an untracked production env file}
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: postgres
+      DB_DATABASE: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY is required}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - backend-storage:/var/www/backend/storage
+      - backend-cache:/var/www/backend/bootstrap/cache
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  queue-worker:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["php", "artisan", "queue:work", "--sleep=3", "--tries=3", "--no-interaction"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - ${BACKEND_ENV_FILE:?BACKEND_ENV_FILE must point to an untracked production env file}
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: postgres
+      DB_DATABASE: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY is required}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - backend-storage:/var/www/backend/storage
+      - backend-cache:/var/www/backend/bootstrap/cache
+    depends_on:
+      backend:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  scheduler:
+    image: ${BACKEND_IMAGE:?BACKEND_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["php", "artisan", "schedule:work"]
+    read_only: true
+    tmpfs:
+      - /tmp
+    env_file:
+      - ${BACKEND_ENV_FILE:?BACKEND_ENV_FILE must point to an untracked production env file}
+    environment:
+      APP_ENV: production
+      APP_DEBUG: "false"
+      DB_HOST: postgres
+      DB_DATABASE: ${POSTGRES_DB:?POSTGRES_DB is required}
+      DB_USERNAME: ${POSTGRES_USER:?POSTGRES_USER is required}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+      MEILISEARCH_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY is required}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - backend-storage:/var/www/backend/storage
+      - backend-cache:/var/www/backend/bootstrap/cache
+    depends_on:
+      backend:
+        condition: service_healthy
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  frontend:
+    image: ${FRONTEND_IMAGE:?FRONTEND_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["pnpm", "start"]
+    read_only: true
+    tmpfs:
+      - /tmp:uid=1000,gid=1000,mode=1777
+    expose:
+      - "3000"
+    env_file:
+      - ${FRONTEND_ENV_FILE:?FRONTEND_ENV_FILE must point to an untracked production env file}
+    environment:
+      NODE_ENV: production
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000').then((r) => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      start_period: 20s
+      retries: 18
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  matching:
+    image: ${MATCHING_IMAGE:?MATCHING_IMAGE must reference an immutable release digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--workers", "1"]
+    read_only: true
+    tmpfs:
+      - /tmp:uid=999,gid=999,mode=1777
+    expose:
+      - "8000"
+    env_file:
+      - ${MATCHING_ENV_FILE:?MATCHING_ENV_FILE must point to an untracked production env file}
+    environment:
+      DEBUG: "false"
+      MATCHING_REQUIRE_API_KEY: "true"
+      MATCHING_WORKERS: "1"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/v1/health', timeout=3).read()\""]
+      interval: 10s
+      timeout: 5s
+      start_period: 10s
+      retries: 12
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  postgres:
+    image: ${POSTGRES_IMAGE:?POSTGRES_IMAGE must reference an approved immutable digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB is required}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER is required}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required}
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  redis:
+    image: ${REDIS_IMAGE:?REDIS_IMAGE must reference an approved immutable digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    command: ["redis-server", "--appendonly", "yes", "--requirepass", "${REDIS_PASSWORD:?REDIS_PASSWORD is required}"]
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:?REDIS_PASSWORD is required}
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli -a \"$${REDIS_PASSWORD}\" ping | grep -q PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+  meilisearch:
+    image: ${MEILI_IMAGE:?MEILI_IMAGE must reference an approved immutable digest}
+    restart: unless-stopped
+    init: true
+    logging: *default-logging
+    environment:
+      MEILI_ENV: production
+      MEILI_MASTER_KEY: ${MEILI_MASTER_KEY:?MEILI_MASTER_KEY is required}
+    volumes:
+      - meilidata:/meili_data
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:7700/health >/dev/null || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+    security_opt:
+      - no-new-privileges:true
+    networks:
+      - mis-network
+
+volumes:
+  backend-storage:
+  backend-cache:
+  pgdata:
+  redisdata:
+  meilidata:
+
+networks:
+  mis-network:
+    driver: bridge

@@ -1,16 +1,21 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight, ClipboardCheck, Clock, FileQuestion, Users, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
+import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
 import { localePath } from '@/i18n/paths';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/spinner';
+import { PaginationControls } from '@/components/ui/pagination';
 
 interface EvaluationResult {
   id: string;
@@ -49,26 +54,38 @@ interface Evaluation {
   user_result?: EvaluationResult | null;
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-}
-
 export default function EvaluationsPage() {
   const t = useTranslations();
   const locale = useLocale();
   const { user } = useAuth();
   const isMentor = user?.role === 'mentor';
+  const [evaluationPage, setEvaluationPage] = useState(1);
+  const [mentorResultPage, setMentorResultPage] = useState(1);
+  const perPage = 12;
 
-  const { data, isLoading } = useQuery<PaginatedResponse<Evaluation>>({
-    queryKey: ['evaluations', user?.client_type],
-    queryFn: () => api.get<PaginatedResponse<Evaluation>>('/evaluations', { per_page: 100 }),
+  const { data, isLoading, isFetching, error } = useQuery<PaginatedResponse<Evaluation>>({
+    queryKey: ['evaluations', user?.client_type, { page: evaluationPage, per_page: perPage }],
+    queryFn: async ({ signal }) => {
+      const response = await api.get<RawPaginatedResponse<Evaluation>>('/evaluations', {
+        page: evaluationPage,
+        per_page: perPage,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page: evaluationPage, perPage });
+    },
     enabled: !!user,
   });
 
-  const { data: mentorResultData, isLoading: mentorResultsLoading } = useQuery<PaginatedResponse<MentorEvaluationResult>>({
-    queryKey: ['mentor-evaluation-results'],
-    queryFn: () => api.get<PaginatedResponse<MentorEvaluationResult>>('/mentor/evaluation-results', { per_page: 100 }),
+  const { data: mentorResultData, isLoading: mentorResultsLoading, isFetching: mentorResultsFetching, error: mentorResultsError } = useQuery<PaginatedResponse<MentorEvaluationResult>>({
+    queryKey: ['mentor-evaluation-results', { page: mentorResultPage, per_page: perPage }],
+    queryFn: async ({ signal }) => {
+      const response = await api.get<RawPaginatedResponse<MentorEvaluationResult>>('/mentor/evaluation-results', {
+        page: mentorResultPage,
+        per_page: perPage,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page: mentorResultPage, perPage });
+    },
     enabled: isMentor,
   });
 
@@ -76,6 +93,16 @@ export default function EvaluationsPage() {
     return (
       <AppShell>
         <PageSpinner />
+      </AppShell>
+    );
+  }
+
+  if (error || mentorResultsError) {
+    return (
+      <AppShell>
+        <Alert variant="error">
+          {apiErrorMessage(error ?? mentorResultsError, (key) => t(key)) || t('common.load_error')}
+        </Alert>
       </AppShell>
     );
   }
@@ -100,7 +127,7 @@ export default function EvaluationsPage() {
             <div className="grid grid-cols-2 gap-3">
               <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
                 <p className="text-sm text-slate-300">{t('evaluations.available')}</p>
-                <p className="mt-2 text-3xl font-bold">{data?.total ?? evaluations.length}</p>
+                <p className="mt-2 text-3xl font-bold">{data?.meta.total ?? evaluations.length}</p>
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/10 p-4 backdrop-blur">
                 <p className="text-sm text-slate-300">{t('evaluations.completed')}</p>
@@ -117,7 +144,7 @@ export default function EvaluationsPage() {
                 <h2 className="text-xl font-bold text-slate-950">{t('evaluations.mentor_results_title')}</h2>
                 <p className="text-sm text-slate-500">{t('evaluations.mentor_results_subtitle')}</p>
               </div>
-              <Badge variant="primary">{mentorResultData?.total ?? mentorResults.length}</Badge>
+                <Badge variant="primary">{mentorResultData?.meta.total ?? mentorResults.length}</Badge>
             </div>
 
             {mentorResults.length === 0 ? (
@@ -125,7 +152,7 @@ export default function EvaluationsPage() {
                 {t('evaluations.mentor_results_empty')}
               </Card>
             ) : (
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              <div className={`grid gap-4 md:grid-cols-2 xl:grid-cols-3 ${mentorResultsFetching ? 'opacity-60' : ''}`} aria-busy={mentorResultsFetching}>
                 {mentorResults.map((result) => (
                   <Card key={result.id} className="border-0 shadow-sm ring-1 ring-slate-100">
                     <CardHeader>
@@ -157,6 +184,21 @@ export default function EvaluationsPage() {
                 ))}
               </div>
             )}
+            {mentorResultData && (
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+                <PaginationControls
+                  meta={mentorResultData.meta}
+                  page={mentorResultPage}
+                  onPageChange={setMentorResultPage}
+                  isLoading={mentorResultsFetching}
+                  ariaLabel={t('common.pagination')}
+                  previousLabel={t('common.previous')}
+                  nextLabel={t('common.next')}
+                  pageLabel={t('common.page')}
+                  ofLabel={t('common.of')}
+                />
+              </div>
+            )}
           </section>
         )}
 
@@ -167,7 +209,7 @@ export default function EvaluationsPage() {
             <p className="mt-2 text-sm text-slate-500">{t('evaluations.empty_desc')}</p>
           </Card>
         ) : (
-          <div className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <div className={`grid gap-5 md:grid-cols-2 xl:grid-cols-3 ${isFetching ? 'opacity-60' : ''}`} aria-busy={isFetching}>
             {evaluations.map((evaluation) => {
               const result = evaluation.user_result;
 
@@ -177,7 +219,7 @@ export default function EvaluationsPage() {
                     <div className="flex items-start justify-between gap-3">
                       <div>
                         <CardTitle>{localizedText(evaluation.title, locale)}</CardTitle>
-                        {evaluation.category && <p className="mt-1 text-sm text-slate-500">{evaluation.category}</p>}
+                        {evaluation.category && <p className="mt-1 text-sm text-slate-500">{evaluationCategoryLabel(evaluation.category, t)}</p>}
                       </div>
                       {result ? (
                         <Badge variant={result.passed ? 'success' : 'warning'}>
@@ -195,7 +237,7 @@ export default function EvaluationsPage() {
 
                   <div className="mt-5 grid grid-cols-2 gap-3 text-sm">
                     <InfoItem icon={FileQuestion} label={`${evaluation.questions_count} ${t('evaluations.questions')}`} />
-                    <InfoItem icon={Clock} label={`${evaluation.time_limit_minutes ?? 0} min`} />
+                    <InfoItem icon={Clock} label={`${evaluation.time_limit_minutes ?? 0} ${t('common.minutes_short')}`} />
                   </div>
 
                   {result && (
@@ -222,6 +264,21 @@ export default function EvaluationsPage() {
             })}
           </div>
         )}
+        {data && (
+          <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+            <PaginationControls
+              meta={data.meta}
+              page={evaluationPage}
+              onPageChange={setEvaluationPage}
+              isLoading={isFetching}
+              ariaLabel={t('common.pagination')}
+              previousLabel={t('common.previous')}
+              nextLabel={t('common.next')}
+              pageLabel={t('common.page')}
+              ofLabel={t('common.of')}
+            />
+          </div>
+        )}
       </div>
     </AppShell>
   );
@@ -244,4 +301,16 @@ function localizedText(value: Record<string, string> | null | undefined, locale:
 
 function mentorResultUserName(result: MentorEvaluationResult): string {
   return result.user.full_name || [result.user.name, result.user.last_name].filter(Boolean).join(' ') || result.user.email;
+}
+
+function evaluationCategoryLabel(category: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    bienestar: t('evaluation_categories.wellbeing'),
+    desarrollo: t('evaluation_categories.development'),
+    profesional: t('evaluation_categories.professional'),
+    familiar: t('evaluation_categories.family'),
+    empresa: t('evaluation_categories.business'),
+  };
+
+  return labels[category] ?? t('common.not_applicable');
 }

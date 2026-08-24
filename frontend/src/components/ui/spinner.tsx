@@ -1,3 +1,6 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { ThinkingOrb } from '@/components/ui/thinking-orb';
 
@@ -13,10 +16,12 @@ export function Spinner({ size = 'md', className }: SpinnerProps) {
 }
 
 export function PageSpinner() {
+  const t = useTranslations();
+
   return (
     <div className="flex min-h-[50vh] flex-col items-center justify-center gap-4" role="status">
       <ThinkingOrb size="xl" decorative />
-      <p className="text-sm font-medium text-slate-500">Loading...</p>
+      <p className="text-sm font-medium text-slate-500">{t('common.loading')}</p>
     </div>
   );
 }

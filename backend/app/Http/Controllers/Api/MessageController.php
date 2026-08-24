@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
 use App\Http\Requests\Message\StoreMessageRequest;
+use App\Http\Resources\MessageResource;
 use App\Models\Message;
 use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
@@ -24,7 +25,7 @@ class MessageController
         ->latest()
         ->paginate($perPage);
 
-        return response()->json($messages);
+        return MessageResource::collection($messages)->response();
     }
 
     public function store(StoreMessageRequest $request): JsonResponse
@@ -46,7 +47,7 @@ class MessageController
 
         $message->load('sender');
 
-        return response()->json($message, 201);
+        return response()->json(new MessageResource($message), 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -55,7 +56,7 @@ class MessageController
 
         abort_unless($message->relationship->involvesUser($request->user()), 403);
 
-        return response()->json($message);
+        return response()->json(new MessageResource($message));
     }
 
     public function markAsRead(Request $request, string $id): JsonResponse
@@ -66,6 +67,6 @@ class MessageController
 
         $message->update(['read_at' => now()]);
 
-        return response()->json($message);
+        return response()->json(new MessageResource($message->load('sender')));
     }
 }

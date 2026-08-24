@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { ApiError, api } from '@/lib/api';
+import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { useCreateRelationship, useRelationshipContexts } from '@/hooks/use-relationships';
 import { AppShell } from '@/components/layout/AppShell';
@@ -17,7 +18,9 @@ import { Button } from '@/components/ui/button';
 import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PageSpinner } from '@/components/ui/spinner';
+import { Avatar } from '@/components/ui/avatar';
 import { Brain, Users } from 'lucide-react';
+import type { UserSkill } from '@/lib/mentor-skills';
 
 interface Mentor {
   id: string;
@@ -26,7 +29,7 @@ interface Mentor {
   bio: string | null;
   client_type: string;
   active_mentees_count?: number;
-  skills?: { skill_tag?: { name: string } }[];
+  skills?: UserSkill[];
   personality_assessment?: { completed_at: string | null } | null;
 }
 
@@ -69,7 +72,11 @@ export default function MentorDetailPage() {
   if (isLoading) return withShell(<PageSpinner />);
 
   if (error || !mentor) {
-    return withShell(<p className="p-8 text-center text-gray-500">{t('common.no_results')}</p>);
+    return withShell(
+      <Alert variant="error" className="mx-auto max-w-3xl">
+        {error ? apiErrorMessage(error, (key) => t(key)) || t('common.load_error') : t('common.no_results')}
+      </Alert>,
+    );
   }
 
   return withShell(
@@ -78,14 +85,13 @@ export default function MentorDetailPage() {
         <CardHeader>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary-100 text-xl font-bold text-primary-700">
-                {mentor.avatar ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={mentor.avatar} alt="" className="h-full w-full rounded-2xl object-cover" />
-                ) : (
-                  mentor.full_name.charAt(0)
-                )}
-              </div>
+              <Avatar
+                src={mentor.avatar}
+                alt={mentor.full_name}
+                size="lg"
+                fallback={mentor.full_name.charAt(0)}
+                className="rounded-2xl bg-primary-100 text-xl font-bold text-primary-700"
+              />
               <div>
                 <CardTitle>{mentor.full_name}</CardTitle>
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -115,8 +121,9 @@ export default function MentorDetailPage() {
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
             {(mentor.skills ?? []).map((skill, index) => (
-              <span key={skill.skill_tag?.name ?? index} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
-                {skill.skill_tag?.name}
+              <span key={skill.id ?? index} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
+                {skill.skill?.name}
+                <span className="ml-1 text-gray-400">· {t(`learning_levels.${skill.level}`)}</span>
               </span>
             ))}
             {(mentor.skills ?? []).length === 0 && (
@@ -134,7 +141,9 @@ export default function MentorDetailPage() {
             {contextsQuery.isLoading ? (
               <div className="mt-5"><PageSpinner /></div>
             ) : contextsQuery.error ? (
-              <Alert variant="error" className="mt-5">{t('mentors.contexts_error')}</Alert>
+              <Alert variant="error" className="mt-5">
+                {apiErrorMessage(contextsQuery.error, (key) => t(key)) || t('mentors.contexts_error')}
+              </Alert>
             ) : contexts.length === 0 ? (
               <Alert variant="info" className="mt-5">{t('mentors.no_contexts')}</Alert>
             ) : (
@@ -212,9 +221,7 @@ export default function MentorDetailPage() {
 }
 
 function relationshipError(error: Error, t: ReturnType<typeof useTranslations>): string {
-  if (error instanceof ApiError && error.status === 422) {
-    return Object.values(error.errors ?? {}).flat()[0] ?? error.message;
-  }
+  const message = apiErrorMessage(error, (key) => t(key));
 
-  return t('mentors.request_error');
+  return message || t('mentors.request_error');
 }

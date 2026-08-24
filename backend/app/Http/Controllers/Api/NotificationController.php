@@ -10,9 +10,10 @@ class NotificationController
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
         $notifications = Notification::where('user_id', $request->user()->id)
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
         return response()->json($notifications);
     }

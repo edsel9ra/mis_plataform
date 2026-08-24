@@ -140,7 +140,7 @@ export function AppShell({ children }: { children: ReactNode }) {
               </span>
               <span className={cn('min-w-0 transition-opacity duration-200', isSidebarCollapsed && 'lg:hidden')}>
                 <span className="block text-base font-bold leading-tight">MIS</span>
-                <span className="block text-xs text-slate-400">Mentoria sistemica</span>
+                 <span className="block text-xs text-slate-400">{t('app.sidebar_subtitle')}</span>
               </span>
             </Link>
             <button

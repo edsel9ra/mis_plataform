@@ -88,4 +88,29 @@ describe('ApiClient error normalization', () => {
       code: 'network',
     });
   });
+
+  it('sends credentials and query parameters without a token in local storage', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.get('/sessions', { page: 2, per_page: 20, search: undefined });
+
+    expect(fetchMock).toHaveBeenCalledWith('/api/v1/sessions?page=2&per_page=20', expect.objectContaining({
+      credentials: 'include',
+      method: 'GET',
+    }));
+    expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('Accept-Language')).toBe('es');
+    expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('X-MIS-Locale')).toBe('es');
+  });
+
+  it('sends the active interface locale to the API', async () => {
+    vi.stubGlobal('document', { documentElement: { lang: 'en-US' }, cookie: '' });
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ data: [] }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+
+    await api.get('/sessions');
+
+    expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('Accept-Language')).toBe('en');
+    expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('X-MIS-Locale')).toBe('en');
+  });
 });

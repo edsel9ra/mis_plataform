@@ -16,6 +16,7 @@ use App\Http\Requests\Admin\UpdateAdminSessionStatusRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\AssessmentResultResource;
+use App\Http\Resources\AdminMentorResource;
 use App\Http\Resources\MentorResource;
 use App\Http\Resources\PlanResource;
 use App\Http\Resources\RecommendationMentorResource;
@@ -42,6 +43,7 @@ class AdminController
     public function users(Request $request): JsonResponse
     {
         $query = User::query();
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('client_type')) {
             $query->byClientType($request->client_type);
@@ -58,7 +60,7 @@ class AdminController
         $users = $query->withCount('mentorRelationships')
             ->with(['personalityAssessment', 'company'])
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
         return response()->json($users);
     }
@@ -111,7 +113,7 @@ class AdminController
 
         $user->delete();
 
-        return response()->json(['message' => 'User deleted successfully']);
+        return response()->json(['message' => __('admin.user_deleted')]);
     }
 
     // ──────────────────────────────────────────────
@@ -121,6 +123,7 @@ class AdminController
     public function mentors(Request $request): JsonResponse
     {
         $query = User::byRole('mentor');
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('client_type')) {
             $query->where('client_type', $request->client_type);
@@ -137,9 +140,9 @@ class AdminController
             ->withCount(['mentorRelationships as active_mentees_count' => function ($q) {
                 $q->where('status', 'active');
             }])
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
-        return response()->json($mentors);
+        return response()->json(AdminMentorResource::collection($mentors));
     }
 
     public function mentorShow(string $id): JsonResponse
@@ -153,7 +156,7 @@ class AdminController
             }])
             ->findOrFail($id);
 
-        return response()->json($mentor);
+        return response()->json(new AdminMentorResource($mentor));
     }
 
     public function mentorStore(StoreAdminMentorRequest $request): JsonResponse
@@ -166,7 +169,7 @@ class AdminController
         $user = User::create($validated);
         $user->syncApplicationRole('mentor');
 
-        return response()->json(new UserResource($user), 201);
+        return response()->json(new AdminMentorResource($user->load('skills.skillTag')), 201);
     }
 
     public function mentorUpdate(UpdateAdminMentorRequest $request, string $id): JsonResponse
@@ -181,7 +184,7 @@ class AdminController
 
         $mentor->update($validated);
 
-        return response()->json(new UserResource($mentor));
+        return response()->json(new AdminMentorResource($mentor->load('skills.skillTag')));
     }
 
     public function mentorDestroy(string $id): JsonResponse
@@ -189,7 +192,7 @@ class AdminController
         $mentor = User::byRole('mentor')->findOrFail($id);
         $mentor->delete();
 
-        return response()->json(['message' => 'Mentor deleted successfully']);
+        return response()->json(['message' => __('admin.mentor_deleted')]);
     }
 
     // ──────────────────────────────────────────────
@@ -199,6 +202,7 @@ class AdminController
     public function sessions(Request $request): JsonResponse
     {
         $query = Session::with(['relationship.mentor', 'relationship.source', 'attendees.user']);
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('status')) {
             $query->where('status', $request->status);
@@ -211,7 +215,7 @@ class AdminController
             });
         }
 
-        $sessions = $query->latest('scheduled_at')->paginate($request->per_page ?? 20);
+        $sessions = $query->latest('scheduled_at')->paginate($perPage);
 
         return response()->json($sessions);
     }
@@ -246,6 +250,26 @@ class AdminController
 
         $validated = $request->validated();
 
+        if (array_key_exists('relationship_id', $validated) || array_key_exists('session_type', $validated)) {
+            $relationship = MentorshipRelationship::findOrFail(
+                $validated['relationship_id'] ?? $session->relationship_id,
+            );
+            abort_unless($relationship->status === 'active', 422, __('sessions.relationship_inactive'));
+
+            $expectedType = match ($relationship->type) {
+                'personal' => 'individual',
+                'familiar' => 'family',
+                'grupal' => 'group',
+                'empresa' => 'corporate',
+                default => null,
+            };
+            abort_unless(
+                $expectedType !== null && ($validated['session_type'] ?? $session->session_type) === $expectedType,
+                422,
+                __('sessions.type_mismatch'),
+            );
+        }
+
         $session->update($validated);
 
         return response()->json(new SessionResource($session));
@@ -267,7 +291,7 @@ class AdminController
         $session = Session::findOrFail($id);
         $session->delete();
 
-        return response()->json(['message' => 'Session deleted successfully']);
+        return response()->json(['message' => __('admin.session_deleted')]);
     }
 
     // ──────────────────────────────────────────────
@@ -277,12 +301,13 @@ class AdminController
     public function assessments(Request $request): JsonResponse
     {
         $query = PersonalityAssessment::with('user');
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('completed')) {
             $query->whereNotNull('completed_at');
         }
 
-        $assessments = $query->latest()->paginate($request->per_page ?? 20);
+        $assessments = $query->latest()->paginate($perPage);
 
         return response()->json($assessments);
     }
@@ -319,7 +344,7 @@ class AdminController
         $assessment = PersonalityAssessment::findOrFail($id);
         $assessment->delete();
 
-        return response()->json(['message' => 'Assessment deleted successfully']);
+        return response()->json(['message' => __('admin.assessment_deleted')]);
     }
 
     // ──────────────────────────────────────────────
@@ -329,6 +354,7 @@ class AdminController
     public function evaluationCatalog(Request $request): JsonResponse
     {
         $query = LearningAssessment::withCount('results')->latest();
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('search')) {
             $term = $request->string('search')->toString();
@@ -348,7 +374,7 @@ class AdminController
             $query->where('is_active', $request->boolean('active'));
         }
 
-        return response()->json($query->paginate($request->per_page ?? 20));
+        return response()->json($query->paginate($perPage));
     }
 
     public function evaluationCatalogStore(Request $request): JsonResponse
@@ -376,12 +402,13 @@ class AdminController
         $assessment = LearningAssessment::findOrFail($id);
         $assessment->delete();
 
-        return response()->json(['message' => 'Evaluation deleted successfully']);
+        return response()->json(['message' => __('admin.evaluation_deleted')]);
     }
 
     public function evaluationResults(Request $request): JsonResponse
     {
         $query = AssessmentResult::with(['user', 'assessment'])->latest('completed_at');
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         if ($request->filled('assessment_id')) {
             $query->where('assessment_id', $request->assessment_id);
@@ -406,7 +433,7 @@ class AdminController
             });
         }
 
-        $results = $query->paginate($request->per_page ?? 20);
+        $results = $query->paginate($perPage);
 
         return response()->json([
             'data' => AssessmentResultResource::collection($results->getCollection())->resolve($request),
@@ -424,7 +451,8 @@ class AdminController
     public function plans(StoreAdminPlanRequest $request): JsonResponse
     {
         if ($request->isMethod('get')) {
-            $plans = Plan::withCount('subscriptions')->paginate(20);
+            $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+            $plans = Plan::withCount('subscriptions')->paginate($perPage);
 
             return response()->json($plans);
         }
@@ -525,7 +553,7 @@ class AdminController
 
         if (!$assessment || !$assessment->completed_at) {
             return response()->json([
-                'message' => 'Complete your personality test first',
+                'message' => __('recommendations.test_required'),
                 'recommended_mentors' => [],
                 'recommended_sessions' => [],
                 'recommended_evaluations' => [],
@@ -617,49 +645,49 @@ class AdminController
 
         if ($openness >= 60) {
             $recommendations['creatividad'] = [
-                'reason' => 'Tu alta apertura sugiere gran potencial creativo.',
+                'reason' => 'recommendations.high_openness',
             ];
         }
 
         if ($conscientiousness >= 60) {
             $recommendations['liderazgo'] = [
-                'reason' => 'Tu alta responsabilidad indica capacidad de liderazgo.',
+                'reason' => 'recommendations.high_conscientiousness',
             ];
         }
 
         if ($extraversion >= 60) {
             $recommendations['inteligencia-emocional'] = [
-                'reason' => 'Tu alta extraversión es ideal para roles de comunicación.',
+                'reason' => 'recommendations.high_extraversion',
             ];
         }
 
         if ($agreeableness >= 60) {
             $recommendations['inteligencia-emocional'] = [
-                'reason' => 'Tu alta amabilidad favorece el trabajo colaborativo.',
+                'reason' => 'recommendations.high_agreeableness',
             ];
         }
 
         if ($neuroticism >= 60) {
             $recommendations['estres-burnout'] = [
-                'reason' => 'Identifica áreas para fortalecer tu bienestar emocional.',
+                'reason' => 'recommendations.high_neuroticism',
             ];
         }
 
         if ($conscientiousness < 40) {
             $recommendations['motivacion'] = [
-                'reason' => 'Puedes fortalecer tus habilidades de planificación.',
+                'reason' => 'recommendations.low_conscientiousness',
             ];
         }
 
         if ($extraversion < 40) {
             $recommendations['inteligencia-emocional'] = [
-                'reason' => 'Fortalece tu presencia en entornos sociales.',
+                'reason' => 'recommendations.low_extraversion',
             ];
         }
 
         if (empty($recommendations)) {
             $recommendations['bienestar-integral'] = [
-                'reason' => 'Mantén una visión integral de tu bienestar y desarrollo.',
+                'reason' => 'recommendations.default',
             ];
         }
 
@@ -676,13 +704,13 @@ class AdminController
             ->get()
             ->map(function (LearningAssessment $evaluation) use ($recommendations) {
                 $locale = app()->getLocale();
-                $reason = $recommendations[$evaluation->slug]['reason'] ?? 'Evaluación recomendada para tu perfil.';
+                $reasonKey = $recommendations[$evaluation->slug]['reason'] ?? 'recommendations.default';
 
                 return [
                     'id' => $evaluation->id,
                     'title' => $evaluation->title[$locale] ?? $evaluation->title['es'] ?? $evaluation->slug,
                     'description' => $evaluation->description[$locale] ?? $evaluation->description['es'] ?? '',
-                    'reason' => $reason,
+                    'reason' => __($reasonKey),
                     'type' => $evaluation->category ?? 'desarrollo',
                 ];
             })
@@ -709,7 +737,7 @@ class AdminController
                         'id' => $evaluation->id,
                         'title' => $evaluation->title[$locale] ?? $evaluation->title['es'] ?? $evaluation->slug,
                         'description' => $evaluation->description[$locale] ?? $evaluation->description['es'] ?? '',
-                        'reason' => 'Evaluación recomendada para complementar tu perfil.',
+                        'reason' => __('recommendations.complement'),
                         'type' => $evaluation->category ?? 'desarrollo',
                     ];
                 })

@@ -23,12 +23,29 @@ const config: NextConfig = {
   async rewrites() {
     return [
       {
+        source: '/sanctum/:path*',
+        destination: `${apiInternalUrl}/sanctum/:path*`,
+      },
+      {
         source: '/api/:path*',
         destination: `${apiInternalUrl}/api/:path*`,
       },
     ];
   },
   async headers() {
+    const protectedPaths = [
+      '/admin/:path*',
+      '/dashboard/:path*',
+      '/evaluations/:path*',
+      '/certificates/:path*',
+      '/learning-paths/:path*',
+      '/messages/:path*',
+      '/onboarding/:path*',
+      '/profile/:path*',
+      '/recommendations/:path*',
+      '/sessions/:path*',
+    ];
+
     return [
       {
         source: '/:path*',
@@ -39,6 +56,16 @@ const config: NextConfig = {
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
         ],
       },
+      ...protectedPaths.flatMap((path) => [
+        {
+          source: path,
+          headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+        },
+        {
+          source: `/:locale(en|pt)${path}`,
+          headers: [{ key: 'X-Robots-Tag', value: 'noindex, nofollow, noarchive' }],
+        },
+      ]),
     ];
   },
 };

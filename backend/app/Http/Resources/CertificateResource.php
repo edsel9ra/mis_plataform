@@ -25,7 +25,7 @@ class CertificateResource extends JsonResource
             'issued_at' => $this->issued_at,
             'expires_at' => $this->expires_at,
             'created_at' => $this->created_at,
-            'user' => UserResource::make($this->whenLoaded('user')),
+            'user' => UserSummaryResource::make($this->whenLoaded('user')),
             'relationship' => RelationshipResource::make($this->whenLoaded('relationship')),
         ];
     }

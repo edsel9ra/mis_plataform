@@ -3,6 +3,8 @@
 use App\Models\Assessment;
 use App\Models\AssessmentResult;
 use App\Models\MentorshipRelationship;
+use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 use Database\Seeders\RolePermissionSeeder;
 
@@ -48,8 +50,34 @@ function createSuperAdminWithoutSearch(): User
     return User::withoutSyncingToSearch(fn () => User::factory()->superAdmin()->create());
 }
 
+function createEvaluationUser(array $attributes = []): User
+{
+    $user = createUserWithoutSearch($attributes);
+    $plan = Plan::create([
+        'client_type' => $user->client_type,
+        'name' => ['es' => 'Evaluations test plan'],
+        'description' => ['es' => 'Test plan'],
+        'features' => ['Evaluaciones'],
+        'price_monthly' => 1,
+        'price_yearly' => 10,
+        'max_sessions_per_month' => 4,
+        'max_members' => 1,
+        'max_mentors' => 1,
+        'is_active' => true,
+    ]);
+    Subscription::create([
+        'subscriber_type' => 'user',
+        'subscriber_id' => $user->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subMinute(),
+    ]);
+
+    return $user;
+}
+
 it('lists active evaluations for the authenticated user client type', function () {
-    $user = createUserWithoutSearch(['client_type' => 'personal']);
+    $user = createEvaluationUser(['client_type' => 'personal']);
     $token = $user->createToken('test')->plainTextToken;
 
     $personal = Assessment::create(evaluationPayload(['slug' => 'personal-evaluation']));
@@ -64,7 +92,7 @@ it('lists active evaluations for the authenticated user client type', function (
 });
 
 it('stores and validates an evaluation result for the user', function () {
-    $user = createUserWithoutSearch(['client_type' => 'personal']);
+    $user = createEvaluationUser(['client_type' => 'personal']);
     $token = $user->createToken('test')->plainTextToken;
     $evaluation = Assessment::create(evaluationPayload());
 
@@ -88,7 +116,7 @@ it('stores and validates an evaluation result for the user', function () {
 });
 
 it('shows an accessible evaluation directly with the user result', function () {
-    $user = createUserWithoutSearch(['client_type' => 'personal']);
+    $user = createEvaluationUser(['client_type' => 'personal']);
     $token = $user->createToken('test')->plainTextToken;
     $evaluation = Assessment::create(evaluationPayload());
 
@@ -110,6 +138,15 @@ it('shows an accessible evaluation directly with the user result', function () {
         ->assertOk()
         ->assertJsonPath('id', $evaluation->id)
         ->assertJsonPath('user_result.passed', true);
+});
+
+it('does not expose evaluations without the required plan feature', function () {
+    $user = createUserWithoutSearch(['client_type' => 'personal']);
+
+    $this->actingAs($user)
+        ->getJson('/api/v1/evaluations')
+        ->assertOk()
+        ->assertJsonCount(0, 'data');
 });
 
 it('rejects incomplete evaluation answers', function () {

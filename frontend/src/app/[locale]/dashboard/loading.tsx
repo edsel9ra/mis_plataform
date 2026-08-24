@@ -1,12 +1,17 @@
+'use client';
+
+import { useTranslations } from 'next-intl';
 import { ThinkingOrb } from '@/components/ui/thinking-orb';
 
 export default function DashboardLoading() {
+  const t = useTranslations();
+
   return (
     <div className="space-y-6 animate-fade-in">
       <div className="flex h-48 items-center justify-center rounded-3xl bg-slate-950 text-white shadow-xl shadow-slate-200">
         <div className="flex flex-col items-center gap-3">
-          <ThinkingOrb size="xl" tone="inverse" label="Loading dashboard..." />
-          <p className="text-sm font-medium text-slate-300">Preparando tu dashboard...</p>
+          <ThinkingOrb size="xl" tone="inverse" label={t('dashboard.loading')} />
+          <p className="text-sm font-medium text-slate-300">{t('dashboard.loading')}</p>
         </div>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">

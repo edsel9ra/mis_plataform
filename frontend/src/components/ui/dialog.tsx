@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
@@ -89,6 +90,7 @@ interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export function DialogContent({ className, children, showClose = true, ...props }: DialogContentProps) {
   const { open, onOpenChange } = useDialog();
+  const t = useTranslations();
   const overlayRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
@@ -176,7 +178,7 @@ export function DialogContent({ className, children, showClose = true, ...props 
             data-dialog-close
             onClick={() => onOpenChange(false)}
             className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>

@@ -7,10 +7,12 @@ use Illuminate\Console\Command;
 class SyncPendingMatchScores extends Command
 {
     protected $signature = 'app:sync-pending-match-scores';
-    protected $description = 'Sync pending match scores with matching service';
+    protected $description = 'Safely report that pending match score sync is unavailable';
 
-    public function handle(): void
+    public function handle(): int
     {
-        $this->info('Match scores sync completed');
+        $this->info('No-op: matching score persistence is not implemented; no external request was made.');
+
+        return self::SUCCESS;
     }
 }

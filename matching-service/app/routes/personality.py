@@ -1,14 +1,19 @@
+import logging
+
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, Field, model_validator
-from typing import Dict, Optional
+from typing import Dict
+from app.config import load_settings
 from app.services.big_five import BigFiveScorer
 
 router = APIRouter()
 scorer = BigFiveScorer()
+settings = load_settings()
+logger = logging.getLogger(__name__)
 
 
 class ScoreRequest(BaseModel):
-    answers: Dict[int, int]
+    answers: Dict[int, int] = Field(min_length=1, max_length=300)
     test_version: str = Field(default="ipip-neo-120", pattern="^(ipip-neo-120|ipip-neo-300)$")
     age: int = Field(default=30, ge=12, le=110)
     sex: str = Field(default="N", pattern="^[MFN]$")
@@ -32,8 +37,8 @@ class ScoreRequest(BaseModel):
 
 
 class CompareRequest(BaseModel):
-    user_id_1: str
-    user_id_2: str
+    user_id_1: str = Field(min_length=1, max_length=128)
+    user_id_2: str = Field(min_length=1, max_length=128)
 
 
 @router.post("/score")
@@ -46,14 +51,15 @@ async def calculate_score(request: ScoreRequest):
             sex=request.sex,
         )
         return result
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception:
+        logger.exception("Failed to calculate personality score")
+        raise HTTPException(status_code=500, detail="Internal personality scoring error")
 
 
 @router.post("/batch-score")
 async def batch_score(requests: list[ScoreRequest]):
-    if len(requests) > 50:
-        raise HTTPException(status_code=422, detail="batch size cannot exceed 50")
+    if len(requests) > settings.max_batch_size:
+        raise HTTPException(status_code=422, detail="batch size exceeds the configured limit")
 
     results = []
     for req in requests:
@@ -65,8 +71,9 @@ async def batch_score(requests: list[ScoreRequest]):
                 sex=req.sex,
             )
             results.append(result)
-        except Exception as e:
-            results.append({"error": str(e)})
+        except Exception:
+            logger.exception("Failed to score an item in a personality batch")
+            results.append({"error": "Internal personality scoring error"})
     return {"results": results}
 
 

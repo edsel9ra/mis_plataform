@@ -1,8 +1,10 @@
 'use client';
 
 import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
 import { ApiError, api } from '@/lib/api';
 import { queryClient } from '@/lib/query-client';
+import type { UserSkill } from '@/lib/mentor-skills';
 
 interface PersonalityAssessment {
   id: string;
@@ -23,6 +25,7 @@ export interface User {
   locale: string;
   company_id: string | null;
   personality_assessment?: PersonalityAssessment | null;
+  skills?: UserSkill[];
 }
 
 export interface Subscription {
@@ -73,6 +76,7 @@ export function AuthProvider({
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(initialHasAuthCookie);
   const [authError, setAuthError] = useState<string | null>(null);
+  const t = useTranslations();
 
   const clearSession = useCallback(() => {
     api.setToken(null);
@@ -102,12 +106,12 @@ export function AuthProvider({
           return;
         }
 
-        setAuthError(error instanceof Error ? error.message : 'Unable to verify session');
+        setAuthError(t('auth.session_verification_error'));
       })
       .finally(() => setIsLoading(false));
 
     return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
-  }, [clearSession, initialHasAuthCookie]);
+  }, [clearSession, initialHasAuthCookie, t]);
 
   const login = useCallback(async (email: string, password: string) => {
     const res = await api.post<{ user: User }>('/auth/login', { email, password });
@@ -135,12 +139,12 @@ export function AuthProvider({
 
       if (error instanceof ApiError && error.status === 401) return;
 
-      setAuthError(error instanceof Error ? error.message : 'Unable to log out');
+      setAuthError(t('auth.logout_error'));
       throw error;
     }
 
     clearSession();
-  }, [clearSession]);
+  }, [clearSession, t]);
 
   const refreshUser = useCallback(async (): Promise<User> => {
     try {
@@ -153,12 +157,12 @@ export function AuthProvider({
       if (error instanceof ApiError && error.status === 401) {
         clearSession();
       } else {
-        setAuthError(error instanceof Error ? error.message : 'Unable to verify session');
+        setAuthError(t('auth.session_verification_error'));
       }
 
       throw error;
     }
-  }, [clearSession]);
+  }, [clearSession, t]);
 
   return (
     <AuthContext.Provider value={{ user, login, register, logout, isLoading, authError, refreshUser }}>

@@ -16,7 +16,7 @@ class EmployeeResource extends JsonResource
             'status' => $this->status,
             'invited_at' => $this->invited_at,
             'activated_at' => $this->activated_at,
-            'user' => UserResource::make($this->whenLoaded('user')),
+            'user' => UserContactResource::make($this->whenLoaded('user')),
             'company' => CompanyResource::make($this->whenLoaded('company')),
         ];
     }

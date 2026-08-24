@@ -3,11 +3,19 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\ClientType;
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
+    use NormalizesEmail;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeEmailInput();
+    }
+
     public function authorize(): bool
     {
         return true;

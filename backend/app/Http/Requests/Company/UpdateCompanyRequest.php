@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Company;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateCompanyRequest extends FormRequest
 {
@@ -20,7 +21,13 @@ class UpdateCompanyRequest extends FormRequest
             'size' => ['nullable', 'string', 'in:startup,sme,enterprise'],
             'website' => ['nullable', 'url', 'max:255'],
             'phone' => ['nullable', 'string', 'max:30'],
-            'plan_id' => ['nullable', 'exists:plans,id'],
+            'plan_id' => [
+                'nullable',
+                Rule::prohibitedIf(fn () => $this->filled('plan_id') && !$this->user()?->isAdmin()),
+                Rule::exists('plans', 'id')->where(fn ($query) => $query
+                    ->where('is_active', true)
+                    ->where('client_type', 'empresa')),
+            ],
         ];
     }
 }

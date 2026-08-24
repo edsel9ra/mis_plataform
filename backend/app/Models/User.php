@@ -70,6 +70,13 @@ class User extends Authenticatable
         });
     }
 
+    public function setEmailAttribute(?string $value): void
+    {
+        $this->attributes['email'] = $value === null
+            ? null
+            : mb_strtolower(trim($value));
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);

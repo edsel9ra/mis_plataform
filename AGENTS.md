@@ -13,13 +13,13 @@
 - `blockchain/contracts/CertificateRegistry.sol` is used by backend certificate services with IPFS/Pinata and Polygon envs.
 
 ## Commands
-- Full setup: `bash setup.sh` runs Docker check, `make build`, `make up`, composer install, key generation, migrations, seeders, and storage link.
+- Full setup: `bash setup.sh` runs Docker check, `make build`, `make up`, composer install, migrations, seeders, and storage link; `APP_KEY` comes from the Compose environment file.
 - Services: `make build`, `make up`, `make down`, `make restart`, `make logs`.
 - Most `make` targets use `docker compose exec`; run `make up` before `make composer-install`, `make migrate`, `make test-backend`, `make npm-install`, etc.
-- Backend: `make composer-install`, `make key`, `make migrate`, `make seed`, `make fresh`, `make storage`, `make shell`.
+- Backend: `make composer-install`, `make migrate`, `make seed`, `make fresh`, `make storage`, `make shell`.
 - Backend tests: `make test-backend`; focused: `docker compose exec backend php artisan test tests/Feature/AuthTest.php` or `docker compose exec backend php artisan test --filter PersonalityTest`.
 - Frontend uses `pnpm@9.15.0`; despite the name, `make npm-install` runs `pnpm install`.
-- Frontend checks: `make test-frontend` runs Playwright only if `playwright.config.*` exists; otherwise it runs `pnpm typecheck`.
+- Frontend checks: `make test-frontend` runs the repository's `pnpm test` script (Vitest).
 - Focused frontend checks: `docker compose exec frontend pnpm typecheck`; use `docker compose exec frontend pnpm build` before relying on production output.
 - Service shells: `make backend`, `make frontend`, `make matching`; Scout import: `make meili`.
 

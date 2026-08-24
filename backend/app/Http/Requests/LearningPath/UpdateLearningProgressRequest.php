@@ -3,6 +3,7 @@
 namespace App\Http\Requests\LearningPath;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class UpdateLearningProgressRequest extends FormRequest
 {
@@ -15,7 +16,12 @@ class UpdateLearningProgressRequest extends FormRequest
     {
         return [
             'progress' => ['required', 'numeric', 'between:0,100'],
-            'module_id' => ['nullable', 'exists:path_modules,id'],
+            'module_id' => [
+                'nullable',
+                Rule::exists('path_modules', 'id')->where(fn ($query) =>
+                    $query->where('learning_path_id', $this->route('id'))
+                ),
+            ],
         ];
     }
 }

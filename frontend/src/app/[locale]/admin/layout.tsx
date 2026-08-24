@@ -117,7 +117,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               </span>
               <span className={cn('min-w-0 transition-opacity duration-200', isSidebarCollapsed && 'lg:hidden')}>
                 <span className="block text-base font-bold leading-tight">MIS Admin</span>
-                <span className="block text-xs text-slate-400">{user.role === 'super_admin' ? 'Super admin' : 'Admin'}</span>
+                <span className="block text-xs text-slate-400">{user.role === 'super_admin' ? t('roles.super_admin') : t('roles.admin')}</span>
               </span>
             </Link>
             <button
@@ -151,11 +151,11 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
               isSidebarCollapsed && 'lg:mt-0 lg:max-h-0 lg:border-0 lg:p-0 lg:opacity-0',
             )}
           >
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-200">Admin operativo</p>
-            <p className="mt-2 text-sm text-slate-300">Usuarios, mentores, sesiones y evaluaciones configurables.</p>
+            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary-200">{t('admin.operational_badge')}</p>
+            <p className="mt-2 text-sm text-slate-300">{t('admin.operational_description')}</p>
           </div>
         </div>
-        <nav className={cn('flex-1 overflow-y-auto p-3 transition-[padding] duration-300', isSidebarCollapsed && 'lg:px-2')} aria-label="Admin navigation">
+        <nav className={cn('flex-1 overflow-y-auto p-3 transition-[padding] duration-300', isSidebarCollapsed && 'lg:px-2')} aria-label={t('admin.navigation')}>
           <ul className="space-y-1">
             {adminNavItems.map(({ href, label, icon: Icon }) => (
               <li key={href}>

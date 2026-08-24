@@ -10,6 +10,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { clientTypeOptions, registerSchema, type RegisterFormData } from '@/lib/schemas/auth';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -38,7 +39,7 @@ interface Plan {
   client_type: RegisterFormData['client_type'];
   name: string | Record<string, string>;
   description?: string | Record<string, string> | null;
-  features?: string[] | null;
+  features?: Array<string | Record<string, string>> | null;
   price_monthly: number | string;
   max_sessions_per_month?: number | null;
   max_members?: number | null;
@@ -90,9 +91,9 @@ export default function RegisterFormPage() {
     },
   });
 
-  const { data: plansData, isLoading: plansLoading } = useQuery<Plan[]>({
+  const { data: plansData, isLoading: plansLoading, error: plansError } = useQuery<Plan[] | { data: Plan[] }>({
     queryKey: ['plans', normalizedClientType],
-    queryFn: () => api.get<Plan[]>('/plans', { client_type: normalizedClientType }),
+    queryFn: ({ signal }) => api.get<Plan[] | { data: Plan[] }>('/plans', { client_type: normalizedClientType }, { signal }),
     enabled: isClientType(clientType),
   });
 
@@ -101,7 +102,7 @@ export default function RegisterFormPage() {
   const emailType = detectEmailType(emailValue ?? '');
   const selectedDetails = clientTypeDetails[normalizedClientType];
   const SelectedIcon = selectedDetails.icon;
-  const plans = plansData ?? emptyPlans;
+  const plans: Plan[] = Array.isArray(plansData) ? plansData as Plan[] : plansData?.data ?? emptyPlans;
 
   useEffect(() => {
     if (!selectedPlanId && plans.length > 0) {
@@ -125,7 +126,7 @@ export default function RegisterFormPage() {
       await authRegister(data);
       router.push(localePath('/onboarding/test-personalidad', locale));
     } catch (err) {
-      setServerError(err instanceof Error ? err.message : t('common.error'));
+      setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
     }
   };
 
@@ -258,6 +259,7 @@ export default function RegisterFormPage() {
               <fieldset className="space-y-3">
                 <legend className="text-sm font-semibold text-gray-900">{t('plans.select_title')}</legend>
                 {plansLoading && <p className="text-sm text-gray-500">{t('common.loading')}</p>}
+                {plansError && <Alert variant="error">{apiErrorMessage(plansError, (key) => t(key)) || t('common.load_error')}</Alert>}
                 {!plansLoading && plans.length === 0 && (
                   <p className="rounded-xl border border-dashed border-gray-300 p-4 text-sm text-gray-500">
                     {t('plans.no_plan_for_type')}
@@ -298,14 +300,14 @@ export default function RegisterFormPage() {
                           )}
                         </span>
                         {(plan.features ?? []).length > 0 && (
-                          <ul className="mt-3 space-y-1 text-sm text-gray-600">
-                            {(plan.features ?? []).slice(0, 3).map((feature) => (
-                              <li key={feature} className="flex items-start gap-2">
-                                <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
-                                {feature}
-                              </li>
-                            ))}
-                          </ul>
+                           <ul className="mt-3 space-y-1 text-sm text-gray-600">
+                             {(plan.features ?? []).slice(0, 3).map((feature) => (
+                               <li key={typeof feature === 'string' ? feature : JSON.stringify(feature)} className="flex items-start gap-2">
+                                 <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-emerald-600" aria-hidden="true" />
+                                 {localizedText(feature, locale)}
+                               </li>
+                             ))}
+                           </ul>
                         )}
                       </label>
                     );

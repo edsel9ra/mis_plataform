@@ -5,9 +5,12 @@ namespace App\Http\Controllers\Api;
 use App\Http\Requests\Cohort\AddCohortMemberRequest;
 use App\Http\Requests\Cohort\StoreCohortRequest;
 use App\Http\Requests\Cohort\UpdateCohortRequest;
+use App\Http\Resources\CohortMemberResource;
+use App\Http\Resources\CohortResource;
 use App\Models\Cohort;
 use App\Models\CohortMember;
 use App\Models\User;
+use App\Services\ContentAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -15,6 +18,10 @@ use Illuminate\Support\Facades\Gate;
 
 class CohortController
 {
+    public function __construct(
+        private ContentAccessService $contentAccess,
+    ) {}
+
     public function store(StoreCohortRequest $request): JsonResponse
     {
         $validated = $request->validated();
@@ -37,20 +44,20 @@ class CohortController
                 'status' => 'active',
             ]);
 
-            return $cohort->load('members.user');
+            return $cohort->load(['creator', 'members.user', 'plan']);
         });
 
-        return response()->json($cohort, 201);
+        return response()->json(new CohortResource($cohort), 201);
     }
 
     public function show(Request $request, string $id): JsonResponse
     {
-        $cohort = Cohort::with(['members.user.personalityAssessment', 'plan'])
+        $cohort = Cohort::with(['creator', 'members.user', 'plan'])
             ->findOrFail($id);
 
         Gate::authorize('view', $cohort);
 
-        return response()->json($cohort);
+        return response()->json(new CohortResource($cohort));
     }
 
     public function update(UpdateCohortRequest $request, string $id): JsonResponse
@@ -63,7 +70,7 @@ class CohortController
 
         $cohort->update($validated);
 
-        return response()->json($cohort);
+        return response()->json(new CohortResource($cohort->fresh(['creator', 'members.user', 'plan'])));
     }
 
     public function addMember(AddCohortMemberRequest $request, string $id): JsonResponse
@@ -72,27 +79,44 @@ class CohortController
 
         Gate::authorize('manage', $cohort);
 
-        if ($cohort->members()->count() >= $cohort->max_members) {
+        $validated = $request->validated();
+
+        $member = DB::transaction(function () use ($validated, $cohort) {
+            $lockedCohort = Cohort::query()->lockForUpdate()->findOrFail($cohort->id);
+            $activeMembers = $lockedCohort->members()->where('status', 'active')->count();
+            $planLimit = $this->contentAccess
+                ->activePlanForSource('cohort', $lockedCohort->id, 'grupal')
+                ?->max_members;
+            $memberLimit = $planLimit === null
+                ? $lockedCohort->max_members
+                : min($lockedCohort->max_members, (int) $planLimit);
+
+            if ($activeMembers >= $memberLimit) {
+                return null;
+            }
+
+            if (CohortMember::where('cohort_id', $lockedCohort->id)
+                ->where('user_id', $validated['user_id'])
+                ->exists()) {
+                return false;
+            }
+
+            return CohortMember::create([
+                'cohort_id' => $lockedCohort->id,
+                'user_id' => $validated['user_id'],
+                'status' => 'active',
+            ])->load('user');
+        });
+
+        if ($member === null) {
             return response()->json(['message' => __('cohorts.max_members_reached')], 422);
         }
 
-        $validated = $request->validated();
-
-        $exists = CohortMember::where('cohort_id', $cohort->id)
-            ->where('user_id', $validated['user_id'])
-            ->exists();
-
-        if ($exists) {
+        if ($member === false) {
             return response()->json(['message' => __('cohorts.member_exists')], 422);
         }
 
-        $member = CohortMember::create([
-            'cohort_id' => $cohort->id,
-            'user_id' => $validated['user_id'],
-            'status' => 'active',
-        ]);
-
-        return response()->json($member->load('user'), 201);
+        return response()->json(new CohortMemberResource($member), 201);
     }
 
     public function removeMember(Request $request, string $id, string $memberId): JsonResponse

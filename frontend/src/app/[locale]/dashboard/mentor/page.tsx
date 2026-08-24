@@ -1,6 +1,6 @@
 'use client';
 
-import { useDeferredValue, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Brain, ChevronLeft, ChevronRight, Search, Users } from 'lucide-react';
@@ -11,6 +11,8 @@ import { Input } from '@/components/ui/input';
 import { PageSpinner } from '@/components/ui/spinner';
 import { localePath } from '@/i18n/paths';
 import { useMentorUsers } from '@/hooks/use-mentor-dashboard';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
+import { apiErrorMessage } from '@/lib/errors';
 
 export default function MentorDashboardPage() {
   const t = useTranslations();
@@ -18,10 +20,10 @@ export default function MentorDashboardPage() {
   const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
-  const deferredSearch = useDeferredValue(search.trim());
-  const { data, isLoading, isFetching, error } = useMentorUsers(deferredSearch, page, user?.role === 'mentor');
+  const debouncedSearch = useDebouncedValue(search.trim());
+  const { data, isLoading, isFetching, error } = useMentorUsers(debouncedSearch, page, user?.role === 'mentor');
 
-  useEffect(() => setPage(1), [deferredSearch]);
+  useEffect(() => setPage(1), [debouncedSearch]);
 
   if (isLoading) return <PageSpinner />;
 
@@ -54,7 +56,7 @@ export default function MentorDashboardPage() {
 
       {error ? (
         <Card className="border-red-200 bg-red-50 text-red-800" role="alert">
-          {t('mentor_dashboard.load_error')}
+          {apiErrorMessage(error, (key) => t(key)) || t('mentor_dashboard.load_error')}
         </Card>
       ) : data?.data.length === 0 ? (
         <Card className="py-14 text-center">

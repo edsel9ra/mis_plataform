@@ -4,14 +4,19 @@ namespace App\Http\Requests\Admin;
 
 use App\Enums\ClientType;
 use App\Enums\UserRole;
+use App\Http\Requests\Concerns\NormalizesEmail;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
 
 class UpdateAdminUserRequest extends FormRequest
 {
+    use NormalizesEmail;
+
     protected function prepareForValidation(): void
     {
+        $this->normalizeEmailInput();
+
         $role = $this->input('role') ?? User::find($this->route('id'))?->role;
 
         if ($this->isPlatformAdminRole($role)) {

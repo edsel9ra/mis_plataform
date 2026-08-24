@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\Plan;
+use App\Http\Resources\PlanResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -18,13 +19,13 @@ class PlanController
 
         $plans = $query->orderBy('price_monthly')->get();
 
-        return response()->json($plans);
+        return PlanResource::collection($plans)->response();
     }
 
     public function show(string $id): JsonResponse
     {
-        $plan = Plan::findOrFail($id);
+        $plan = Plan::where('is_active', true)->findOrFail($id);
 
-        return response()->json($plan);
+        return response()->json(new PlanResource($plan));
     }
 }

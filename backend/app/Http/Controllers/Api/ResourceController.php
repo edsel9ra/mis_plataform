@@ -3,14 +3,18 @@
 namespace App\Http\Controllers\Api;
 
 use App\Models\LearningResource;
+use App\Services\ContentAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class ResourceController
 {
+    public function __construct(private ContentAccessService $contentAccess) {}
+
     public function index(Request $request): JsonResponse
     {
-        $query = LearningResource::with('module.learningPath');
+        $query = $this->contentAccess->resources($request->user())
+            ->with('module.learningPath');
 
         if ($request->has('type')) {
             $query->where('type', $request->type);
@@ -20,14 +24,17 @@ class ResourceController
             $query->where('module_id', $request->module_id);
         }
 
-        $resources = $query->orderBy('order')->paginate($request->per_page ?? 20);
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+        $resources = $query->orderBy('order')->paginate($perPage);
 
         return response()->json($resources);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $resource = LearningResource::with('module.learningPath')->findOrFail($id);
+        $resource = $this->contentAccess->resources($request->user())
+            ->with('module.learningPath')
+            ->findOrFail($id);
 
         return response()->json($resource);
     }

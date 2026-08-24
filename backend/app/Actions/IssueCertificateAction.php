@@ -18,15 +18,17 @@ class IssueCertificateAction
     public function execute(array $data): Certificate
     {
         $user = User::findOrFail($data['user_id']);
-        $relationship = MentorshipRelationship::with('mentor')->findOrFail($data['relationship_id']);
+        $relationship = MentorshipRelationship::findOrFail($data['relationship_id']);
 
         $this->blockchainService->assertIssueAvailable();
 
+        $issuedAt = now();
         $metadata = array_merge($data['metadata'] ?? [], [
-            'user_name' => $user->full_name,
-            'mentor_name' => $relationship->mentor->full_name,
+            'subject_hash' => $this->publicIdentifier($user->id),
+            'mentor_hash' => $this->publicIdentifier($relationship->mentor_id),
+            'relationship_hash' => $this->publicIdentifier($relationship->id),
             'relationship_type' => $relationship->type,
-            'issued_at' => now()->toIso8601String(),
+            'issued_at' => $issuedAt->toIso8601String(),
         ]);
 
         $ipfsResult = $this->ipfsService->uploadCertificate([
@@ -34,7 +36,7 @@ class IssueCertificateAction
             'description' => $data['description'] ?? '',
             'type' => $data['type'],
             'metadata' => $metadata,
-            'issued_at' => now()->toIso8601String(),
+            'issued_at' => $issuedAt->toIso8601String(),
         ]);
 
         $blockchainResult = $this->blockchainService->issueCertificate($ipfsResult['cid']);
@@ -50,7 +52,12 @@ class IssueCertificateAction
             'ipfs_uri' => $ipfsResult['uri'],
             'blockchain_tx_hash' => $blockchainResult['tx_hash'],
             'blockchain_contract_address' => $blockchainResult['contract_address'],
-            'issued_at' => now(),
+            'issued_at' => $issuedAt,
         ]);
+    }
+
+    private function publicIdentifier(string $value): string
+    {
+        return hash_hmac('sha256', $value, (string) config('app.key'));
     }
 }

@@ -1,10 +1,13 @@
 'use client';
 
-import { useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useEffect, useState } from 'react';
+import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { apiIsoToDatetimeLocal, datetimeLocalToApiIso } from '@/lib/datetime';
+import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
+import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -12,6 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
+import { PaginationControls } from '@/components/ui/pagination';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -62,27 +66,14 @@ interface EvaluationResult {
   assessment: EvaluationCatalogItem;
 }
 
-interface PaginatedResponse<T> {
-  data: T[];
-  total: number;
-  current_page: number;
-  last_page: number;
+interface BriefUser {
+  id: string;
+  name: string;
+  email: string;
 }
 
-const CLIENT_TYPE_OPTIONS = [
-  { value: 'personal', label: 'Personal' },
-  { value: 'familiar', label: 'Familiar' },
-  { value: 'grupal', label: 'Grupal' },
-  { value: 'empresa', label: 'Empresa' },
-];
-
-const CATEGORY_OPTIONS = [
-  { value: 'bienestar', label: 'Bienestar' },
-  { value: 'desarrollo', label: 'Desarrollo' },
-  { value: 'profesional', label: 'Profesional' },
-  { value: 'familiar', label: 'Familiar' },
-  { value: 'empresa', label: 'Empresa' },
-];
+const CLIENT_TYPE_VALUES = ['personal', 'familiar', 'grupal', 'empresa'] as const;
+const CATEGORY_VALUES = ['bienestar', 'desarrollo', 'profesional', 'familiar', 'empresa'] as const;
 
 const emptyAssessmentForm = {
   user_id: '', test_version: 'ipip-neo-120' as string,
@@ -90,33 +81,50 @@ const emptyAssessmentForm = {
   completed_at: '',
 };
 
-const emptyCatalogForm = {
-  slug: '',
-  title_es: '',
-  short_name_es: '',
-  description_es: '',
-  category: 'bienestar',
-  client_types: ['personal'] as string[],
-  passing_score: 70,
-  time_limit_minutes: 15,
-  is_active: true,
-  questions: JSON.stringify([
-    {
-      id: 1,
-      text: 'Pregunta de evaluacion',
-      options: ['Nunca', 'Raramente', 'A veces', 'Frecuentemente', 'Siempre'],
-      dimension: 'dimension',
-      reverse_score: false,
-    },
-  ], null, 2),
-};
+function createEmptyCatalogForm(translate: (key: string) => string) {
+  return {
+    slug: '',
+    title_es: '',
+    title_en: '',
+    title_pt: '',
+    short_name_es: '',
+    short_name_en: '',
+    short_name_pt: '',
+    description_es: '',
+    description_en: '',
+    description_pt: '',
+    category: 'bienestar',
+    client_types: ['personal'] as string[],
+    passing_score: 70,
+    time_limit_minutes: 15,
+    is_active: true,
+    questions: JSON.stringify([
+      {
+        id: 1,
+        text: translate('admin.default_question'),
+        options: [
+          translate('admin.never'),
+          translate('admin.rarely'),
+          translate('admin.sometimes'),
+          translate('admin.frequently'),
+          translate('admin.always'),
+        ],
+        dimension: 'dimension',
+        reverse_score: false,
+      },
+    ], null, 2),
+  };
+}
 
-type CatalogForm = typeof emptyCatalogForm;
+type CatalogForm = ReturnType<typeof createEmptyCatalogForm>;
 
 export default function AdminEvaluations() {
   const t = useTranslations();
   const locale = useLocale();
   const queryClient = useQueryClient();
+  const clientTypeOptions = CLIENT_TYPE_VALUES.map((value) => ({ value, label: t(`client_types.${value}`) }));
+  const categoryOptions = CATEGORY_VALUES.map((value) => ({ value, label: evaluationCategoryLabel(value, t) }));
+  const emptyCatalogForm = createEmptyCatalogForm(t);
   const [selectedAssessment, setSelectedAssessment] = useState<Assessment | null>(null);
   const [selectedEvaluation, setSelectedEvaluation] = useState<EvaluationCatalogItem | null>(null);
   const [selectedEvaluationResult, setSelectedEvaluationResult] = useState<EvaluationResult | null>(null);
@@ -125,6 +133,7 @@ export default function AdminEvaluations() {
   const [catalogSearch, setCatalogSearch] = useState('');
   const [resultSearch, setResultSearch] = useState('');
   const [catalogClientType, setCatalogClientType] = useState('');
+  const [catalogPage, setCatalogPage] = useState(1);
   const [showAssessmentModal, setShowAssessmentModal] = useState(false);
   const [showCatalogModal, setShowCatalogModal] = useState(false);
   const [editingAssessmentId, setEditingAssessmentId] = useState<string | null>(null);
@@ -132,69 +141,112 @@ export default function AdminEvaluations() {
   const [assessmentForm, setAssessmentForm] = useState(emptyAssessmentForm);
   const [catalogForm, setCatalogForm] = useState<CatalogForm>(emptyCatalogForm);
   const [formError, setFormError] = useState<string | null>(null);
+  const [mutationError, setMutationError] = useState<unknown>(null);
+  const debouncedCatalogSearch = useDebouncedValue(catalogSearch.trim());
+  const debouncedResultSearch = useDebouncedValue(resultSearch.trim());
 
-  const { data: assessmentData, isLoading: assessmentsLoading } = useQuery<PaginatedResponse<Assessment>>({
+  useEffect(() => setCatalogPage(1), [catalogClientType, debouncedCatalogSearch]);
+  useEffect(() => setResultPage(1), [debouncedResultSearch]);
+
+  const { data: assessmentData, isLoading: assessmentsLoading, isFetching: assessmentsFetching, error: assessmentsError } = useQuery<PaginatedResponse<Assessment>>({
     queryKey: ['admin-assessments', assessmentPage],
-    queryFn: () => api.get<PaginatedResponse<Assessment>>('/admin/assessments', { page: assessmentPage }),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<RawPaginatedResponse<Assessment>>('/admin/assessments', {
+        page: assessmentPage,
+        per_page: 20,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page: assessmentPage, perPage: 20 });
+    },
   });
 
-  const { data: catalogData, isLoading: catalogLoading } = useQuery<PaginatedResponse<EvaluationCatalogItem>>({
-    queryKey: ['admin-evaluation-catalog', catalogSearch, catalogClientType],
-    queryFn: () => api.get<PaginatedResponse<EvaluationCatalogItem>>('/admin/evaluation-catalog', {
-      search: catalogSearch || undefined,
+  const { data: catalogData, isLoading: catalogLoading, isFetching: catalogFetching, error: catalogError } = useQuery<PaginatedResponse<EvaluationCatalogItem>>({
+    queryKey: ['admin-evaluation-catalog', debouncedCatalogSearch, catalogClientType, catalogPage],
+    queryFn: async ({ signal }) => {
+      const response = await api.get<RawPaginatedResponse<EvaluationCatalogItem>>('/admin/evaluation-catalog', {
+      search: debouncedCatalogSearch || undefined,
       client_type: catalogClientType || undefined,
-      per_page: 100,
-    }),
+        page: catalogPage,
+        per_page: 12,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page: catalogPage, perPage: 12 });
+    },
   });
 
-  const { data: resultData, isLoading: resultsLoading } = useQuery<PaginatedResponse<EvaluationResult>>({
-    queryKey: ['admin-evaluation-results', resultPage, resultSearch],
-    queryFn: () => api.get<PaginatedResponse<EvaluationResult>>('/admin/evaluation-results', {
+  const { data: resultData, isLoading: resultsLoading, isFetching: resultsFetching, error: resultsError } = useQuery<PaginatedResponse<EvaluationResult>>({
+    queryKey: ['admin-evaluation-results', resultPage, debouncedResultSearch],
+    queryFn: async ({ signal }) => {
+      const response = await api.get<RawPaginatedResponse<EvaluationResult>>('/admin/evaluation-results', {
       page: resultPage,
-      search: resultSearch || undefined,
-    }),
+        per_page: 12,
+        search: debouncedResultSearch || undefined,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page: resultPage, perPage: 12 });
+    },
   });
 
-  const { data: usersData } = useQuery<{ data: { id: string; name: string; email: string }[] }>({
+  const usersQuery = useInfiniteQuery({
     queryKey: ['admin-users-brief'],
-    queryFn: () => api.get('/admin/users', { per_page: 200 }),
+    initialPageParam: 1,
+    queryFn: ({ signal, pageParam }) => api.get<RawPaginatedResponse<BriefUser>>('/admin/users', {
+      page: pageParam,
+      per_page: 20,
+    }, { signal }),
+    getNextPageParam: (lastPage) => {
+      const meta = lastPage.meta ?? lastPage;
+      const currentPage = typeof meta.current_page === 'number' ? meta.current_page : 1;
+      const lastPageNumber = typeof meta.last_page === 'number' ? meta.last_page : currentPage;
+
+      return currentPage < lastPageNumber ? currentPage + 1 : undefined;
+    },
   });
+  const briefUsers = usersQuery.data?.pages.flatMap((pageData) => pageData.data ?? []) ?? [];
 
   const createAssessmentMutation = useMutation({
     mutationFn: (data: typeof emptyAssessmentForm) => api.post('/admin/assessments', parseAssessmentPayload(data)),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }); closeAssessmentModal(); },
+    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }); closeAssessmentModal(); },
+    onError: (error) => setMutationError(error),
   });
 
   const updateAssessmentMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<typeof emptyAssessmentForm> }) =>
       api.put(`/admin/assessments/${id}`, parseAssessmentPayload(data)),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }); closeAssessmentModal(); },
+    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }); closeAssessmentModal(); },
+    onError: (error) => setMutationError(error),
   });
 
   const deleteAssessmentMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/assessments/${id}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }),
+    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-assessments'] }); },
+    onError: (error) => setMutationError(error),
   });
 
   const createEvaluationMutation = useMutation({
     mutationFn: (data: CatalogForm) => api.post('/admin/evaluation-catalog', parseCatalogPayload(data)),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-evaluation-catalog'] }); closeCatalogModal(); },
+    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-evaluation-catalog'] }); closeCatalogModal(); },
+    onError: (error) => setMutationError(error),
   });
 
   const updateEvaluationMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: CatalogForm }) => api.put(`/admin/evaluation-catalog/${id}`, parseCatalogPayload(data)),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['admin-evaluation-catalog'] }); closeCatalogModal(); },
+    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-evaluation-catalog'] }); closeCatalogModal(); },
+    onError: (error) => setMutationError(error),
   });
 
   const deleteEvaluationMutation = useMutation({
     mutationFn: (id: string) => api.delete(`/admin/evaluation-catalog/${id}`),
     onSuccess: () => {
+      setMutationError(null);
       queryClient.invalidateQueries({ queryKey: ['admin-evaluation-catalog'] });
       setSelectedEvaluation(null);
     },
+    onError: (error) => setMutationError(error),
   });
 
   function openCreateAssessment() {
+    setMutationError(null);
     setEditingAssessmentId(null);
     setAssessmentForm(emptyAssessmentForm);
     setFormError(null);
@@ -202,6 +254,7 @@ export default function AdminEvaluations() {
   }
 
   function openEditAssessment(assessment: Assessment) {
+    setMutationError(null);
     setEditingAssessmentId(assessment.id);
     setAssessmentForm({
       user_id: assessment.user_id,
@@ -216,6 +269,7 @@ export default function AdminEvaluations() {
   }
 
   function openCreateEvaluation() {
+    setMutationError(null);
     setEditingEvaluationId(null);
     setCatalogForm(emptyCatalogForm);
     setFormError(null);
@@ -223,12 +277,19 @@ export default function AdminEvaluations() {
   }
 
   function openEditEvaluation(evaluation: EvaluationCatalogItem) {
+    setMutationError(null);
     setEditingEvaluationId(evaluation.id);
     setCatalogForm({
       slug: evaluation.slug,
-      title_es: localizedText(evaluation.title, locale),
-      short_name_es: localizedText(evaluation.short_name, locale),
-      description_es: localizedText(evaluation.description, locale),
+      title_es: localizedText(evaluation.title, 'es'),
+      title_en: localizedText(evaluation.title, 'en'),
+      title_pt: localizedText(evaluation.title, 'pt'),
+      short_name_es: localizedText(evaluation.short_name, 'es'),
+      short_name_en: localizedText(evaluation.short_name, 'en'),
+      short_name_pt: localizedText(evaluation.short_name, 'pt'),
+      description_es: localizedText(evaluation.description, 'es'),
+      description_en: localizedText(evaluation.description, 'en'),
+      description_pt: localizedText(evaluation.description, 'pt'),
       category: evaluation.category || 'bienestar',
       client_types: evaluation.client_types?.length ? evaluation.client_types : ['personal'],
       passing_score: evaluation.passing_score,
@@ -256,6 +317,7 @@ export default function AdminEvaluations() {
 
   function handleAssessmentSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setMutationError(null);
     try {
       parseAssessmentPayload(assessmentForm);
       if (editingAssessmentId) {
@@ -264,12 +326,13 @@ export default function AdminEvaluations() {
         createAssessmentMutation.mutate(assessmentForm);
       }
     } catch {
-      setFormError('Revisa que answers, results y raw_scores sean JSON valido.');
+      setFormError(t('admin.invalid_assessment_json'));
     }
   }
 
   function handleCatalogSubmit(e: React.FormEvent) {
     e.preventDefault();
+    setMutationError(null);
     try {
       parseCatalogPayload(catalogForm);
       if (editingEvaluationId) {
@@ -278,11 +341,15 @@ export default function AdminEvaluations() {
         createEvaluationMutation.mutate(catalogForm);
       }
     } catch {
-      setFormError('Las preguntas deben ser un JSON valido con text y al menos 2 options por pregunta.');
+      setFormError(t('admin.invalid_questions_json'));
     }
   }
 
   if (assessmentsLoading || catalogLoading || resultsLoading) return <PageSpinner />;
+
+  if (assessmentsError || catalogError || resultsError) {
+    return <Alert variant="error">{apiErrorMessage(assessmentsError ?? catalogError ?? resultsError, (key) => t(key)) || t('common.load_error')}</Alert>;
+  }
 
   const catalog = catalogData?.data ?? [];
   const evaluationResults = resultData?.data ?? [];
@@ -294,47 +361,53 @@ export default function AdminEvaluations() {
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.evaluations')}</h1>
           <p className="mt-1 text-sm text-gray-500">
-            Gestiona el catalogo de evaluaciones complementarias y los resultados Big Five de usuarios.
+            {t('admin.evaluations_description')}
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={openCreateAssessment}>+ Resultado Big Five</Button>
-          <Button onClick={openCreateEvaluation}>+ Evaluacion</Button>
+          <Button variant="outline" onClick={openCreateAssessment}>+ {t('admin.create_big_five_result')}</Button>
+          <Button onClick={openCreateEvaluation}>+ {t('admin.create_evaluation')}</Button>
         </div>
       </div>
 
       <section className="grid gap-4 sm:grid-cols-4">
-        <SummaryCard label="Evaluaciones" value={catalogData?.total ?? 0} icon={FileQuestion} color="bg-blue-50 text-blue-700" />
-        <SummaryCard label="Preguntas" value={totalQuestions} icon={ListChecks} color="bg-emerald-50 text-emerald-700" />
-        <SummaryCard label="Resultados Big Five" value={assessmentData?.total ?? 0} icon={ClipboardCheck} color="bg-violet-50 text-violet-700" />
-        <SummaryCard label="Resultados evaluaciones" value={resultData?.total ?? 0} icon={BarChart3} color="bg-amber-50 text-amber-700" />
+        <SummaryCard label={t('admin.summary_evaluations')} value={catalogData?.meta.total ?? 0} icon={FileQuestion} color="bg-blue-50 text-blue-700" />
+        <SummaryCard label={t('admin.summary_questions')} value={totalQuestions} icon={ListChecks} color="bg-emerald-50 text-emerald-700" />
+        <SummaryCard label={t('admin.summary_big_five_results')} value={assessmentData?.meta.total ?? 0} icon={ClipboardCheck} color="bg-violet-50 text-violet-700" />
+        <SummaryCard label={t('admin.summary_evaluation_results')} value={resultData?.meta.total ?? 0} icon={BarChart3} color="bg-amber-50 text-amber-700" />
       </section>
 
-      <Alert variant="info">
-        Las plantillas base vienen del proyecto Community: inteligencia emocional, resiliencia, liderazgo, estres/burnout, motivacion, clima organizacional, cohesion familiar, toma de decisiones, creatividad y bienestar integral.
+        {Boolean(formError || mutationError) && (
+          <Alert variant="error">
+            {formError || apiErrorMessage(mutationError, (key) => t(key)) || t('common.error')}
+          </Alert>
+        )}
+
+        <Alert variant="info">
+        {t('admin.base_templates_notice')}
       </Alert>
 
       <Tabs defaultValue="catalog" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="catalog">Catalogo configurable</TabsTrigger>
-          <TabsTrigger value="big-five">Resultados Big Five</TabsTrigger>
-          <TabsTrigger value="results">Resultados evaluaciones</TabsTrigger>
+          <TabsTrigger value="catalog">{t('admin.catalog_tab')}</TabsTrigger>
+          <TabsTrigger value="big-five">{t('admin.big_five_results_tab')}</TabsTrigger>
+          <TabsTrigger value="results">{t('admin.evaluation_results_tab')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="catalog" className="space-y-6">
           <Card className="border-0 shadow-sm ring-1 ring-slate-100">
             <div className="flex flex-wrap gap-4">
               <div className="min-w-[220px] flex-1">
-                <Input placeholder={t('common.search')} value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} />
+                <Input aria-label={t('common.search')} placeholder={t('common.search')} value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} />
               </div>
               <div className="w-44">
-                <Select options={[{ value: '', label: 'Todos' }, ...CLIENT_TYPE_OPTIONS]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
+                <Select options={[{ value: '', label: t('common.all') }, ...clientTypeOptions]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
               </div>
             </div>
           </Card>
 
           <div className="grid gap-6 xl:grid-cols-[1fr_0.9fr]">
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className={`grid gap-4 sm:grid-cols-2 ${catalogFetching ? 'opacity-60' : ''}`} aria-busy={catalogFetching}>
               {catalog.map((evaluation) => (
                 <button
                   key={evaluation.id}
@@ -351,11 +424,11 @@ export default function AdminEvaluations() {
                   <div className="mt-4 flex flex-wrap gap-2">
                     {(evaluation.client_types ?? []).map((clientType) => (
                       <span key={clientType} className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">
-                        {t(`client_types.${clientType}`)}
+                         {clientTypeLabel(clientType, t)}
                       </span>
                     ))}
-                    <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
-                      {evaluation.questions?.length ?? 0} preguntas
+                      <span className="rounded-full bg-primary-50 px-2.5 py-1 text-xs font-medium text-primary-700">
+                       {evaluation.questions?.length ?? 0} {t('evaluations.questions')}
                     </span>
                   </div>
                 </button>
@@ -379,16 +452,16 @@ export default function AdminEvaluations() {
                     </div>
                   </CardHeader>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    <InfoPill label="Categoria" value={selectedEvaluation.category ?? '—'} />
-                    <InfoPill label="Tiempo" value={`${selectedEvaluation.time_limit_minutes ?? 0} min`} />
-                    <InfoPill label="Aprobacion" value={`${selectedEvaluation.passing_score}%`} />
-                    <InfoPill label="Resultados" value={selectedEvaluation.results_count ?? 0} />
+                    <InfoPill label={t('admin.category')} value={selectedEvaluation.category ? evaluationCategoryLabel(selectedEvaluation.category, t) : '—'} />
+                     <InfoPill label={t('admin.time')} value={`${selectedEvaluation.time_limit_minutes ?? 0} ${t('common.minutes_short')}`} />
+                    <InfoPill label={t('admin.passing_score')} value={`${selectedEvaluation.passing_score}%`} />
+                    <InfoPill label={t('admin.results')} value={selectedEvaluation.results_count ?? 0} />
                   </div>
                   <div className="space-y-3">
                     {selectedEvaluation.questions?.map((question, index) => (
                       <div key={`${question.id ?? index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-sm font-medium text-slate-900">{index + 1}. {question.text}</p>
-                        <p className="mt-1 text-xs text-slate-500">{question.options.length} opciones · {question.dimension ?? 'sin dimension'}</p>
+                        <p className="mt-1 text-xs text-slate-500">{question.options.length} {t('admin.options')} · {question.dimension ?? t('admin.no_dimension')}</p>
                       </div>
                     ))}
                   </div>
@@ -396,18 +469,33 @@ export default function AdminEvaluations() {
               ) : (
                 <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-center">
                   <Sparkles className="h-8 w-8 text-primary-500" aria-hidden="true" />
-                  <p className="mt-3 font-semibold text-slate-900">Selecciona una evaluacion</p>
-                  <p className="mt-1 max-w-xs text-sm text-slate-500">Edita preguntas, segmentos de cliente y parametros de aprobacion.</p>
+                  <p className="mt-3 font-semibold text-slate-900">{t('admin.select_evaluation')}</p>
+                  <p className="mt-1 max-w-xs text-sm text-slate-500">{t('admin.edit_evaluation_description')}</p>
                 </div>
               )}
             </Card>
           </div>
+          {catalogData && (
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-sm">
+              <PaginationControls
+                meta={catalogData.meta}
+                page={catalogPage}
+                onPageChange={setCatalogPage}
+                isLoading={catalogFetching}
+                ariaLabel={t('common.pagination')}
+                previousLabel={t('common.previous')}
+                nextLabel={t('common.next')}
+                pageLabel={t('common.page')}
+                ofLabel={t('common.of')}
+              />
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="big-five" className="grid gap-6 lg:grid-cols-2">
           <Card className="border-0 shadow-sm ring-1 ring-slate-100">
             <CardHeader>
-              <CardTitle>Resultados Big Five</CardTitle>
+                <CardTitle>{t('admin.big_five_results_tab')}</CardTitle>
             </CardHeader>
             <div className="space-y-2">
               {assessmentData?.data?.map((assessment) => (
@@ -431,18 +519,18 @@ export default function AdminEvaluations() {
               ))}
             </div>
 
-            {assessmentData && assessmentData.last_page > 1 && (
-              <div className="mt-4 flex items-center justify-between border-t pt-4">
-                <Button variant="outline" size="sm" disabled={assessmentPage <= 1} onClick={() => setAssessmentPage(p => p - 1)}>
-                  {t('common.previous')}
-                </Button>
-                <span className="text-sm text-gray-600">
-                  {t('common.page')} {assessmentData.current_page} {t('common.of')} {assessmentData.last_page}
-                </span>
-                <Button variant="outline" size="sm" disabled={assessmentPage >= assessmentData.last_page} onClick={() => setAssessmentPage(p => p + 1)}>
-                  {t('common.next')}
-                </Button>
-              </div>
+            {assessmentData && (
+              <PaginationControls
+                meta={assessmentData.meta}
+                page={assessmentPage}
+                onPageChange={setAssessmentPage}
+                isLoading={assessmentsFetching}
+                ariaLabel={t('common.pagination')}
+                previousLabel={t('common.previous')}
+                nextLabel={t('common.next')}
+                pageLabel={t('common.page')}
+                ofLabel={t('common.of')}
+              />
             )}
           </Card>
 
@@ -462,7 +550,7 @@ export default function AdminEvaluations() {
               </CardHeader>
 
               <div className="space-y-4">
-                <InfoPill label="Version" value={selectedAssessment.test_version} />
+                <InfoPill label={t('admin.version')} value={selectedAssessment.test_version} />
                 {selectedAssessment.completed_at && <InfoPill label={t('sessions.date')} value={new Date(selectedAssessment.completed_at).toLocaleDateString(locale)} />}
                 {selectedAssessment.results?.factors && (
                   <div>
@@ -470,7 +558,7 @@ export default function AdminEvaluations() {
                     <div className="space-y-2">
                       {Object.entries(selectedAssessment.results.factors).map(([key, val]) => (
                         <div key={key} className="flex items-center justify-between">
-                          <span className="text-sm text-gray-600">{key}</span>
+                           <span className="text-sm text-gray-600">{oceanLabel(key, t)}</span>
                           <div className="flex items-center gap-2">
                             <div className="h-2 w-32 rounded-full bg-gray-100">
                               <div className="h-2 rounded-full bg-primary-500" style={{ width: `${Math.min(100, val)}%` }} />
@@ -489,13 +577,13 @@ export default function AdminEvaluations() {
 
         <TabsContent value="results" className="space-y-6">
           <Card className="border-0 shadow-sm ring-1 ring-slate-100">
-            <Input placeholder={t('common.search')} value={resultSearch} onChange={(e) => { setResultSearch(e.target.value); setResultPage(1); }} />
+            <Input aria-label={t('common.search')} placeholder={t('common.search')} value={resultSearch} onChange={(e) => setResultSearch(e.target.value)} />
           </Card>
 
           <div className="grid gap-6 lg:grid-cols-[1fr_0.9fr]">
             <Card className="border-0 shadow-sm ring-1 ring-slate-100">
               <CardHeader>
-                <CardTitle>Resultados de evaluaciones</CardTitle>
+                <CardTitle>{t('admin.evaluation_results_tab')}</CardTitle>
               </CardHeader>
               <div className="space-y-2">
                 {evaluationResults.map((result) => (
@@ -521,18 +609,18 @@ export default function AdminEvaluations() {
                 {evaluationResults.length === 0 && <p className="text-sm text-gray-500">{t('common.no_results')}</p>}
               </div>
 
-              {resultData && resultData.last_page > 1 && (
-                <div className="mt-4 flex items-center justify-between border-t pt-4">
-                  <Button variant="outline" size="sm" disabled={resultPage <= 1} onClick={() => setResultPage(p => p - 1)}>
-                    {t('common.previous')}
-                  </Button>
-                  <span className="text-sm text-gray-600">
-                    {t('common.page')} {resultData.current_page} {t('common.of')} {resultData.last_page}
-                  </span>
-                  <Button variant="outline" size="sm" disabled={resultPage >= resultData.last_page} onClick={() => setResultPage(p => p + 1)}>
-                    {t('common.next')}
-                  </Button>
-                </div>
+              {resultData && (
+                <PaginationControls
+                  meta={resultData.meta}
+                  page={resultPage}
+                  onPageChange={setResultPage}
+                  isLoading={resultsFetching}
+                  ariaLabel={t('common.pagination')}
+                  previousLabel={t('common.previous')}
+                  nextLabel={t('common.next')}
+                  pageLabel={t('common.page')}
+                  ofLabel={t('common.of')}
+                />
               )}
             </Card>
 
@@ -548,18 +636,18 @@ export default function AdminEvaluations() {
                     </div>
                   </CardHeader>
                   <div className="grid grid-cols-2 gap-3 text-sm">
-                    <InfoPill label="Puntaje" value={`${Math.round(selectedEvaluationResult.score)}%`} />
-                    <InfoPill label="Estado" value={selectedEvaluationResult.passed ? 'Aprobada' : 'No aprobada'} />
-                    <InfoPill label="Fecha" value={new Date(selectedEvaluationResult.completed_at).toLocaleDateString(locale)} />
-                    <InfoPill label="Tiempo" value={formatSeconds(selectedEvaluationResult.time_spent_seconds)} />
+                    <InfoPill label={t('admin.score')} value={`${Math.round(selectedEvaluationResult.score)}%`} />
+                    <InfoPill label={t('common.status')} value={selectedEvaluationResult.passed ? t('evaluations.passed') : t('evaluations.failed')} />
+                    <InfoPill label={t('admin.date')} value={new Date(selectedEvaluationResult.completed_at).toLocaleDateString(locale)} />
+                     <InfoPill label={t('admin.time')} value={formatSeconds(selectedEvaluationResult.time_spent_seconds, t)} />
                   </div>
                   <div>
-                    <p className="mb-2 text-sm font-medium text-gray-700">Respuestas registradas</p>
+                    <p className="mb-2 text-sm font-medium text-gray-700">{t('admin.recorded_answers')}</p>
                     <div className="space-y-2">
                       {selectedEvaluationResult.answers.map((answer, index) => (
                         <div key={`${answer.question_id}-${index}`} className="flex items-center justify-between rounded-xl border border-slate-100 bg-slate-50 px-3 py-2 text-sm">
-                          <span className="text-slate-600">Pregunta {answer.question_id}</span>
-                          <span className="font-semibold text-slate-950">Opcion {answer.option_index + 1}</span>
+                           <span className="text-slate-600">{t('admin.question_number', { number: answer.question_id })}</span>
+                           <span className="font-semibold text-slate-950">{t('admin.option_number', { number: answer.option_index + 1 })}</span>
                         </div>
                       ))}
                     </div>
@@ -568,8 +656,8 @@ export default function AdminEvaluations() {
               ) : (
                 <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-center">
                   <BarChart3 className="h-8 w-8 text-primary-500" aria-hidden="true" />
-                  <p className="mt-3 font-semibold text-slate-900">Selecciona un resultado</p>
-                  <p className="mt-1 max-w-xs text-sm text-slate-500">Revisa puntaje, estado y respuestas de evaluaciones desarrolladas por usuarios.</p>
+                  <p className="mt-3 font-semibold text-slate-900">{t('admin.select_result')}</p>
+                  <p className="mt-1 max-w-xs text-sm text-slate-500">{t('admin.result_details')}</p>
                 </div>
               )}
             </Card>
@@ -580,27 +668,46 @@ export default function AdminEvaluations() {
       <Dialog open={showCatalogModal} onOpenChange={(open) => { if (!open) closeCatalogModal(); else setShowCatalogModal(true); }}>
         <DialogContent aria-labelledby="admin-evaluation-catalog-dialog-title" className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle id="admin-evaluation-catalog-dialog-title">{editingEvaluationId ? 'Editar evaluacion' : 'Crear evaluacion'}</DialogTitle>
+            <DialogTitle id="admin-evaluation-catalog-dialog-title">{editingEvaluationId ? t('common.edit') : t('common.create')} {t('admin.evaluation')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleCatalogSubmit} className="mt-4 space-y-4">
             {formError && <Alert variant="error">{formError}</Alert>}
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Slug" value={catalogForm.slug} onChange={e => setCatalogForm({ ...catalogForm, slug: e.target.value })} required />
-              <Input label="Titulo" value={catalogForm.title_es} onChange={e => setCatalogForm({ ...catalogForm, title_es: e.target.value })} required />
+              <Input label={t('admin.slug')} value={catalogForm.slug} onChange={e => setCatalogForm({ ...catalogForm, slug: e.target.value })} required />
+              <Select label={t('admin.category')} options={categoryOptions} value={catalogForm.category} onChange={e => setCatalogForm({ ...catalogForm, category: e.target.value })} />
             </div>
+            <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <legend className="px-1 text-sm font-semibold text-slate-700">{t('admin.title_by_language')}</legend>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Input label={t('admin.title_es')} value={catalogForm.title_es} onChange={e => setCatalogForm({ ...catalogForm, title_es: e.target.value })} required />
+                <Input label={t('admin.title_en')} value={catalogForm.title_en} onChange={e => setCatalogForm({ ...catalogForm, title_en: e.target.value })} />
+                <Input label={t('admin.title_pt')} value={catalogForm.title_pt} onChange={e => setCatalogForm({ ...catalogForm, title_pt: e.target.value })} />
+              </div>
+            </fieldset>
+            <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <legend className="px-1 text-sm font-semibold text-slate-700">{t('admin.short_name_by_language')}</legend>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Input label={t('admin.short_name_es')} value={catalogForm.short_name_es} onChange={e => setCatalogForm({ ...catalogForm, short_name_es: e.target.value })} />
+                <Input label={t('admin.short_name_en')} value={catalogForm.short_name_en} onChange={e => setCatalogForm({ ...catalogForm, short_name_en: e.target.value })} />
+                <Input label={t('admin.short_name_pt')} value={catalogForm.short_name_pt} onChange={e => setCatalogForm({ ...catalogForm, short_name_pt: e.target.value })} />
+              </div>
+            </fieldset>
+            <fieldset className="space-y-3 rounded-xl border border-slate-200 p-4">
+              <legend className="px-1 text-sm font-semibold text-slate-700">{t('admin.description_by_language')}</legend>
+              <div className="grid gap-4 sm:grid-cols-3">
+                <Textarea label={t('admin.description_es')} rows={3} value={catalogForm.description_es} onChange={e => setCatalogForm({ ...catalogForm, description_es: e.target.value })} />
+                <Textarea label={t('admin.description_en')} rows={3} value={catalogForm.description_en} onChange={e => setCatalogForm({ ...catalogForm, description_en: e.target.value })} />
+                <Textarea label={t('admin.description_pt')} rows={3} value={catalogForm.description_pt} onChange={e => setCatalogForm({ ...catalogForm, description_pt: e.target.value })} />
+              </div>
+            </fieldset>
             <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Nombre corto" value={catalogForm.short_name_es} onChange={e => setCatalogForm({ ...catalogForm, short_name_es: e.target.value })} />
-              <Select label="Categoria" options={CATEGORY_OPTIONS} value={catalogForm.category} onChange={e => setCatalogForm({ ...catalogForm, category: e.target.value })} />
-            </div>
-            <Textarea label="Descripcion" rows={2} value={catalogForm.description_es} onChange={e => setCatalogForm({ ...catalogForm, description_es: e.target.value })} />
-            <div className="grid gap-4 sm:grid-cols-2">
-              <Input label="Puntaje de aprobacion" type="number" value={catalogForm.passing_score} onChange={e => setCatalogForm({ ...catalogForm, passing_score: Number(e.target.value) })} required />
-              <Input label="Tiempo limite (min)" type="number" value={catalogForm.time_limit_minutes} onChange={e => setCatalogForm({ ...catalogForm, time_limit_minutes: Number(e.target.value) })} />
+              <Input label={t('admin.passing_score')} type="number" value={catalogForm.passing_score} onChange={e => setCatalogForm({ ...catalogForm, passing_score: Number(e.target.value) })} required />
+              <Input label={t('admin.time_limit')} type="number" value={catalogForm.time_limit_minutes} onChange={e => setCatalogForm({ ...catalogForm, time_limit_minutes: Number(e.target.value) })} />
             </div>
             <div>
-              <span className="block text-sm font-medium text-gray-700">Tipos de cliente</span>
+              <span className="block text-sm font-medium text-gray-700">{t('admin.client_types')}</span>
               <div className="mt-2 grid gap-2 sm:grid-cols-4">
-                {CLIENT_TYPE_OPTIONS.map((option) => (
+                {clientTypeOptions.map((option) => (
                   <label key={option.value} className="flex items-center gap-2 rounded-lg border px-3 py-2 text-sm">
                     <input
                       type="checkbox"
@@ -612,10 +719,10 @@ export default function AdminEvaluations() {
                 ))}
               </div>
             </div>
-            <Textarea label="Preguntas (JSON)" rows={10} value={catalogForm.questions} onChange={e => setCatalogForm({ ...catalogForm, questions: e.target.value })} required />
+            <Textarea label={t('admin.questions_json')} rows={10} value={catalogForm.questions} onChange={e => setCatalogForm({ ...catalogForm, questions: e.target.value })} required />
             <label className="flex items-center gap-2 text-sm text-gray-700">
               <input type="checkbox" checked={catalogForm.is_active} onChange={e => setCatalogForm({ ...catalogForm, is_active: e.target.checked })} />
-              Evaluacion activa
+              {t('admin.active_evaluation')}
             </label>
             <DialogFooter>
               <Button variant="outline" type="button" onClick={closeCatalogModal}>{t('common.cancel')}</Button>
@@ -630,22 +737,34 @@ export default function AdminEvaluations() {
       <Dialog open={showAssessmentModal} onOpenChange={(open) => { if (!open) closeAssessmentModal(); else setShowAssessmentModal(true); }}>
         <DialogContent aria-labelledby="admin-evaluation-dialog-title">
           <DialogHeader>
-            <DialogTitle id="admin-evaluation-dialog-title">{editingAssessmentId ? 'Editar resultado Big Five' : 'Crear resultado Big Five'}</DialogTitle>
+            <DialogTitle id="admin-evaluation-dialog-title">{editingAssessmentId ? t('common.edit') : t('common.create')} {t('admin.big_five_result')}</DialogTitle>
           </DialogHeader>
           <form onSubmit={handleAssessmentSubmit} className="mt-4 space-y-4">
             {formError && <Alert variant="error">{formError}</Alert>}
-            <Select label="Usuario" options={(usersData?.data || []).map((u) => ({
+            <Select label={t('admin.user')} options={briefUsers.map((u) => ({
               value: u.id, label: `${u.name} (${u.email})`,
             }))} value={assessmentForm.user_id}
               onChange={e => setAssessmentForm({ ...assessmentForm, user_id: e.target.value })} required={!editingAssessmentId} />
-            <Select label="Version del test" options={[
+            {usersQuery.error && <Alert variant="error">{apiErrorMessage(usersQuery.error, (key) => t(key)) || t('common.load_error')}</Alert>}
+            {usersQuery.hasNextPage && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                loading={usersQuery.isFetchingNextPage}
+                onClick={() => usersQuery.fetchNextPage()}
+              >
+                {t('common.load_more')}
+              </Button>
+            )}
+            <Select label={t('admin.test_version')} options={[
               { value: 'ipip-neo-120', label: 'IPIP-NEO-120' },
               { value: 'ipip-neo-300', label: 'IPIP-NEO-300' },
             ]} value={assessmentForm.test_version} onChange={e => setAssessmentForm({ ...assessmentForm, test_version: e.target.value })} />
-            <Textarea label="Respuestas (JSON)" rows={3} value={assessmentForm.answers} onChange={e => setAssessmentForm({ ...assessmentForm, answers: e.target.value })} />
-            <Textarea label="Resultados (JSON)" rows={4} value={assessmentForm.results} onChange={e => setAssessmentForm({ ...assessmentForm, results: e.target.value })} />
-            <Textarea label="Puntajes brutos (JSON)" rows={3} value={assessmentForm.raw_scores} onChange={e => setAssessmentForm({ ...assessmentForm, raw_scores: e.target.value })} />
-            <Input label="Completado en" type="datetime-local" value={assessmentForm.completed_at} onChange={e => setAssessmentForm({ ...assessmentForm, completed_at: e.target.value })} />
+            <Textarea label={t('admin.answers_json')} rows={3} value={assessmentForm.answers} onChange={e => setAssessmentForm({ ...assessmentForm, answers: e.target.value })} />
+            <Textarea label={t('admin.assessment_results_json')} rows={4} value={assessmentForm.results} onChange={e => setAssessmentForm({ ...assessmentForm, results: e.target.value })} />
+            <Textarea label={t('admin.raw_scores_json')} rows={3} value={assessmentForm.raw_scores} onChange={e => setAssessmentForm({ ...assessmentForm, raw_scores: e.target.value })} />
+            <Input label={t('admin.completed_at')} type="datetime-local" value={assessmentForm.completed_at} onChange={e => setAssessmentForm({ ...assessmentForm, completed_at: e.target.value })} />
             <DialogFooter>
               <Button variant="outline" type="button" onClick={closeAssessmentModal}>{t('common.cancel')}</Button>
               <Button type="submit" loading={createAssessmentMutation.isPending || updateAssessmentMutation.isPending}>
@@ -703,9 +822,25 @@ function parseCatalogPayload(data: CatalogForm) {
 
   return {
     slug: data.slug,
-    title: { es: data.title_es, en: data.title_es, pt: data.title_es },
-    short_name: data.short_name_es ? { es: data.short_name_es, en: data.short_name_es, pt: data.short_name_es } : undefined,
-    description: data.description_es ? { es: data.description_es, en: data.description_es, pt: data.description_es } : undefined,
+    title: {
+      es: data.title_es,
+      en: data.title_en || data.title_es,
+      pt: data.title_pt || data.title_es,
+    },
+    short_name: data.short_name_es || data.short_name_en || data.short_name_pt
+      ? {
+          es: data.short_name_es || data.short_name_en || data.short_name_pt,
+          en: data.short_name_en || data.short_name_es || data.short_name_pt,
+          pt: data.short_name_pt || data.short_name_es || data.short_name_en,
+        }
+      : undefined,
+    description: data.description_es || data.description_en || data.description_pt
+      ? {
+          es: data.description_es || data.description_en || data.description_pt,
+          en: data.description_en || data.description_es || data.description_pt,
+          pt: data.description_pt || data.description_es || data.description_en,
+        }
+      : undefined,
     category: data.category,
     client_types: data.client_types,
     questions,
@@ -722,17 +857,52 @@ function localizedText(value: Record<string, string> | null | undefined, locale:
   return value[locale] ?? value.es ?? value.en ?? value.pt ?? '';
 }
 
+function evaluationCategoryLabel(category: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    bienestar: t('evaluation_categories.wellbeing'),
+    desarrollo: t('evaluation_categories.development'),
+    profesional: t('evaluation_categories.professional'),
+    familiar: t('evaluation_categories.family'),
+    empresa: t('evaluation_categories.business'),
+  };
+
+  return labels[category] ?? t('common.not_applicable');
+}
+
+function clientTypeLabel(type: string, t: (translationKey: string) => string): string {
+  const labels: Record<string, string> = {
+    personal: 'client_types.personal',
+    familiar: 'client_types.familiar',
+    grupal: 'client_types.grupal',
+    empresa: 'client_types.empresa',
+  };
+
+  return labels[type] ? t(labels[type]) : t('common.not_applicable');
+}
+
+function oceanLabel(key: string, t: (translationKey: string) => string): string {
+  const labels: Record<string, string> = {
+    O: 'personality.openness',
+    C: 'personality.conscientiousness',
+    E: 'personality.extraversion',
+    A: 'personality.agreeableness',
+    N: 'personality.neuroticism',
+  };
+
+  return labels[key] ? t(labels[key]) : t('common.not_applicable');
+}
+
 function toggleValue(values: string[], value: string): string[] {
   return values.includes(value)
     ? values.filter((item) => item !== value)
     : [...values, value];
 }
 
-function formatSeconds(value: number | null): string {
-  if (!value) return '0 min';
+function formatSeconds(value: number | null, t: (key: string) => string): string {
+  if (!value) return `0 ${t('common.minutes_short')}`;
 
   const minutes = Math.floor(value / 60);
   const seconds = value % 60;
 
-  return `${minutes}m ${seconds}s`;
+  return `${minutes} ${t('common.minutes_short')} ${seconds} ${t('common.seconds_short')}`;
 }

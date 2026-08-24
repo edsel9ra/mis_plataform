@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface Relationship {
   id: string;
@@ -11,10 +13,17 @@ export interface Relationship {
   created_at: string;
 }
 
-export function useRelationships() {
+export function useRelationships(page = 1, perPage = 20) {
   return useQuery({
-    queryKey: ['relationships'],
-    queryFn: ({ signal }) => api.get<{ data: Relationship[] }>('/relationships', undefined, { signal }),
+    queryKey: queryKeys.relationships(page, perPage),
+    queryFn: async ({ signal }): Promise<PaginatedResponse<Relationship>> => {
+      const response = await api.get<RawPaginatedResponse<Relationship>>('/relationships', {
+        page,
+        per_page: perPage,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page, perPage });
+    },
   });
 }
 
@@ -38,8 +47,9 @@ export function useCreateRelationship() {
       objectives?: string;
     }) => api.post<Relationship>('/relationships', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['relationships'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.relationshipsRoot });
       queryClient.invalidateQueries({ queryKey: ['relationship-contexts'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
     },
   });
 }

@@ -5,11 +5,14 @@ import { useLocale, useTranslations } from 'next-intl';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-keys';
 import { localePath } from '@/i18n/paths';
 import { useRelationships } from '@/hooks/use-relationships';
 import { useSessions } from '@/hooks/use-sessions';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
 import { Badge } from '@/components/ui/badge';
+import { Alert } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import {
   AlertTriangle,
@@ -83,28 +86,27 @@ export default function PersonalDashboard() {
   const locale = useLocale();
   const { user } = useAuth();
   const hasCompletedPersonality = Boolean(user?.personality_assessment?.completed_at);
-  const { data: sessionsData, isLoading: sessionsLoading } = useSessions();
-  const { data: relationshipsData } = useRelationships();
-  const { data: learningPathsData } = useQuery<LearningPath[] | { data: LearningPath[] }>({
+  const { data: sessionsData, isLoading: sessionsLoading, error: sessionsError } = useSessions();
+  const { data: relationshipsData, error: relationshipsError } = useRelationships();
+  const { data: learningPathsData, error: learningPathsError } = useQuery<LearningPath[] | { data: LearningPath[] }>({
     queryKey: ['learning-paths', user?.client_type],
-    queryFn: () => api.get<LearningPath[] | { data: LearningPath[] }>('/learning-paths', { client_type: user?.client_type || undefined }),
+    queryFn: ({ signal }) => api.get<LearningPath[] | { data: LearningPath[] }>('/learning-paths', { client_type: user?.client_type || undefined }, { signal }),
     enabled: !!user?.client_type,
   });
-  const { data: personalityReport, isLoading: personalityLoading } = useQuery<PersonalityReport>({
+  const { data: personalityReport, isLoading: personalityLoading, error: personalityError } = useQuery<PersonalityReport>({
     queryKey: ['personality-report'],
-    queryFn: () => api.get<PersonalityReport>('/personality/report'),
+    queryFn: ({ signal }) => api.get<PersonalityReport>('/personality/report', undefined, { signal }),
     enabled: hasCompletedPersonality,
-    retry: 1,
   });
-  const { data: recommendationsData } = useQuery<RecommendationsSummary>({
-    queryKey: ['personality-recommendations-summary'],
-    queryFn: () => api.get<RecommendationsSummary>('/personality/recommendations'),
+  const { data: recommendationsData, error: recommendationsError } = useQuery<RecommendationsSummary>({
+    queryKey: queryKeys.recommendations,
+    queryFn: ({ signal }) => api.get<RecommendationsSummary>('/personality/recommendations', undefined, { signal }),
     enabled: hasCompletedPersonality,
-    retry: 1,
   });
 
   const sessions = sessionsData?.data ?? [];
   const relationships = relationshipsData?.data ?? [];
+  const dashboardError = sessionsError ?? relationshipsError ?? learningPathsError ?? personalityError ?? recommendationsError;
   const learningPaths = Array.isArray(learningPathsData) ? learningPathsData : learningPathsData?.data ?? [];
   const activeRelationships = relationships.filter((relationship: RelationshipSummary) => relationship.status === 'active');
   const nextSession = sessions.find((session: SessionSummary) => ['scheduled', 'in_progress'].includes(session.status));
@@ -163,6 +165,11 @@ export default function PersonalDashboard() {
 
   return (
     <div className="space-y-8 animate-fade-in">
+      {dashboardError && (
+        <Alert variant="error" role="alert">
+          {apiErrorMessage(dashboardError, (key) => t(key)) || t('common.load_error')}
+        </Alert>
+      )}
       <section className="relative overflow-hidden rounded-3xl bg-[radial-gradient(circle_at_top_left,#1d4ed8_0,#111827_42%,#020617_100%)] p-6 text-white shadow-xl shadow-gray-200 animate-slide-up sm:p-8">
         <div className="absolute -right-24 -top-24 h-72 w-72 rounded-full bg-primary-500/30 blur-3xl" aria-hidden="true" />
         <div className="absolute bottom-0 right-0 h-32 w-2/3 rounded-full bg-violet-500/10 blur-3xl" aria-hidden="true" />

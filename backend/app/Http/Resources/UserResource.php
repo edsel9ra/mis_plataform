@@ -26,6 +26,7 @@ class UserResource extends JsonResource
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'personality_assessment' => PersonalityAssessmentResource::make($this->whenLoaded('personalityAssessment')),
+            'skills' => UserSkillResource::collection($this->whenLoaded('skills')),
             'company' => CompanyResource::make($this->whenLoaded('company')),
             'employee' => EmployeeResource::make($this->whenLoaded('employee')),
         ];

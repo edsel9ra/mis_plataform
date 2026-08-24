@@ -7,6 +7,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, CheckCircle2, Clock, FileQuestion, RotateCcw } from 'lucide-react';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { AppShell } from '@/components/layout/AppShell';
 import { Alert } from '@/components/ui/alert';
@@ -53,10 +54,11 @@ export default function EvaluationDetailPage() {
   const [startedAt, setStartedAt] = useState(() => Date.now());
   const [submittedResult, setSubmittedResult] = useState<EvaluationResult | null>(null);
   const [isRetaking, setIsRetaking] = useState(false);
+  const [submitError, setSubmitError] = useState<unknown>(null);
 
   const { data: evaluation, isLoading, error } = useQuery<Evaluation>({
     queryKey: ['evaluation', evaluationId],
-    queryFn: () => api.get<Evaluation>(`/evaluations/${evaluationId}`),
+    queryFn: ({ signal }) => api.get<Evaluation>(`/evaluations/${evaluationId}`, undefined, { signal }),
     enabled: !!evaluationId,
   });
 
@@ -68,9 +70,11 @@ export default function EvaluationDetailPage() {
     onSuccess: (result) => {
       setSubmittedResult(result);
       setIsRetaking(false);
+      setSubmitError(null);
       queryClient.invalidateQueries({ queryKey: ['evaluations'] });
       queryClient.invalidateQueries({ queryKey: ['evaluation', evaluationId] });
     },
+    onError: (error) => setSubmitError(error),
   });
 
   useEffect(() => {
@@ -117,6 +121,7 @@ export default function EvaluationDetailPage() {
     setCurrent(0);
     setStartedAt(Date.now());
     setIsRetaking(true);
+    setSubmitError(null);
   }
 
   if (result) {
@@ -144,7 +149,7 @@ export default function EvaluationDetailPage() {
             <div className="rounded-3xl bg-gradient-to-br from-primary-50 to-slate-50 p-6 text-center">
               <p className="text-sm font-medium text-slate-500">{localizedText(evaluation.title, locale)}</p>
               <p className="mt-4 text-6xl font-black tracking-tight text-slate-950">{Math.round(result.score)}%</p>
-              <div className="mx-auto mt-5 h-3 max-w-md rounded-full bg-white shadow-inner">
+              <div className="mx-auto mt-5 h-3 max-w-md rounded-full bg-white shadow-inner" role="progressbar" aria-valuenow={Math.round(Math.min(100, result.score))} aria-valuemin={0} aria-valuemax={100}>
                 <div className="h-3 rounded-full bg-primary-500" style={{ width: `${Math.min(100, result.score)}%` }} />
               </div>
               <p className="mt-3 text-sm text-slate-500">
@@ -155,7 +160,7 @@ export default function EvaluationDetailPage() {
             <div className="mt-6 grid gap-3 sm:grid-cols-3">
               <ResultPill label={t('evaluations.score')} value={`${Math.round(result.score)}%`} />
               <ResultPill label={t('sessions.date')} value={new Date(result.completed_at).toLocaleDateString(locale)} />
-              <ResultPill label={t('evaluations.time_limit')} value={formatSeconds(result.time_spent_seconds)} />
+               <ResultPill label={t('evaluations.time_limit')} value={formatSeconds(result.time_spent_seconds, t)} />
             </div>
 
             <div className="mt-6 flex flex-col gap-3 sm:flex-row">
@@ -195,7 +200,7 @@ export default function EvaluationDetailPage() {
                 </Badge>
                 <Badge>
                   <Clock className="mr-1 h-3 w-3" aria-hidden="true" />
-                  {evaluation.time_limit_minutes ?? 0} min
+                   {evaluation.time_limit_minutes ?? 0} {t('common.minutes_short')}
                 </Badge>
               </div>
             </div>
@@ -206,7 +211,7 @@ export default function EvaluationDetailPage() {
               <span>{t('personality.question')} {current + 1} {t('personality.of')} {questions.length}</span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-slate-100">
+            <div className="mt-2 h-2 rounded-full bg-slate-100" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
               <div className="h-2 rounded-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
@@ -226,6 +231,7 @@ export default function EvaluationDetailPage() {
                       key={`${questionId}-${index}`}
                       type="button"
                       onClick={() => answerQuestion(index)}
+                      aria-pressed={selected}
                       className={`flex w-full items-center gap-3 rounded-xl border p-4 text-left transition ${
                         selected ? 'border-primary-400 bg-primary-50 text-primary-950' : 'border-slate-200 bg-white hover:border-primary-300 hover:bg-primary-50/50'
                       }`}
@@ -249,7 +255,11 @@ export default function EvaluationDetailPage() {
                 </Button>
               </div>
 
-              {submitMutation.isError && <Alert variant="error" className="mt-4">{t('common.error')}</Alert>}
+              {Boolean(submitMutation.isError || submitError) && (
+                <Alert variant="error" className="mt-4">
+                  {apiErrorMessage(submitError ?? submitMutation.error, (key) => t(key)) || t('common.error')}
+                </Alert>
+              )}
             </div>
           ) : (
             <Alert variant="warning">{t('common.no_results')}</Alert>
@@ -275,11 +285,11 @@ function localizedText(value: Record<string, string> | null | undefined, locale:
   return value[locale] ?? value.es ?? value.en ?? value.pt ?? '';
 }
 
-function formatSeconds(value: number | null): string {
-  if (!value) return '0 min';
+function formatSeconds(value: number | null, t: (key: string) => string): string {
+  if (!value) return `0 ${t('common.minutes_short')}`;
 
   const minutes = Math.floor(value / 60);
   const seconds = value % 60;
 
-  return `${minutes}m ${seconds}s`;
+  return `${minutes} ${t('common.minutes_short')} ${seconds} ${t('common.seconds_short')}`;
 }

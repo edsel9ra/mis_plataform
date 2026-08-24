@@ -54,7 +54,7 @@ class SessionController
             'relationship.mentor',
             'relationship.source',
             'attendees.user',
-            'reviews',
+            'reviews.rater',
         ])->findOrFail($id);
 
         Gate::authorize('view', $session);

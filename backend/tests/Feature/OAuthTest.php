@@ -106,7 +106,7 @@ it('rejects an unverifiable provider email without exposing exception details', 
 
     $response->assertRedirect()->assertCookieExpired('mis_oauth_state_google');
     expect(urldecode($response->headers->get('Location')))
-        ->toContain(__('auth.oauth_email_unverified'))
+        ->toContain('error=oauth_email_unverified')
         ->not->toContain('DomainException');
     $this->assertDatabaseCount('oauth_accounts', 0);
 });

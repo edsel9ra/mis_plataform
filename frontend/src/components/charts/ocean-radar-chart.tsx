@@ -1,5 +1,7 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
+
 export interface OceanRadarPoint {
   key: string;
   trait: string;
@@ -16,10 +18,12 @@ const CENTER = VIEW_BOX / 2;
 const RADIUS = 90;
 
 export function OceanRadarChart({ data }: OceanRadarChartProps) {
+  const t = useTranslations();
+
   if (data.length === 0) {
     return (
       <div className="flex h-full min-h-80 items-center justify-center rounded-2xl bg-white/60 text-sm text-slate-500">
-        Sin datos OCEAN disponibles
+        {t('personality.ocean_chart_empty')}
       </div>
     );
   }
@@ -29,7 +33,7 @@ export function OceanRadarChart({ data }: OceanRadarChartProps) {
   const radarPath = radarPoints.map(({ x, y }) => `${x},${y}`).join(' ');
 
   return (
-    <svg className="h-full min-h-80 w-full" viewBox={`0 0 ${VIEW_BOX} ${VIEW_BOX}`} role="img" aria-label="Perfil OCEAN">
+    <svg className="h-full min-h-80 w-full" viewBox={`0 0 ${VIEW_BOX} ${VIEW_BOX}`} role="img" aria-label={t('personality.ocean_chart_label')}>
       <defs>
         <radialGradient id="oceanRadarFill" cx="50%" cy="50%" r="60%">
           <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.34" />

@@ -7,6 +7,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocale, useTranslations } from 'next-intl';
 import { ApiError, api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
 import { companySchema, type CompanyFormData } from '@/lib/schemas/company';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { localePath } from '@/i18n/paths';
@@ -43,7 +44,7 @@ export default function EmpresaDashboard() {
   });
   const employeesQuery = useQuery({
     queryKey: ['company-employees', companyId],
-    queryFn: ({ signal }) => api.get<EmployeeSummary>(`/companies/${companyId}/employees`, undefined, { signal }),
+    queryFn: ({ signal }) => api.get<EmployeeSummary>(`/companies/${companyId}/employees`, { page: 1, per_page: 1 }, { signal }),
     enabled: user?.role === 'company_admin' && Boolean(companyId),
   });
 
@@ -63,7 +64,7 @@ export default function EmpresaDashboard() {
   if (companyQuery.isLoading || employeesQuery.isLoading) return <PageSpinner />;
 
   if (companyQuery.error || employeesQuery.error || !companyQuery.data || !employeesQuery.data) {
-    return <Alert variant="error">{t('company.dashboard_error')}</Alert>;
+    return <Alert variant="error">{apiErrorMessage(companyQuery.error ?? employeesQuery.error, (key) => t(key)) || t('company.dashboard_error')}</Alert>;
   }
 
   const company = companyQuery.data;
@@ -72,7 +73,7 @@ export default function EmpresaDashboard() {
     { label: t('company.total_employees'), value: employees.meta.total },
     { label: t('company.active_employees'), value: employees.status_counts.active },
     { label: t('company.pending_employees'), value: employees.status_counts.invited },
-    { label: t('company.subscription_status'), value: t(`company.status_${company.subscription_status}`) },
+     { label: t('company.subscription_status'), value: subscriptionStatusLabel(company.subscription_status, t) },
   ];
 
   return (
@@ -102,6 +103,18 @@ export default function EmpresaDashboard() {
   );
 }
 
+function subscriptionStatusLabel(status: string, t: (key: string) => string): string {
+  const labels: Record<string, string> = {
+    trial: 'company.status_trial',
+    active: 'company.status_active',
+    past_due: 'company.status_past_due',
+    canceled: 'company.status_canceled',
+    expired: 'company.status_expired',
+  };
+
+  return labels[status] ? t(labels[status]) : t('common.not_applicable');
+}
+
 function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown> }) {
   const t = useTranslations();
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -128,11 +141,11 @@ function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown>
       await refreshUser();
     } catch (error) {
       if (error instanceof ApiError && error.status === 422) {
-        Object.entries(error.errors ?? {}).forEach(([field, messages]) => {
-          if (field in values) setError(field as keyof CompanyFormData, { message: messages[0] });
+        Object.entries(error.errors ?? {}).forEach(([field]) => {
+          if (field in values) setError(field as keyof CompanyFormData, { message: t('common.validation_error') });
         });
       }
-      setSubmitError(error instanceof ApiError ? error.message : t('company.setup_error'));
+      setSubmitError(apiErrorMessage(error, (key) => t(key)) || t('company.setup_error'));
     }
   });
 
@@ -145,14 +158,14 @@ function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown>
       <form onSubmit={submit} className="space-y-5" noValidate>
         <Input
           label={t('company.legal_name')}
-          error={errors.legal_name ? t('company.legal_name_error') : undefined}
+           error={errors.legal_name?.message ? t(errors.legal_name.message) : undefined}
           autoComplete="organization"
           required
           {...register('legal_name')}
         />
         <div className="grid gap-4 sm:grid-cols-2">
-          <Input label={t('company.tax_id')} error={errors.tax_id?.message} {...register('tax_id')} />
-          <Input label={t('company.industry')} error={errors.industry?.message} {...register('industry')} />
+           <Input label={t('company.tax_id')} error={validationMessage(errors.tax_id?.message, t)} {...register('tax_id')} />
+           <Input label={t('company.industry')} error={validationMessage(errors.industry?.message, t)} {...register('industry')} />
           <Select
             label={t('company.size')}
             placeholder={t('company.select_size')}
@@ -161,16 +174,16 @@ function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown>
               { value: 'sme', label: t('company.size_sme') },
               { value: 'enterprise', label: t('company.size_enterprise') },
             ]}
-            error={errors.size?.message}
+             error={validationMessage(errors.size?.message, t)}
             {...register('size')}
           />
-          <Input label={t('company.phone')} type="tel" autoComplete="tel" error={errors.phone?.message} {...register('phone')} />
+           <Input label={t('company.phone')} type="tel" autoComplete="tel" error={validationMessage(errors.phone?.message, t)} {...register('phone')} />
         </div>
         <Input
           label={t('company.website')}
           type="url"
           placeholder="https://example.com"
-          error={errors.website ? t('company.website_error') : undefined}
+           error={validationMessage(errors.website?.message, t)}
           {...register('website')}
         />
         {submitError && <Alert variant="error">{submitError}</Alert>}
@@ -178,4 +191,8 @@ function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown>
       </form>
     </Card>
   );
+}
+
+function validationMessage(message: string | undefined, t: (key: string) => string): string | undefined {
+  return message ? t(message) : undefined;
 }

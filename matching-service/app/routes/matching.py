@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import Optional
 from app.services.matcher import MentorshipMatcher
@@ -10,16 +10,16 @@ logger = logging.getLogger(__name__)
 
 
 class CalculateRequest(BaseModel):
-    user_id: str
-    mentor_id: str
+    user_id: str = Field(min_length=1, max_length=128)
+    mentor_id: str = Field(min_length=1, max_length=128)
     client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
-    context_id: Optional[str] = None
+    context_id: Optional[str] = Field(default=None, max_length=128)
 
 
 class SuggestionsRequest(BaseModel):
-    user_id: str
+    user_id: str = Field(min_length=1, max_length=128)
     client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
-    context_id: Optional[str] = None
+    context_id: Optional[str] = Field(default=None, max_length=128)
     limit: int = Field(default=10, ge=1, le=50)
 
 
@@ -58,7 +58,7 @@ async def get_suggestions(request: SuggestionsRequest):
 
 
 @router.post("/analyze-profile")
-async def analyze_profile(user_id: str):
+async def analyze_profile(user_id: str = Query(min_length=1, max_length=128)):
     return {
         "user_id": user_id,
         "message": "Profile analysis requires data from Laravel API"

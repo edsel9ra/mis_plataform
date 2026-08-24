@@ -4,7 +4,7 @@ use App\Actions\CreateSessionAction;
 use App\Models\MentorshipRelationship;
 use App\Models\Session;
 use App\Models\User;
-use Illuminate\Database\QueryException;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Str;
 
 uses()->group('actions');
@@ -48,7 +48,7 @@ it('creates session without extra attendees', function () {
     expect($session->status)->toBe('scheduled');
 });
 
-it('rolls back the session when an attendee cannot be created', function () {
+it('rejects a relationship with a missing source before creating a session', function () {
     $mentor = User::factory()->mentor()->create();
     $relationship = MentorshipRelationship::factory()->create([
         'source_type' => 'user',
@@ -66,7 +66,7 @@ it('rolls back the session when an attendee cannot be created', function () {
         ]);
 
         $this->fail('Expected attendee creation to fail.');
-    } catch (QueryException) {
+    } catch (ModelNotFoundException) {
         expect(Session::count())->toBe(0)
             ->and(\App\Models\SessionAttendee::count())->toBe(0);
     }

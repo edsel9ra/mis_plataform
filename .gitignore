@@ -1,7 +1,10 @@
 # Docker
+.env
+.env.production
 .env.backend
 .env.frontend
 .env.matching
+.env.*.production
 
 # Backend
 backend/vendor/

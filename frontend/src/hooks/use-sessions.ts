@@ -1,5 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface Session {
   id: string;
@@ -15,10 +17,17 @@ export interface Session {
   } | null;
 }
 
-export function useSessions(enabled = true) {
+export function useSessions(page = 1, perPage = 20, enabled = true) {
   return useQuery({
-    queryKey: ['sessions'],
-    queryFn: ({ signal }) => api.get<{ data: Session[] }>('/sessions', undefined, { signal }),
+    queryKey: queryKeys.sessions(page, perPage),
+    queryFn: async ({ signal }): Promise<PaginatedResponse<Session>> => {
+      const response = await api.get<RawPaginatedResponse<Session>>('/sessions', {
+        page,
+        per_page: perPage,
+      }, { signal });
+
+      return normalizePaginatedResponse(response, { page, perPage });
+    },
     enabled,
   });
 }
@@ -44,7 +53,8 @@ export function useCreateSession() {
       duration_minutes: number;
     }) => api.post<Session>('/sessions', data),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['sessions'] });
+      queryClient.invalidateQueries({ queryKey: queryKeys.sessionsRoot });
+      queryClient.invalidateQueries({ queryKey: queryKeys.recommendations });
     },
   });
 }

@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { queryKeys } from '@/lib/query-keys';
 
 export interface MentorAssignment {
   relationship_id: string;
@@ -77,11 +78,11 @@ export interface MentorRecommendationsResponse {
 export function useMentorUsers(search: string, page: number, enabled = true) {
   return useQuery({
     queryKey: ['mentor', 'users', { search, page }],
-    queryFn: () => api.get<MentorUsersResponse>('/mentor/users', {
+    queryFn: ({ signal }) => api.get<MentorUsersResponse>('/mentor/users', {
       search: search || undefined,
       page,
       per_page: 12,
-    }),
+    }, { signal }),
     enabled,
   });
 }
@@ -89,19 +90,19 @@ export function useMentorUsers(search: string, page: number, enabled = true) {
 export function useMentorUserPersonality(userId: string, relationshipId: string, enabled = true) {
   return useQuery({
     queryKey: ['mentor', 'users', userId, 'personality', relationshipId],
-    queryFn: () => api.get<MentorPersonalityResponse>(`/mentor/users/${userId}/personality`, {
+    queryFn: ({ signal }) => api.get<MentorPersonalityResponse>(`/mentor/users/${userId}/personality`, {
       relationship_id: relationshipId,
-    }),
+    }, { signal }),
     enabled: enabled && Boolean(userId && relationshipId),
   });
 }
 
 export function useMentorUserRecommendations(userId: string, relationshipId: string, enabled = true) {
   return useQuery({
-    queryKey: ['mentor', 'users', userId, 'recommendations', relationshipId],
-    queryFn: () => api.get<MentorRecommendationsResponse>(`/mentor/users/${userId}/recommendations`, {
+    queryKey: queryKeys.mentorRecommendations(userId, relationshipId),
+    queryFn: ({ signal }) => api.get<MentorRecommendationsResponse>(`/mentor/users/${userId}/recommendations`, {
       relationship_id: relationshipId,
-    }),
+    }, { signal }),
     enabled: enabled && Boolean(userId && relationshipId),
   });
 }

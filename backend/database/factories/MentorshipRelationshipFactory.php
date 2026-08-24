@@ -10,7 +10,7 @@ class MentorshipRelationshipFactory extends Factory
     public function definition(): array
     {
         return [
-            'type' => $this->faker->randomElement(['personal', 'familiar', 'grupal', 'empresa']),
+            'type' => 'personal',
             'source_type' => 'user',
             'source_id' => User::factory(),
             'mentor_id' => User::factory()->mentor(),

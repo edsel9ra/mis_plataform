@@ -10,15 +10,15 @@ export default function FamiliarDashboard() {
   return (
     <div>
       <h1 className="text-2xl font-bold text-gray-900">{t('dashboard.welcome')}, {user?.name}</h1>
-      <p className="mt-2 text-gray-500">Dashboard Familiar — gestiona los miembros de tu familia y sus mentorías.</p>
+      <p className="mt-2 text-gray-500">{t('dashboard.family_description')}</p>
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-500">Miembros</h3>
+          <h3 className="text-sm font-medium text-gray-500">{t('dashboard.family_members')}</h3>
           <p className="mt-2 text-2xl font-bold text-gray-900">0</p>
         </div>
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-500">Próxima Sesión Familiar</h3>
+          <h3 className="text-sm font-medium text-gray-500">{t('dashboard.family_next_session')}</h3>
           <p className="mt-2 text-2xl font-bold text-gray-900">—</p>
         </div>
       </div>

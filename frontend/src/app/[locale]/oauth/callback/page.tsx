@@ -9,6 +9,15 @@ import { Alert } from '@/components/ui/alert';
 import { localePath } from '@/i18n/paths';
 
 const platformAdminRoles = new Set(['super_admin', 'admin']);
+const oauthErrorMessages: Record<string, string> = {
+  invalid_provider: 'auth.oauth_invalid_provider',
+  invalid_oauth_state: 'auth.oauth_invalid_state',
+  provider_error: 'auth.oauth_provider_error',
+  oauth_email_unverified: 'auth.oauth_email_unverified',
+  oauth_account_conflict: 'auth.oauth_account_conflict',
+  inactive: 'auth.oauth_inactive',
+  access_denied: 'auth.oauth_access_denied',
+};
 
 export default function OAuthCallbackPage() {
   const t = useTranslations();
@@ -27,7 +36,7 @@ export default function OAuthCallbackPage() {
     const oauthError = params.get('error');
 
     if (oauthError) {
-      setError(oauthError);
+      setError(t(oauthErrorMessages[oauthError] ?? 'auth.oauth_error'));
       return;
     }
 

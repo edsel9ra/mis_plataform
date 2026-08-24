@@ -10,6 +10,7 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => $oauthRedirectBaseUrl . '/api/v1/auth/google/callback',
+        'timeout' => (int) env('GOOGLE_HTTP_TIMEOUT', 10),
         'calendar' => [
             'impersonate' => env('GOOGLE_CALENDAR_IMPERSONATE'),
         ],
@@ -38,6 +39,7 @@ return [
         'api_url' => env('IPFS_API_URL', 'https://api.pinata.cloud'),
         'api_key' => env('IPFS_API_KEY', env('PINATA_API_KEY')),
         'secret_key' => env('IPFS_SECRET_API_KEY', env('PINATA_SECRET_API_KEY')),
+        'timeout' => (int) env('IPFS_HTTP_TIMEOUT', 15),
     ],
     'polygon' => [
         'enabled' => env('POLYGON_CERTIFICATES_ENABLED', false),

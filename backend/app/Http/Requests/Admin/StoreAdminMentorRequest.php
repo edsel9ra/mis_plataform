@@ -2,10 +2,18 @@
 
 namespace App\Http\Requests\Admin;
 
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAdminMentorRequest extends FormRequest
 {
+    use NormalizesEmail;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeEmailInput();
+    }
+
     public function authorize(): bool
     {
         return $this->user()?->isAdmin() ?? false;

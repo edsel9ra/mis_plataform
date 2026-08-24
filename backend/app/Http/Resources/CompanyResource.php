@@ -20,7 +20,7 @@ class CompanyResource extends JsonResource
             'website' => $this->website,
             'phone' => $this->phone,
             'created_at' => $this->created_at,
-            'admin' => UserResource::make($this->whenLoaded('admin')),
+            'admin' => UserSummaryResource::make($this->whenLoaded('admin')),
             'plan' => PlanResource::make($this->whenLoaded('plan')),
             'employees_count' => $this->whenCounted('employees'),
         ];

@@ -5,6 +5,7 @@ use App\Models\Cohort;
 use App\Models\Company;
 use App\Models\FamilyGroup;
 use App\Models\Plan;
+use App\Models\Subscription;
 use App\Models\User;
 
 uses()->group('relationships');
@@ -39,6 +40,46 @@ it('creates a relationship', function () {
 
     $response->assertCreated()
         ->assertJsonFragment(['source_id' => $this->user->id]);
+});
+
+it('enforces the mentor limit of the source plan', function () {
+    $plan = Plan::create([
+        'client_type' => 'personal',
+        'name' => ['es' => 'Personal limitado'],
+        'price_monthly' => 10,
+        'price_yearly' => 100,
+        'max_mentors' => 1,
+        'is_active' => true,
+    ]);
+    Subscription::create([
+        'subscriber_type' => 'user',
+        'subscriber_id' => $this->user->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addMonth(),
+    ]);
+
+    $this->withToken($this->token)
+        ->postJson('/api/v1/relationships', [
+            'type' => 'personal',
+            'source_type' => 'user',
+            'source_id' => $this->user->id,
+            'mentor_id' => $this->mentor->id,
+        ])
+        ->assertCreated();
+
+    $secondMentor = User::factory()->mentor()->create();
+
+    $this->withToken($this->token)
+        ->postJson('/api/v1/relationships', [
+            'type' => 'personal',
+            'source_type' => 'user',
+            'source_id' => $this->user->id,
+            'mentor_id' => $secondMentor->id,
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['mentor_id']);
 });
 
 it('lists only relationship contexts managed by the current user', function () {

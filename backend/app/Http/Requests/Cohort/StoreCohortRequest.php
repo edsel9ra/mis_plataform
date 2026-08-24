@@ -16,7 +16,7 @@ class StoreCohortRequest extends FormRequest
         return [
             'name' => ['required', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
-            'max_members' => ['sometimes', 'integer', 'min:2', 'max:100'],
+            'max_members' => ['sometimes', 'integer', 'min:2', 'max:20'],
         ];
     }
 }

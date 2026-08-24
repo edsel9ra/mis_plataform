@@ -1,7 +1,8 @@
 'use client';
 
 import Link from 'next/link';
-import { useParams, useSearchParams } from 'next/navigation';
+import { useParams } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, Brain, Calendar, ClipboardCheck, Clock, UserRoundSearch, type LucideIcon } from 'lucide-react';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
@@ -10,6 +11,7 @@ import { Card, CardTitle } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/spinner';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { localePath } from '@/i18n/paths';
+import { apiErrorMessage } from '@/lib/errors';
 import { useMentorUserPersonality, useMentorUserRecommendations } from '@/hooks/use-mentor-dashboard';
 
 export default function MentorUserDetailPage() {
@@ -17,10 +19,18 @@ export default function MentorUserDetailPage() {
   const locale = useLocale();
   const { user: mentor } = useAuth();
   const params = useParams<{ id: string }>();
-  const relationshipId = useSearchParams().get('relationship_id') ?? '';
-  const enabled = mentor?.role === 'mentor' && Boolean(relationshipId);
-  const personality = useMentorUserPersonality(params.id, relationshipId, enabled);
-  const recommendations = useMentorUserRecommendations(params.id, relationshipId, enabled);
+  const [relationshipId, setRelationshipId] = useState<string | undefined>(undefined);
+
+  useEffect(() => {
+    setRelationshipId(new URLSearchParams(window.location.search).get('relationship_id') ?? '');
+  }, []);
+
+  const resolvedRelationshipId = relationshipId ?? '';
+  const enabled = mentor?.role === 'mentor' && Boolean(resolvedRelationshipId);
+  const personality = useMentorUserPersonality(params.id, resolvedRelationshipId, enabled);
+  const recommendations = useMentorUserRecommendations(params.id, resolvedRelationshipId, enabled);
+
+  if (relationshipId === undefined) return <PageSpinner />;
 
   if (!relationshipId) {
     return <ErrorState message={t('mentor_dashboard.relationship_required')} />;
@@ -28,7 +38,11 @@ export default function MentorUserDetailPage() {
 
   if (personality.isLoading || recommendations.isLoading) return <PageSpinner />;
   if (personality.error || recommendations.error || !personality.data || !recommendations.data) {
-    return <ErrorState message={t('mentor_dashboard.detail_error')} />;
+    return (
+      <ErrorState
+        message={apiErrorMessage(personality.error ?? recommendations.error, (key) => t(key)) || t('mentor_dashboard.detail_error')}
+      />
+    );
   }
 
   const { user, assessment } = personality.data;

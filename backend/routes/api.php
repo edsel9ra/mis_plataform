@@ -4,6 +4,8 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\MentorController;
+use App\Http\Controllers\Api\MentorSkillController;
+use App\Http\Controllers\Api\SkillTagController;
 use App\Http\Controllers\Api\RelationshipController;
 use App\Http\Controllers\Api\RelationshipContextController;
 use App\Http\Controllers\Api\SessionController;
@@ -26,8 +28,10 @@ use App\Http\Controllers\Api\MentorDashboardController;
 
 Route::prefix('v1')->group(function () {
     // Auth
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth-register');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:auth-forgot-password');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
@@ -47,11 +51,16 @@ Route::prefix('v1')->group(function () {
         Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar']);
         Route::put('/profile/locale', [ProfileController::class, 'updateLocale']);
 
+        // Mentor specialty catalog
+        Route::get('/skill-tags', [SkillTagController::class, 'index']);
+
         // Personality
         Route::post('/personality/start-test', [PersonalityController::class, 'startTest']);
-        Route::post('/personality/submit-answers', [PersonalityController::class, 'submitAnswers']);
+         Route::post('/personality/submit-answers', [PersonalityController::class, 'submitAnswers'])
+             ->middleware('throttle:personality-score');
         Route::get('/personality/report', [PersonalityController::class, 'report']);
-        Route::post('/personality/calculate', [PersonalityController::class, 'calculate']);
+         Route::post('/personality/calculate', [PersonalityController::class, 'calculate'])
+             ->middleware('throttle:personality-score');
 
         // Relationships
         Route::get('/relationship-contexts', [RelationshipContextController::class, 'index']);
@@ -119,6 +128,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/mentor/evaluation-results', [EvaluationController::class, 'mentorResults']);
 
         Route::middleware('role:mentor')->prefix('mentor')->group(function () {
+            Route::put('/skills', [MentorSkillController::class, 'updateOwn']);
             Route::get('/users', [MentorDashboardController::class, 'users']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
@@ -155,7 +165,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/mentors', [AdminController::class, 'mentorStore']);
             Route::get('/mentors/{id}', [AdminController::class, 'mentorShow']);
             Route::put('/mentors/{id}', [AdminController::class, 'mentorUpdate']);
+            Route::put('/mentors/{id}/skills', [MentorSkillController::class, 'updateForMentor']);
             Route::delete('/mentors/{id}', [AdminController::class, 'mentorDestroy']);
+
+            // Mentor specialty catalog
+            Route::get('/skill-tags', [SkillTagController::class, 'adminIndex']);
+            Route::post('/skill-tags', [SkillTagController::class, 'store']);
+            Route::put('/skill-tags/{id}', [SkillTagController::class, 'update']);
+            Route::delete('/skill-tags/{id}', [SkillTagController::class, 'destroy']);
 
             // Sessions
             Route::get('/sessions', [AdminController::class, 'sessions']);

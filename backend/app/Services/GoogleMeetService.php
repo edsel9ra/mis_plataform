@@ -39,10 +39,12 @@ class GoogleMeetService
         ];
 
         $response = Http::withToken($this->accessToken())
+            ->connectTimeout((int) config('services.google.timeout', 10))
+            ->timeout((int) config('services.google.timeout', 10))
             ->post('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', $event);
 
         if (!$response->successful()) {
-            Log::error('Google Calendar API error', ['response' => $response->body()]);
+            Log::error('Google Calendar API error', ['status' => $response->status()]);
             throw new \RuntimeException(__('meet.create_error'));
         }
 
@@ -58,6 +60,8 @@ class GoogleMeetService
     public function deleteEvent(string $eventId): void
     {
         Http::withToken($this->accessToken())
+            ->connectTimeout((int) config('services.google.timeout', 10))
+            ->timeout((int) config('services.google.timeout', 10))
             ->delete("https://www.googleapis.com/calendar/v3/calendars/primary/events/{$eventId}");
     }
 
@@ -96,7 +100,10 @@ class GoogleMeetService
 
         $jwt = "{$jwtHeader}.{$jwtPayload}." . $this->base64UrlEncode($signature);
 
-        $response = Http::asForm()->post('https://oauth2.googleapis.com/token', [
+        $response = Http::asForm()
+            ->connectTimeout((int) config('services.google.timeout', 10))
+            ->timeout((int) config('services.google.timeout', 10))
+            ->post('https://oauth2.googleapis.com/token', [
             'grant_type' => 'urn:ietf:params:oauth:grant-type:jwt-bearer',
             'assertion' => $jwt,
         ]);

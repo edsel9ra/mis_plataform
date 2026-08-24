@@ -16,7 +16,7 @@ class UpdateCohortRequest extends FormRequest
         return [
             'name' => ['sometimes', 'string', 'max:100'],
             'description' => ['nullable', 'string'],
-            'max_members' => ['sometimes', 'integer', 'min:2', 'max:100'],
+            'max_members' => ['sometimes', 'integer', 'min:2', 'max:20'],
             'status' => ['sometimes', 'string', 'in:pending,active,completed'],
         ];
     }

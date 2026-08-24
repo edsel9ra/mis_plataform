@@ -23,12 +23,13 @@ class EvaluationController
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         $evaluations = $this->accessibleEvaluations($user)
             ->with(['results' => fn ($q) => $q->where('user_id', $user->id)])
             ->withCount('results')
             ->latest()
-            ->paginate($request->integer('per_page', 20));
+            ->paginate($perPage);
 
         return response()->json([
             'data' => EvaluationResource::collection($evaluations->getCollection())->resolve($request),
@@ -132,7 +133,8 @@ class EvaluationController
             });
         }
 
-        $results = $query->paginate($request->per_page ?? 20);
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+        $results = $query->paginate($perPage);
 
         return response()->json([
             'data' => $results->getCollection()->map(function (AssessmentResult $result) use ($request, $relationshipsByUser) {
@@ -223,28 +225,49 @@ class EvaluationController
     private function userIdsForRelationship(MentorshipRelationship $relationship): array
     {
         if (in_array($relationship->source_type, ['user', User::class], true)) {
-            return [$relationship->source_id];
+            return User::query()
+                ->whereKey($relationship->source_id)
+                ->where('is_active', true)
+                ->pluck('id')
+                ->all();
         }
 
         if (in_array($relationship->source_type, ['family_group', FamilyGroup::class], true)) {
             $familyHeadId = FamilyGroup::where('id', $relationship->source_id)->value('head_user_id');
             $familyMemberIds = FamilyMember::where('family_group_id', $relationship->source_id)->pluck('user_id')->all();
 
-            return collect([$familyHeadId, ...$familyMemberIds])->filter()->unique()->values()->all();
+            return $this->activeUserIds([$familyHeadId, ...$familyMemberIds]);
         }
 
         if (in_array($relationship->source_type, ['cohort', \App\Models\Cohort::class], true)) {
-            return CohortMember::where('cohort_id', $relationship->source_id)->pluck('user_id')->unique()->values()->all();
+            $memberIds = CohortMember::where('cohort_id', $relationship->source_id)
+                ->where('status', 'active')
+                ->pluck('user_id')
+                ->all();
+
+            return $this->activeUserIds($memberIds);
         }
 
         if (in_array($relationship->source_type, ['company', Company::class], true)) {
             $companyAdminId = Company::where('id', $relationship->source_id)->value('admin_id');
-            $employeeIds = Employee::where('company_id', $relationship->source_id)->pluck('user_id')->all();
+            $employeeIds = Employee::where('company_id', $relationship->source_id)
+                ->where('status', 'active')
+                ->pluck('user_id')
+                ->all();
 
-            return collect([$companyAdminId, ...$employeeIds])->filter()->unique()->values()->all();
+            return $this->activeUserIds([$companyAdminId, ...$employeeIds]);
         }
 
         return [];
+    }
+
+    private function activeUserIds(array $ids): array
+    {
+        return User::query()
+            ->whereIn('id', collect($ids)->filter()->unique()->values())
+            ->where('is_active', true)
+            ->pluck('id')
+            ->all();
     }
 
     private function relationshipSummary(MentorshipRelationship $relationship): array

@@ -26,9 +26,10 @@ class EmployeeController
             ->selectRaw('status, count(*) as aggregate')
             ->groupBy('status')
             ->pluck('aggregate', 'status');
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
         $employees = $query
             ->with('user')
-            ->paginate(20);
+            ->paginate($perPage);
 
         return EmployeeResource::collection($employees)
             ->additional([

@@ -13,7 +13,7 @@ class CreateUserAction
         $user = User::create([
             'name' => $data['name'],
             'last_name' => $data['last_name'] ?? null,
-            'email' => $data['email'],
+            'email' => mb_strtolower(trim((string) $data['email'])),
             'password' => Hash::make($data['password']),
             'sex' => $data['sex'] ?? 'N',
             'birth_date' => $data['birth_date'] ?? null,
