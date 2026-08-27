@@ -60,5 +60,5 @@ function localePath(path: string, locale: string): string {
 }
 
 export const config = {
-  matcher: ['/((?!api|_next|_vercel|.*\\..*).*)'],
+  matcher: ['/((?!api|sanctum|_next|_vercel|.*\\..*).*)'],
 };
