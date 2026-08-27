@@ -42,7 +42,7 @@ fresh:
 	docker compose exec backend php artisan migrate:fresh --seed
 
 test-backend:
-	docker compose exec backend php artisan test
+	docker compose exec -e APP_ENV=testing -e DB_DATABASE=mis_project_testing backend php artisan test
 
 test-frontend:
 	docker compose exec frontend pnpm test

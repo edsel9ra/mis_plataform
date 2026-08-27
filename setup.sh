@@ -190,8 +190,6 @@ make npm-install
 bash wait-for-services.sh backend
 
 printf '[5/5] Preparing the database and storage...\n'
-make migrate
-make seed
 make storage
 bash wait-for-services.sh nginx
 

@@ -18,4 +18,18 @@ if [ "$(id -u)" -eq 0 ]; then
     chmod -R 775 bootstrap/cache storage
 fi
 
+if [ "${RUN_DATABASE_BOOTSTRAP:-false}" = "true" ]; then
+    readiness_file="/tmp/mis-database-ready"
+    rm -f "$readiness_file"
+
+    echo "Esperando las dependencias de Laravel..."
+    while [ ! -f vendor/autoload.php ]; do
+        sleep 1
+    done
+
+    echo "Ejecutando migraciones y seeders..."
+    php artisan migrate --seed --force --no-interaction
+    touch "$readiness_file"
+fi
+
 exec "$@"

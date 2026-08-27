@@ -41,7 +41,7 @@ cd mis-project
 bash setup.sh
 ```
 
-El script `setup.sh` crea `.env` y los tres archivos de servicio solo si no existen, genera secretos locales únicamente para placeholders y conserva los valores existentes. Después construye, inicia y espera la readiness de los servicios antes de instalar dependencias, migrar y sembrar la base de datos. `APP_KEY` se prepara desde el entorno de Compose; no se ejecuta `key:generate` sobre `backend/.env`.
+El script `setup.sh` crea `.env` y los tres archivos de servicio solo si no existen, genera secretos locales únicamente para placeholders y conserva los valores existentes. Después construye, inicia y espera la readiness de los servicios antes de instalar dependencias. El contenedor `backend` ejecuta las migraciones y los seeders automáticamente antes de iniciar PHP-FPM, y repite ese bootstrap al volver a levantarse; los seeders son idempotentes y no eliminan usuarios. `APP_KEY` se prepara desde el entorno de Compose; no se ejecuta `key:generate` sobre `backend/.env`.
 
 Para preparar únicamente la configuración local, sin iniciar Docker:
 
@@ -68,11 +68,7 @@ make npm-install
 make storage
 bash wait-for-services.sh backend
 
-# 5. Base de datos
-make migrate
-make seed
-
-# 6. Verificar
+# 5. Verificar
 curl http://localhost/up
 curl http://localhost:8000/api/v1/health
 ```
@@ -100,7 +96,7 @@ curl http://localhost:8000/api/v1/health
 | Comando | Descripción |
 |---------|-------------|
 | `make build` | Construir imágenes Docker |
-| `make up` | Iniciar todos los servicios |
+| `make up` | Iniciar todos los servicios y ejecutar el bootstrap de base de datos |
 | `make down` | Detener todos los servicios |
 | `make restart` | Reiniciar todos los servicios |
 | `make logs` | Ver logs de todos los servicios |
@@ -121,7 +117,7 @@ curl http://localhost:8000/api/v1/health
 | `make reverb` | Iniciar servidor WebSocket |
 | `make cache` | Optimizar caché de Laravel |
 | `make meili` | Indexar usuarios en Meilisearch |
-| `make test-backend` | Ejecutar tests (Pest) |
+| `make test-backend` | Ejecutar tests (Pest) sobre `mis_project_testing` |
 | `make composer-install` | Instalar dependencias PHP |
 | `make backend` | Shell del contenedor backend |
 

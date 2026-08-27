@@ -49,6 +49,8 @@ services:
       - ./backend:/var/www/backend
     env_file:
       - .env.backend
+    environment:
+      RUN_DATABASE_BOOTSTRAP: "true"
     depends_on:
       postgres:
         condition: service_healthy
@@ -57,7 +59,7 @@ services:
       meilisearch:
         condition: service_healthy
     healthcheck:
-      test: ["CMD-SHELL", "php -r \"exit(is_file('/var/www/backend/vendor/autoload.php') ? 0 : 1);\""]
+      test: ["CMD-SHELL", "test -f /tmp/mis-database-ready"]
       interval: 10s
       timeout: 5s
       start_period: 10s
