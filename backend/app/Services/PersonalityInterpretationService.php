@@ -4,7 +4,9 @@ namespace App\Services;
 
 class PersonalityInterpretationService
 {
-    /** @return array<string, array{trait: string, score: float|int, level: string}> */
+    private const IMPROVEMENT_THRESHOLD = 51;
+
+    /** @return array<string, array{trait: string, score: float|int, level: string, needs_improvement: bool}> */
     public function interpret(array $factors): array
     {
         $labels = [
@@ -22,10 +24,11 @@ class PersonalityInterpretationService
                 continue;
             }
 
-            $score = $factors[$key];
+            $score = $factors[$key] + 0;
             $interpretation[$key] = [
                 'trait' => $translatedLabels[$locale] ?? $translatedLabels['es'],
                 'score' => $score,
+                'needs_improvement' => $score < self::IMPROVEMENT_THRESHOLD,
                 'level' => match (true) {
                     $score >= 70 => __('personality.level_high'),
                     $score >= 40 => __('personality.level_medium'),

@@ -79,6 +79,12 @@ describe('ApiClient error normalization', () => {
     });
   });
 
+  it('preserves JSON null responses', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('null', { status: 200 })));
+
+    await expect(api.get<null>('/subscriptions/active')).resolves.toBeNull();
+  });
+
   it('normalizes fetch failures as network errors', async () => {
     vi.stubGlobal('fetch', vi.fn().mockRejectedValue(new TypeError('socket closed')));
 
@@ -112,5 +118,19 @@ describe('ApiClient error normalization', () => {
 
     expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('Accept-Language')).toBe('en');
     expect((fetchMock.mock.calls[0]?.[1]?.headers as Headers).get('X-MIS-Locale')).toBe('en');
+  });
+
+  it('sends FormData unchanged without setting a JSON content type', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(JSON.stringify({ id: 'challenge-1' }), { status: 200 }));
+    vi.stubGlobal('fetch', fetchMock);
+    const formData = new FormData();
+    formData.append('title', 'Focus practice');
+    formData.append('content_file', new Blob(['content'], { type: 'text/plain' }), 'practice.txt');
+
+    await api.post('/mentor/challenges', formData);
+
+    const init = fetchMock.mock.calls[0]?.[1];
+    expect(init?.body).toBe(formData);
+    expect((init?.headers as Headers).get('Content-Type')).toBeNull();
   });
 });

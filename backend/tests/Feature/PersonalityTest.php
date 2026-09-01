@@ -149,3 +149,52 @@ it('shows personality report', function () {
     $response->assertOk()
         ->assertJsonStructure(['test_version', 'factors', 'interpretation']);
 });
+
+it('marks every ocean factor below 51 as needing improvement', function () {
+    PersonalityAssessment::factory()->create([
+        'user_id' => $this->user->id,
+        'results' => [
+            'factors' => [
+                'O' => 50,
+                'C' => 50.99,
+                'E' => 51,
+                'A' => 80,
+                'N' => 10,
+            ],
+        ],
+    ]);
+
+    $this->withToken($this->token)
+        ->getJson('/api/v1/personality/report')
+        ->assertOk()
+        ->assertJsonPath('interpretation.O.needs_improvement', true)
+        ->assertJsonPath('interpretation.C.needs_improvement', true)
+        ->assertJsonPath('interpretation.E.needs_improvement', false)
+        ->assertJsonPath('interpretation.A.needs_improvement', false)
+        ->assertJsonPath('interpretation.N.needs_improvement', true)
+        ->assertJsonPath('interpretation.O.level', 'Medio');
+});
+
+it('does not mark factors at or above 51 as needing improvement', function () {
+    PersonalityAssessment::factory()->create([
+        'user_id' => $this->user->id,
+        'results' => [
+            'factors' => [
+                'O' => 51,
+                'C' => 65,
+                'E' => 70,
+                'A' => 51.01,
+                'N' => 100,
+            ],
+        ],
+    ]);
+
+    $response = $this->withToken($this->token)
+        ->getJson('/api/v1/personality/report');
+
+    $response->assertOk();
+
+    foreach (['O', 'C', 'E', 'A', 'N'] as $factor) {
+        $response->assertJsonPath("interpretation.{$factor}.needs_improvement", false);
+    }
+});

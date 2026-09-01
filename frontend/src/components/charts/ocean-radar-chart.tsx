@@ -6,6 +6,7 @@ export interface OceanRadarPoint {
   key: string;
   trait: string;
   score: number;
+  needsImprovement?: boolean;
 }
 
 interface OceanRadarChartProps {
@@ -63,7 +64,14 @@ export function OceanRadarChart({ data }: OceanRadarChartProps) {
 
       {radarPoints.map(({ x, y }, index) => (
         <g key={data[index].key}>
-          <circle cx={x} cy={y} r="4.5" fill="#ffffff" stroke="#2563eb" strokeWidth="3">
+          <circle
+            cx={x}
+            cy={y}
+            r="4.5"
+            fill={data[index].needsImprovement ? '#fee2e2' : '#ffffff'}
+            stroke={data[index].needsImprovement ? '#dc2626' : '#2563eb'}
+            strokeWidth="3"
+          >
             <title>{`${data[index].trait}: ${Math.round(data[index].score)}`}</title>
           </circle>
         </g>
@@ -72,12 +80,12 @@ export function OceanRadarChart({ data }: OceanRadarChartProps) {
       {axisPoints.map((point, index) => {
         const labelPoint = pointFor(index, data.length, RADIUS + 22);
 
-        return (
-          <g key={`${data[index].key}-label`}>
-            <text x={labelPoint.x} y={labelPoint.y - 2} textAnchor="middle" className="fill-slate-700 text-sm font-bold">
+          return (
+            <g key={`${data[index].key}-label`}>
+            <text x={labelPoint.x} y={labelPoint.y - 2} textAnchor="middle" className={`${data[index].needsImprovement ? 'fill-red-700' : 'fill-slate-700'} text-sm font-bold`}>
               {data[index].key}
             </text>
-            <text x={labelPoint.x} y={labelPoint.y + 12} textAnchor="middle" className="fill-slate-500 text-[9px]">
+            <text x={labelPoint.x} y={labelPoint.y + 12} textAnchor="middle" className={`${data[index].needsImprovement ? 'fill-red-600' : 'fill-slate-500'} text-[9px]`}>
               {Math.round(data[index].score)}
             </text>
           </g>

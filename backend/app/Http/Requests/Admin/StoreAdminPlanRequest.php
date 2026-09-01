@@ -19,6 +19,7 @@ class StoreAdminPlanRequest extends FormRequest
 
         return [
             'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],
+            'code' => ['nullable', 'string', 'max:100', 'unique:plans,code'],
             'name' => ['required', 'array'],
             'name.es' => ['required', 'string'],
             'name.en' => ['required', 'string'],
@@ -30,6 +31,8 @@ class StoreAdminPlanRequest extends FormRequest
             'max_members' => ['required', 'integer', 'min:1'],
             'max_mentors' => ['required', 'integer', 'min:1'],
             'features' => ['nullable', 'array'],
+            'entitlements' => ['nullable', 'array'],
+            'is_active' => ['sometimes', 'boolean'],
         ];
     }
 }

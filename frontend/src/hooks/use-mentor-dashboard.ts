@@ -1,6 +1,8 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { queryKeys } from '@/lib/query-keys';
+import { fetchAllCollection } from '@/lib/mentor-workspace';
+import type { WorkspaceEntitlements, WorkspacePlan } from '@/types/mentor-workspace';
 
 export interface MentorAssignment {
   relationship_id: string;
@@ -10,11 +12,11 @@ export interface MentorAssignment {
     id: string;
     name: string;
   };
-  plan: {
-    id: string;
-    name: string;
-    client_type: string;
-  } | null;
+  plan: WorkspacePlan | null;
+  plan_status?: string;
+  locked?: boolean;
+  lock_reason?: string | null;
+  entitlements?: WorkspaceEntitlements;
 }
 
 export interface MentorAssignedUser {
@@ -35,6 +37,12 @@ export interface MentorUsersResponse {
     per_page: number;
     total: number;
   };
+  plan_counts?: {
+    all: number;
+    basic: number;
+    premium: number;
+    locked: number;
+  };
 }
 
 export interface MentorPersonalityResponse {
@@ -44,7 +52,7 @@ export interface MentorPersonalityResponse {
     completed_at: string;
     factors: Record<string, number>;
     facets: Record<string, number>;
-    interpretation: Record<string, { trait: string; score: number; level: string }>;
+    interpretation: Record<string, { trait: string; score: number; level: string; needs_improvement?: boolean }>;
   } | null;
 }
 
@@ -75,21 +83,41 @@ export interface MentorRecommendationsResponse {
   }>;
 }
 
-export function useMentorUsers(search: string, page: number, enabled = true) {
+export type MentorPlanFilter = 'all' | 'basic' | 'premium' | 'locked';
+
+export function useMentorUsers(
+  search: string,
+  page: number,
+  enabled = true,
+  planFilter: MentorPlanFilter = 'all',
+  perPage = 12,
+) {
   return useQuery({
-    queryKey: ['mentor', 'users', { search, page }],
+    queryKey: queryKeys.mentorUsers(search, page, planFilter, perPage),
     queryFn: ({ signal }) => api.get<MentorUsersResponse>('/mentor/users', {
       search: search || undefined,
       page,
-      per_page: 12,
+      per_page: perPage,
+      plan_filter: planFilter === 'all' ? undefined : planFilter,
     }, { signal }),
+    enabled,
+  });
+}
+
+export function useAllMentorUsers(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.mentorUsersAll,
+    queryFn: ({ signal }) => fetchAllCollection((page) => api.get<MentorUsersResponse>('/mentor/users', {
+      page,
+      per_page: 100,
+    }, { signal })),
     enabled,
   });
 }
 
 export function useMentorUserPersonality(userId: string, relationshipId: string, enabled = true) {
   return useQuery({
-    queryKey: ['mentor', 'users', userId, 'personality', relationshipId],
+    queryKey: queryKeys.mentorUserPersonality(userId, relationshipId),
     queryFn: ({ signal }) => api.get<MentorPersonalityResponse>(`/mentor/users/${userId}/personality`, {
       relationship_id: relationshipId,
     }, { signal }),

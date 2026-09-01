@@ -11,6 +11,7 @@ class PlanSeeder extends Seeder
     {
         $plans = [
             [
+                'code' => 'personal_basic',
                 'client_type' => 'personal',
                 'name' => ['es' => 'Personal Básico', 'en' => 'Basic Individual', 'pt' => 'Pessoal Básico'],
                 'description' => ['es' => '4 sesiones al mes con mentor personalizado', 'en' => '4 monthly sessions with personalized mentor', 'pt' => '4 sessões mensais com mentor personalizado'],
@@ -20,6 +21,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Perfil OCEAN', 'OCEAN profile', 'Perfil OCEAN'),
                     $this->feature('Ruta de aprendizaje', 'Learning path', 'Trilha de aprendizagem'),
                 ],
+                'entitlements' => $this->personalEntitlements(3),
                 'price_monthly' => 499.00,
                 'price_yearly' => 4999.00,
                 'max_sessions_per_month' => 4,
@@ -28,6 +30,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'code' => 'personal_premium',
                 'client_type' => 'personal',
                 'name' => ['es' => 'Personal Premium', 'en' => 'Premium Individual', 'pt' => 'Pessoal Premium'],
                 'description' => ['es' => '8 sesiones al mes, recursos avanzados', 'en' => '8 monthly sessions with advanced resources', 'pt' => '8 sessões mensais com recursos avançados'],
@@ -38,6 +41,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Evaluaciones', 'Assessments', 'Avaliações'),
                     $this->feature('Certificado blockchain', 'Blockchain certificate', 'Certificado blockchain'),
                 ],
+                'entitlements' => $this->personalEntitlements(10),
                 'price_monthly' => 899.00,
                 'price_yearly' => 8999.00,
                 'max_sessions_per_month' => 8,
@@ -46,6 +50,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'code' => 'family',
                 'client_type' => 'familiar',
                 'name' => ['es' => 'Familiar', 'en' => 'Family', 'pt' => 'Familiar'],
                 'description' => ['es' => 'Hasta 6 miembros, 2 sesiones grupales al mes', 'en' => 'Up to 6 members, 2 group sessions per month', 'pt' => 'Até 6 membros, 2 sessões em grupo por mês'],
@@ -55,6 +60,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Perfiles OCEAN por miembro', 'OCEAN profiles per member', 'Perfis OCEAN por membro'),
                     $this->feature('Chat grupal', 'Group chat', 'Chat em grupo'),
                 ],
+                'entitlements' => [],
                 'price_monthly' => 1299.00,
                 'price_yearly' => 12999.00,
                 'max_sessions_per_month' => 6,
@@ -63,6 +69,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'code' => 'group',
                 'client_type' => 'grupal',
                 'name' => ['es' => 'Grupal', 'en' => 'Group', 'pt' => 'Grupal'],
                 'description' => ['es' => 'Cohortes de 5-20 personas con mentor dedicado', 'en' => '5-20 person cohorts with dedicated mentor', 'pt' => 'Coortes de 5-20 pessoas com mentor dedicado'],
@@ -72,6 +79,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Foro del cohorte', 'Cohort forum', 'Fórum da coorte'),
                     $this->feature('Progreso grupal', 'Group progress', 'Progresso do grupo'),
                 ],
+                'entitlements' => [],
                 'price_monthly' => 2499.00,
                 'price_yearly' => 24999.00,
                 'max_sessions_per_month' => 4,
@@ -80,6 +88,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'code' => 'startup',
                 'client_type' => 'empresa',
                 'name' => ['es' => 'Startup', 'en' => 'Startup', 'pt' => 'Startup'],
                 'description' => ['es' => 'Hasta 20 empleados, dashboard corporativo', 'en' => 'Up to 20 employees, corporate dashboard', 'pt' => 'Até 20 funcionários, painel corporativo'],
@@ -89,6 +98,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Reportes', 'Reports', 'Relatórios'),
                     $this->feature('Matching personalizado', 'Personalized matching', 'Matching personalizado'),
                 ],
+                'entitlements' => [],
                 'price_monthly' => 4999.00,
                 'price_yearly' => 49999.00,
                 'max_sessions_per_month' => 40,
@@ -97,6 +107,7 @@ class PlanSeeder extends Seeder
                 'is_active' => true,
             ],
             [
+                'code' => 'corporate',
                 'client_type' => 'empresa',
                 'name' => ['es' => 'Corporate', 'en' => 'Corporate', 'pt' => 'Corporate'],
                 'description' => ['es' => 'Hasta 100 empleados, todo incluido', 'en' => 'Up to 100 employees, all included', 'pt' => 'Até 100 funcionários, tudo incluído'],
@@ -107,6 +118,7 @@ class PlanSeeder extends Seeder
                     $this->feature('Soporte prioritario', 'Priority support', 'Suporte prioritário'),
                     $this->feature('Certificados blockchain', 'Blockchain certificates', 'Certificados blockchain'),
                 ],
+                'entitlements' => [],
                 'price_monthly' => 14999.00,
                 'price_yearly' => 149999.00,
                 'max_sessions_per_month' => 200,
@@ -140,5 +152,24 @@ class PlanSeeder extends Seeder
     private function feature(string $spanish, string $english, string $portuguese): array
     {
         return ['es' => $spanish, 'en' => $english, 'pt' => $portuguese];
+    }
+
+    private function personalEntitlements(int $maxActiveChallenges): array
+    {
+        return [
+            'mentor_workspace' => true,
+            'attention_tracking' => true,
+            'emotional_check_ins' => true,
+            'challenges' => true,
+            'challenge_media' => true,
+            'challenge_feedback' => true,
+            'mentor_observations' => true,
+            'systemic_maps' => true,
+            'ocean' => true,
+            'neurocognitive' => true,
+            'systemic_map' => true,
+            'feedback' => true,
+            'max_active_challenges' => $maxActiveChallenges,
+        ];
     }
 }

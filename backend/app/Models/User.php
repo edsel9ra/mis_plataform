@@ -154,6 +154,51 @@ class User extends Authenticatable
         return $this->hasMany(AssessmentResult::class);
     }
 
+    public function challengesAsMentor(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'mentor_id');
+    }
+
+    public function challengesAsMentee(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'mentee_id');
+    }
+
+    public function challengeSubmissions(): HasMany
+    {
+        return $this->hasMany(ChallengeSubmission::class, 'mentee_id');
+    }
+
+    public function emotionalCheckIns(): HasMany
+    {
+        return $this->hasMany(EmotionalCheckIn::class, 'mentee_id');
+    }
+
+    public function observationsAsMentor(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveObservation::class, 'mentor_id');
+    }
+
+    public function observationsAsMentee(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveObservation::class, 'mentee_id');
+    }
+
+    public function alertsAsMentor(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveAlert::class, 'mentor_id');
+    }
+
+    public function systemicMapsAsMentor(): HasMany
+    {
+        return $this->hasMany(SystemicMap::class, 'mentor_id');
+    }
+
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(MediaAsset::class, 'uploaded_by');
+    }
+
     public function matchScoresAsMentee(): HasMany
     {
         return $this->hasMany(MatchScore::class, 'user_id');

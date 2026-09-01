@@ -25,6 +25,19 @@ use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
 use App\Http\Controllers\Api\EvaluationController;
 use App\Http\Controllers\Api\MentorDashboardController;
+use App\Http\Controllers\Api\MentorAlertController;
+use App\Http\Controllers\Api\MentorChallengeController;
+use App\Http\Controllers\Api\MentorFeedbackController;
+use App\Http\Controllers\Api\MentorMediaController;
+use App\Http\Controllers\Api\MentorObservationController;
+use App\Http\Controllers\Api\MentorSystemicMapController;
+use App\Http\Controllers\Api\MentorWorkspaceController;
+use App\Http\Controllers\Api\MentorNeurocognitiveController;
+use App\Http\Controllers\Api\MentorEmotionalCheckInController;
+use App\Http\Controllers\Api\MediaAssetController;
+use App\Http\Controllers\Api\MenteeChallengeController;
+use App\Http\Controllers\Api\MenteeCheckInController;
+use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -127,11 +140,50 @@ Route::prefix('v1')->group(function () {
         Route::post('/evaluations/{id}/submit', [EvaluationController::class, 'submit']);
         Route::get('/mentor/evaluation-results', [EvaluationController::class, 'mentorResults']);
 
+        // Mentee workspace activity. Every route resolves the relationship to
+        // the authenticated personal user before reading or writing data.
+        Route::get('/relationships/{relationship}/check-ins', [MenteeCheckInController::class, 'index']);
+        Route::post('/relationships/{relationship}/check-ins', [MenteeCheckInController::class, 'store']);
+        Route::get('/relationships/{relationship}/emotional-check-ins', [MenteeEmotionalCheckInController::class, 'index']);
+        Route::post('/relationships/{relationship}/emotional-check-ins', [MenteeEmotionalCheckInController::class, 'store']);
+        Route::get('/relationships/{relationship}/challenges', [MenteeChallengeController::class, 'index']);
+        Route::get('/challenges/{challenge}', [MenteeChallengeController::class, 'show']);
+        Route::get('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeIndex']);
+        Route::post('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeStore']);
+        Route::get('/challenges/{challenge}/submissions', [MenteeChallengeController::class, 'submissions']);
+        Route::post('/challenges/{challenge}/submissions', [MenteeChallengeController::class, 'storeSubmission']);
+        Route::get('/challenges/{challenge}/feedback', [MenteeChallengeController::class, 'feedback']);
+        Route::get('/media/{media}', [MediaAssetController::class, 'show'])->name('media.show');
+
         Route::middleware('role:mentor')->prefix('mentor')->group(function () {
             Route::put('/skills', [MentorSkillController::class, 'updateOwn']);
             Route::get('/users', [MentorDashboardController::class, 'users']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
+            Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);
+            Route::get('/users/{user}/neurocognitive', [MentorNeurocognitiveController::class, 'show']);
+            Route::put('/users/{user}/neurocognitive', [MentorObservationController::class, 'store']);
+            Route::get('/users/{user}/workspace', [MentorWorkspaceController::class, 'show']);
+            Route::get('/users/{user}/attention', [MentorWorkspaceController::class, 'show']);
+            Route::get('/users/{user}/observations', [MentorObservationController::class, 'index']);
+            Route::post('/users/{user}/observations', [MentorObservationController::class, 'store']);
+            Route::get('/users/{user}/emotional-check-ins', [MentorEmotionalCheckInController::class, 'index']);
+            Route::get('/users/{user}/challenges', [MentorChallengeController::class, 'index']);
+            Route::post('/users/{user}/challenges', [MentorChallengeController::class, 'store']);
+            Route::get('/users/{user}/systemic-map', [MentorSystemicMapController::class, 'show']);
+            Route::put('/users/{user}/systemic-map', [MentorSystemicMapController::class, 'update']);
+            Route::get('/users/{user}/alerts', [MentorAlertController::class, 'index']);
+            Route::get('/challenges', [MentorChallengeController::class, 'catalog']);
+            Route::post('/challenges', [MentorChallengeController::class, 'catalogStore']);
+            Route::get('/challenges/{challenge}', [MentorChallengeController::class, 'show']);
+            Route::put('/challenges/{challenge}', [MentorChallengeController::class, 'update']);
+            Route::get('/challenges/{challenge}/feedback', [MentorFeedbackController::class, 'index']);
+            Route::post('/challenges/{challenge}/feedback', [MentorFeedbackController::class, 'store']);
+            Route::get('/feedback', [MentorFeedbackController::class, 'all']);
+            Route::post('/feedback', [MentorFeedbackController::class, 'storeGeneral']);
+            Route::post('/media', [MentorMediaController::class, 'store']);
+            Route::get('/systemic-maps/{id}', [MentorSystemicMapController::class, 'showById']);
+            Route::patch('/alerts/{id}/resolve', [MentorAlertController::class, 'resolve']);
         });
 
         // Resources

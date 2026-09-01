@@ -8,6 +8,7 @@ echo "Verificando directorios de Laravel..."
 
 mkdir -p \
     bootstrap/cache \
+    storage/app/public \
     storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \

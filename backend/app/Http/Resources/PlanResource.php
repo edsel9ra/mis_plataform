@@ -11,6 +11,7 @@ class PlanResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'code' => $this->code,
             'client_type' => $this->client_type,
             'name' => $this->name,
             'description' => $this->localizedValue($this->description),
@@ -20,6 +21,7 @@ class PlanResource extends JsonResource
             'max_members' => $this->max_members,
             'max_mentors' => $this->max_mentors,
             'features' => $this->localizedFeatures($this->features),
+            'entitlements' => $this->entitlements ?? [],
             'is_active' => $this->is_active,
             'created_at' => $this->created_at,
             'subscriptions_count' => $this->whenCounted('subscriptions'),

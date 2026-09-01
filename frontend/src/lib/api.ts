@@ -72,7 +72,8 @@ class ApiClient {
     }
 
     const headers = new Headers(fetchOptions.headers);
-    if (!headers.has('Content-Type')) headers.set('Content-Type', 'application/json');
+    const isMultipart = isFormData(fetchOptions.body);
+    if (!headers.has('Content-Type') && !isMultipart) headers.set('Content-Type', 'application/json');
     if (!headers.has('Accept')) headers.set('Accept', 'application/json');
     if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentLocale());
     if (!headers.has('X-MIS-Locale')) headers.set('X-MIS-Locale', currentLocale());
@@ -108,10 +109,12 @@ class ApiClient {
           window.dispatchEvent(new Event('auth:unauthorized'));
         }
 
+        const errorPayload = toErrorPayload(payload, text);
+
         throw new ApiError(
-          payload?.message || payload?.error || `HTTP ${response.status}`,
+          errorPayload.message || errorPayload.error || `HTTP ${response.status}`,
           response.status,
-          payload?.errors,
+          errorPayload.errors,
         );
       }
 
@@ -142,11 +145,11 @@ class ApiClient {
   }
 
   post<T>(endpoint: string, data?: unknown, options: ApiRequestOptions = {}): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'POST', body: JSON.stringify(data) });
+    return this.request<T>(endpoint, { ...options, method: 'POST', body: serializeBody(data) });
   }
 
   put<T>(endpoint: string, data?: unknown, options: ApiRequestOptions = {}): Promise<T> {
-    return this.request<T>(endpoint, { ...options, method: 'PUT', body: JSON.stringify(data) });
+    return this.request<T>(endpoint, { ...options, method: 'PUT', body: serializeBody(data) });
   }
 
   delete<T>(endpoint: string, options: ApiRequestOptions = {}): Promise<T> {
@@ -160,18 +163,19 @@ interface ParsedApiPayload {
   errors?: Record<string, string[]>;
 }
 
-function safeJsonParse(text: string): ParsedApiPayload {
+function safeJsonParse(text: string): unknown {
   try {
-    const parsed: unknown = JSON.parse(text);
-
-    if (parsed && typeof parsed === 'object') {
-      return parsed as ParsedApiPayload;
-    }
-
-    return { message: typeof parsed === 'string' ? parsed : text };
+    return JSON.parse(text);
   } catch {
-    return { message: text };
+    return text;
   }
+}
+
+function toErrorPayload(payload: unknown, fallback: string): ParsedApiPayload {
+  if (typeof payload === 'string') return { message: payload };
+  if (!payload || typeof payload !== 'object') return { message: fallback };
+
+  return payload as ParsedApiPayload;
 }
 
 function readCookie(name: string): string | null {
@@ -199,6 +203,16 @@ function currentLocale(): string {
   const locale = document.documentElement.lang.split('-')[0].toLowerCase();
 
   return SUPPORTED_LOCALES.has(locale) ? locale : DEFAULT_LOCALE;
+}
+
+function serializeBody(data: unknown): BodyInit | undefined {
+  if (isFormData(data)) return data;
+
+  return data === undefined ? undefined : JSON.stringify(data);
+}
+
+function isFormData(value: unknown): value is FormData {
+  return typeof FormData !== 'undefined' && value instanceof FormData;
 }
 
 async function ensureCsrfCookie(signal: AbortSignal): Promise<void> {

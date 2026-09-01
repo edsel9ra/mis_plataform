@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\Company;
+use App\Models\FeedbackThread;
 use App\Models\MentorshipRelationship;
 use App\Models\Plan;
 use App\Models\Subscription;
@@ -71,4 +72,30 @@ it('enforces one live company per administrator', function () {
 
     Company::create($attributes);
     Company::create($attributes);
+})->throws(QueryException::class);
+
+it('enforces one general feedback thread per relationship', function () {
+    $mentor = User::factory()->mentor()->create();
+    $relationship = MentorshipRelationship::factory()->create([
+        'type' => 'personal',
+        'source_type' => 'user',
+        'source_id' => $this->user->id,
+        'mentor_id' => $mentor->id,
+        'status' => 'active',
+    ]);
+
+    FeedbackThread::create([
+        'relationship_id' => $relationship->id,
+        'challenge_id' => null,
+        'mentor_id' => $mentor->id,
+        'mentee_id' => $this->user->id,
+        'status' => 'open',
+    ]);
+    FeedbackThread::create([
+        'relationship_id' => $relationship->id,
+        'challenge_id' => null,
+        'mentor_id' => $mentor->id,
+        'mentee_id' => $this->user->id,
+        'status' => 'open',
+    ]);
 })->throws(QueryException::class);

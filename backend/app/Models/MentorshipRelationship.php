@@ -26,6 +26,27 @@ class MentorshipRelationship extends Model
         'completed_at',
     ];
 
+    public function setSourceTypeAttribute(?string $value): void
+    {
+        $this->attributes['source_type'] = self::canonicalSourceType($value);
+    }
+
+    public function getSourceTypeAttribute(?string $value): ?string
+    {
+        return self::canonicalSourceType($value);
+    }
+
+    public static function canonicalSourceType(?string $value): ?string
+    {
+        return match ($value) {
+            User::class, 'user' => 'user',
+            FamilyGroup::class, 'family_group' => 'family_group',
+            Cohort::class, 'cohort' => 'cohort',
+            Company::class, 'company' => 'company',
+            default => $value,
+        };
+    }
+
     protected function casts(): array
     {
         return [
@@ -195,5 +216,50 @@ class MentorshipRelationship extends Model
     public function certificates(): HasMany
     {
         return $this->hasMany(Certificate::class, 'relationship_id');
+    }
+
+    public function challenges(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'relationship_id');
+    }
+
+    public function challengeCheckIns(): HasMany
+    {
+        return $this->hasMany(ChallengeCheckIn::class, 'relationship_id');
+    }
+
+    public function challengeSubmissions(): HasMany
+    {
+        return $this->hasMany(ChallengeSubmission::class, 'relationship_id');
+    }
+
+    public function feedbackThreads(): HasMany
+    {
+        return $this->hasMany(FeedbackThread::class, 'relationship_id');
+    }
+
+    public function emotionalCheckIns(): HasMany
+    {
+        return $this->hasMany(EmotionalCheckIn::class, 'relationship_id');
+    }
+
+    public function neurocognitiveObservations(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveObservation::class, 'relationship_id');
+    }
+
+    public function neurocognitiveAlerts(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveAlert::class, 'relationship_id');
+    }
+
+    public function systemicMaps(): HasMany
+    {
+        return $this->hasMany(SystemicMap::class, 'relationship_id');
+    }
+
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(MediaAsset::class, 'relationship_id');
     }
 }

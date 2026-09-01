@@ -1,6 +1,7 @@
 <?php
 
 use App\Models\User;
+use App\Models\Plan;
 use Database\Seeders\RolePermissionSeeder;
 
 uses()->group('admin');
@@ -93,6 +94,35 @@ it('lists assessments', function () {
         ->getJson('/api/v1/admin/assessments');
 
     $response->assertOk();
+});
+
+it('creates plans with stable codes and entitlements', function () {
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/admin/plans', [
+            'code' => 'admin_personal_plus',
+            'client_type' => 'personal',
+            'name' => [
+                'es' => 'Personal Plus',
+                'en' => 'Personal Plus',
+                'pt' => 'Pessoal Plus',
+            ],
+            'price_monthly' => 20,
+            'price_yearly' => 200,
+            'max_sessions_per_month' => 8,
+            'max_members' => 1,
+            'max_mentors' => 1,
+            'entitlements' => [
+                'mentor_workspace' => true,
+                'ocean' => true,
+            ],
+            'is_active' => false,
+        ]);
+
+    $response->assertCreated()
+        ->assertJsonPath('code', 'admin_personal_plus')
+        ->assertJsonPath('entitlements.ocean', true)
+        ->assertJsonPath('is_active', false);
+    expect(Plan::where('code', 'admin_personal_plus')->exists())->toBeTrue();
 });
 
 it('denies non-admin users', function () {

@@ -140,7 +140,7 @@ class DemoMentorshipSeeder extends Seeder
             'familiar' => $this->familySource($user),
             'grupal' => $this->cohortSource($user),
             'empresa' => $this->companySource($user),
-            default => [User::class, $user->id],
+            default => ['user', $user->id],
         };
     }
 
@@ -156,7 +156,7 @@ class DemoMentorshipSeeder extends Seeder
             ['full_name' => $user->full_name, 'relationship' => 'head'],
         );
 
-        return [FamilyGroup::class, $group->id];
+        return ['family_group', $group->id];
     }
 
     private function cohortSource(User $user): array
@@ -171,7 +171,7 @@ class DemoMentorshipSeeder extends Seeder
             ['status' => 'active', 'personality_assessment_id' => $user->personalityAssessment?->id],
         );
 
-        return [Cohort::class, $cohort->id];
+        return ['cohort', $cohort->id];
     }
 
     private function companySource(User $user): array
@@ -181,7 +181,7 @@ class DemoMentorshipSeeder extends Seeder
             ['industry' => 'Servicios profesionales', 'size' => 'sme', 'subscription_status' => 'trial'],
         );
 
-        return [Company::class, $company->id];
+        return ['company', $company->id];
     }
 
     private function seedSessions(MentorshipRelationship $relationship, User $user, User $mentor, int $index): void

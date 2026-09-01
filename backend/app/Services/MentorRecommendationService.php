@@ -47,7 +47,6 @@ class MentorRecommendationService
             ->get();
 
         return [
-            'user_ocean' => $ocean,
             'recommended_mentors' => RecommendationMentorResource::collection($mentors)->resolve($request),
             'recommended_sessions' => RecommendationSessionResource::collection($sessions)->resolve($request),
             'recommended_evaluations' => $this->evaluations($relationship->type, $ocean),

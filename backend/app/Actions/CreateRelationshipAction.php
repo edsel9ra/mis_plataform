@@ -21,6 +21,8 @@ class CreateRelationshipAction
 
     public function execute(array $data): MentorshipRelationship
     {
+        $data['source_type'] = MentorshipRelationship::canonicalSourceType($data['source_type']);
+
         try {
             return DB::transaction(function () use ($data) {
                 $mentor = User::query()->lockForUpdate()->findOrFail($data['mentor_id']);

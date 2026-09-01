@@ -44,7 +44,8 @@ export default function LoginPage() {
     setServerError('');
     try {
       const user = await login(data.email, data.password);
-      router.push(localePath(platformAdminRoles.has(user.role) ? '/admin' : '/dashboard', locale));
+      const fallbackPath = localePath(platformAdminRoles.has(user.role) ? '/admin' : '/dashboard', locale);
+      router.push(safeNextPath(new URLSearchParams(window.location.search).get('next'), fallbackPath));
     } catch (err) {
       setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
     }
@@ -169,4 +170,17 @@ export default function LoginPage() {
       </div>
     </div>
   );
+}
+
+function safeNextPath(value: string | null, fallback: string): string {
+  if (!value || !value.startsWith('/')) return fallback;
+
+  try {
+    const target = new URL(value, window.location.origin);
+    if (target.origin !== window.location.origin) return fallback;
+
+    return `${target.pathname}${target.search}${target.hash}`;
+  } catch {
+    return fallback;
+  }
 }

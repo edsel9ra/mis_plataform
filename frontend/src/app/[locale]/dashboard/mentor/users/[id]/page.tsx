@@ -5,7 +5,6 @@ import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, Brain, Calendar, ClipboardCheck, Clock, UserRoundSearch, type LucideIcon } from 'lucide-react';
-import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardTitle } from '@/components/ui/card';
 import { PageSpinner } from '@/components/ui/spinner';
@@ -13,6 +12,8 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { localePath } from '@/i18n/paths';
 import { apiErrorMessage } from '@/lib/errors';
 import { useMentorUserPersonality, useMentorUserRecommendations } from '@/hooks/use-mentor-dashboard';
+import { useMentorUserProfile } from '@/hooks/use-mentor-workspace';
+import { MentorUserProfileTabs } from '@/components/mentor-workspace/MentorUserProfileTabs';
 
 export default function MentorUserDetailPage() {
   const t = useTranslations();
@@ -29,6 +30,7 @@ export default function MentorUserDetailPage() {
   const enabled = mentor?.role === 'mentor' && Boolean(resolvedRelationshipId);
   const personality = useMentorUserPersonality(params.id, resolvedRelationshipId, enabled);
   const recommendations = useMentorUserRecommendations(params.id, resolvedRelationshipId, enabled);
+  const workspaceProfile = useMentorUserProfile(params.id, resolvedRelationshipId, enabled);
 
   if (relationshipId === undefined) return <PageSpinner />;
 
@@ -46,10 +48,14 @@ export default function MentorUserDetailPage() {
   }
 
   const { user, assessment } = personality.data;
-  const assignment = user.assignments[0];
-  const radarData = assessment
-    ? Object.entries(assessment.interpretation).map(([key, value]) => ({ key, trait: value.trait, score: value.score }))
-    : [];
+  const assignment = user.assignments?.find((item) => item.relationship_id === resolvedRelationshipId) ?? user.assignments?.[0];
+  if (!assignment) {
+    return <ErrorState message={t('mentor_dashboard.detail_error')} />;
+  }
+  const plan = workspaceProfile.data?.plan
+    ?? workspaceProfile.data?.subscription?.plan
+    ?? workspaceProfile.data?.assignment?.plan
+    ?? assignment.plan;
 
   return (
     <div className="mx-auto max-w-7xl space-y-6">
@@ -73,32 +79,15 @@ export default function MentorUserDetailPage() {
         </div>
       </header>
 
-      {!assessment ? (
-        <Card className="border-amber-200 bg-amber-50 py-12 text-center">
-          <Brain className="mx-auto h-12 w-12 text-amber-500" aria-hidden="true" />
-          <h2 className="mt-4 text-xl font-semibold text-amber-950">{t('mentor_dashboard.incomplete_title')}</h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-amber-800">{t('mentor_dashboard.incomplete_description')}</p>
-        </Card>
-      ) : (
-        <section className="grid gap-6 lg:grid-cols-[minmax(0,1.1fr)_minmax(340px,0.9fr)]">
-          <Card>
-            <CardTitle>{t('mentor_dashboard.ocean_title')}</CardTitle>
-            <div className="mt-2 h-[360px]"><OceanRadarChart data={radarData} /></div>
-          </Card>
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-1">
-            {Object.entries(assessment.interpretation).map(([key, factor]) => (
-              <Card key={key} padding="sm" className="flex items-center justify-between gap-4">
-                <div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-primary-700">{key}</p>
-                  <p className="font-semibold text-slate-900">{factor.trait}</p>
-                  <p className="text-sm text-slate-500">{factor.level}</p>
-                </div>
-                <span className="text-2xl font-bold text-slate-950">{Math.round(factor.score)}</span>
-              </Card>
-            ))}
-          </div>
-        </section>
-      )}
+      <MentorUserProfileTabs
+        userId={params.id}
+        relationshipId={resolvedRelationshipId}
+        assessment={assessment}
+        plan={plan}
+        subscription={workspaceProfile.data?.subscription}
+        entitlements={workspaceProfile.data?.entitlements ?? assignment.entitlements}
+        locked={workspaceProfile.data?.assignment?.locked ?? assignment.locked}
+      />
 
       <section className="grid gap-6 xl:grid-cols-3">
         <RecommendationSection icon={UserRoundSearch} title={t('mentor_dashboard.compatible_mentors')} empty={t('mentor_dashboard.no_compatible_mentors')}>

@@ -19,6 +19,7 @@ import {
   ChevronLeft,
   ChevronRight,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Menu,
   MessageSquare,
@@ -52,11 +53,15 @@ export function AppShell({ children }: { children: ReactNode }) {
 
   const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
   const navItems = isAdmin
-    ? [...baseNavItems, { href: '/admin', label: 'nav.admin', icon: Shield }]
-    : user?.role === 'mentor'
-      ? baseNavItems.map((item) => item.href === '/dashboard'
-        ? { ...item, href: '/dashboard/mentor', label: 'nav.assigned_users' }
-        : item)
+      ? [...baseNavItems, { href: '/admin', label: 'nav.admin', icon: Shield }]
+      : user?.role === 'mentor'
+      ? [
+        ...baseNavItems.map((item) => item.href === '/dashboard'
+          ? { ...item, href: '/dashboard/mentor', label: 'nav.assigned_users' }
+          : item),
+        { href: '/dashboard/mentor/challenges', label: 'nav.mentor_challenges', icon: ListChecks },
+        { href: '/dashboard/mentor/feedback', label: 'nav.mentor_feedback', icon: MessageSquare },
+      ]
       : baseNavItems;
   const fullName = [user?.name, user?.last_name].filter(Boolean).join(' ') || user?.email || 'MIS';
   const sidebarToggleLabel = t(isSidebarCollapsed ? 'common.show_navigation' : 'common.hide_navigation');
@@ -185,7 +190,8 @@ export function AppShell({ children }: { children: ReactNode }) {
           <ul className="space-y-1">
             {navItems.map(({ href, label, icon: Icon }) => {
               const localizedHref = localePath(href, locale);
-              const isActive = pathname === localizedHref || pathname.startsWith(localizedHref + '/');
+              const isActive = pathname === localizedHref
+                || (href === '/dashboard' && pathname.startsWith(localizedHref + '/'));
 
               return (
                 <li key={href}>

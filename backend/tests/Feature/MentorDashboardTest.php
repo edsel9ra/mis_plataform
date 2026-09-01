@@ -10,6 +10,7 @@ use App\Models\MentorshipRelationship;
 use App\Models\PersonalityAssessment;
 use App\Models\Plan;
 use App\Models\Session;
+use App\Models\Subscription;
 use App\Models\User;
 use App\Services\MentorAssignmentService;
 use App\Actions\CreateRelationshipAction;
@@ -37,6 +38,35 @@ beforeEach(function () {
         ]);
     };
 });
+
+function dashboardPlan(): Plan
+{
+    return Plan::create([
+        'code' => 'dashboard_personal',
+        'client_type' => 'personal',
+        'name' => ['es' => 'Dashboard personal'],
+        'price_monthly' => 10,
+        'price_yearly' => 100,
+        'max_mentors' => 1,
+        'entitlements' => [
+            'mentor_workspace' => true,
+            'ocean' => true,
+        ],
+        'is_active' => true,
+    ]);
+}
+
+function subscribeDashboardUser(User $user, Plan $plan): void
+{
+    Subscription::create([
+        'subscriber_type' => 'user',
+        'subscriber_id' => $user->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addMonth(),
+    ]);
+}
 
 it('requires the mentor role and lists only safe active personal assignments', function () {
     $target = User::withoutSyncingToSearch(fn () => User::factory()->create([
@@ -66,6 +96,47 @@ it('requires the mentor role and lists only safe active personal assignments', f
     $mentee->assignRole('mentee');
     $this->actingAs($mentee)->getJson('/api/v1/mentor/users')->assertForbidden();
     $this->actingAs($this->mentor)->getJson('/api/v1/mentor/users?per_page=101')->assertUnprocessable();
+});
+
+it('filters plan tiers before pagination and reports counts for the full result set', function () {
+    $basicUser = User::withoutSyncingToSearch(fn () => User::factory()->create(['name' => 'Basic User']));
+    $premiumUser = User::withoutSyncingToSearch(fn () => User::factory()->create(['name' => 'Premium User']));
+    $lockedUser = User::withoutSyncingToSearch(fn () => User::factory()->create(['name' => 'Locked User']));
+    $basicRelationship = ($this->relationship)($this->mentor, 'personal', 'user', $basicUser->id);
+    ($this->relationship)($this->mentor, 'personal', 'user', $premiumUser->id);
+    ($this->relationship)($this->mentor, 'personal', 'user', $lockedUser->id);
+    subscribeDashboardUser($basicUser, Plan::create([
+        'code' => 'personal_basic',
+        'client_type' => 'personal',
+        'name' => ['es' => 'Personal Básico'],
+        'price_monthly' => 10,
+        'price_yearly' => 100,
+        'max_mentors' => 1,
+        'entitlements' => ['mentor_workspace' => true, 'ocean' => true],
+        'is_active' => true,
+    ]));
+    subscribeDashboardUser($premiumUser, Plan::create([
+        'code' => 'personal_premium',
+        'client_type' => 'personal',
+        'name' => ['es' => 'Personal Premium'],
+        'price_monthly' => 20,
+        'price_yearly' => 200,
+        'max_mentors' => 1,
+        'entitlements' => ['mentor_workspace' => true, 'ocean' => true],
+        'is_active' => true,
+    ]));
+
+    $response = $this->actingAs($this->mentor)->getJson('/api/v1/mentor/users?plan_filter=basic&per_page=1');
+
+    $response->assertOk()
+        ->assertJsonCount(1, 'data')
+        ->assertJsonPath('data.0.id', $basicUser->id)
+        ->assertJsonPath('meta.total', 1)
+        ->assertJsonPath('plan_counts.all', 3)
+        ->assertJsonPath('plan_counts.basic', 1)
+        ->assertJsonPath('plan_counts.premium', 1)
+        ->assertJsonPath('plan_counts.locked', 1);
+    expect($basicRelationship)->not->toBeNull();
 });
 
 it('rejects non-canonical sources and mentors with a different client type on creation', function () {
@@ -171,6 +242,7 @@ it('returns target-specific safe OCEAN data and hides unauthorized pairs as not 
         'birth_date' => '1980-04-05',
     ]));
     $relationship = ($this->relationship)($this->mentor, 'personal', 'user', $target->id);
+    subscribeDashboardUser($target, dashboardPlan());
     PersonalityAssessment::factory()->create([
         'user_id' => $target->id,
         'answers' => ['secret-answer'],
@@ -217,6 +289,7 @@ it('builds local recommendations for the target and limits sessions to the autho
     PersonalityAssessment::factory()->create(['user_id' => $this->mentor->id, 'results' => ['factors' => ['O' => 20, 'C' => 20, 'E' => 20, 'A' => 20, 'N' => 80]]]);
 
     $relationship = ($this->relationship)($this->mentor, 'personal', 'user', $target->id);
+    subscribeDashboardUser($target, dashboardPlan());
     $otherRelationship = ($this->relationship)($this->mentor, 'personal', 'user', $otherTarget->id);
     $authorizedSession = Session::factory()->create([
         'relationship_id' => $relationship->id,
@@ -231,7 +304,6 @@ it('builds local recommendations for the target and limits sessions to the autho
     );
 
     $response->assertOk()
-        ->assertJsonPath('user_ocean.O', 88)
         ->assertJsonPath('recommended_mentors.0.id', $compatibleMentor->id)
         ->assertJsonPath('recommended_sessions.0.id', $authorizedSession->id)
         ->assertJsonCount(1, 'recommended_sessions')
@@ -240,13 +312,14 @@ it('builds local recommendations for the target and limits sessions to the autho
         ->assertJsonMissingPath('recommended_mentors.0.personality_assessment')
         ->assertJsonMissingPath('recommended_sessions.0.meet_link')
         ->assertJsonMissingPath('recommended_sessions.0.mentor_notes')
-        ->assertJsonMissingPath('recommended_sessions.0.attendees');
+        ->assertJsonMissingPath('recommended_sessions.0.attendees')
+        ->assertJsonMissingPath('user_ocean');
 
     $incomplete = User::withoutSyncingToSearch(fn () => User::factory()->create());
     $incompleteRelationship = ($this->relationship)($this->mentor, 'personal', 'user', $incomplete->id);
     $this->actingAs($this->mentor)
         ->getJson("/api/v1/mentor/users/{$incomplete->id}/recommendations?relationship_id={$incompleteRelationship->id}")
         ->assertOk()
-        ->assertJsonPath('user_ocean', null)
+        ->assertJsonMissingPath('user_ocean')
         ->assertJsonStructure(['recommended_mentors', 'recommended_sessions', 'recommended_evaluations']);
 });

@@ -11,6 +11,7 @@ import { localePath } from '@/i18n/paths';
 import { useRelationships } from '@/hooks/use-relationships';
 import { useSessions } from '@/hooks/use-sessions';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
+import { PersonalPlansSection } from '@/components/mentor-workspace/PersonalPlansSection';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +32,7 @@ interface TraitData {
   trait: string;
   score: number;
   level: string;
+  needs_improvement: boolean;
 }
 
 type OceanKey = 'O' | 'C' | 'E' | 'A' | 'N';
@@ -122,8 +124,10 @@ export default function PersonalDashboard() {
       trait: interpreted?.trait ?? oceanTraitName(key, t),
       score: scoreToPercent(score),
       level: interpreted?.level ?? oceanLevel(score, t),
+      needs_improvement: interpreted?.needs_improvement ?? false,
     };
-  }).filter((item): item is { key: OceanKey; trait: string; score: number; level: string } => item !== null);
+  }).filter((item): item is { key: OceanKey; trait: string; score: number; level: string; needs_improvement: boolean } => item !== null);
+  const improvementAreas = oceanChartData.filter((item) => item.needs_improvement);
   const pendingTasks = (hasCompletedPersonality ? 0 : 1) + (activeRelationships.length > 0 ? 0 : 1);
   const profileReadiness = Math.min(
     100,
@@ -212,6 +216,8 @@ export default function PersonalDashboard() {
         ))}
       </section>
 
+      <PersonalPlansSection />
+
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">
           {personalityLoading ? (
@@ -280,6 +286,31 @@ export default function PersonalDashboard() {
                 >
                   {t('personality.banner_link')}
                 </Link>
+              </div>
+            </Card>
+          )}
+
+          {improvementAreas.length > 0 && (
+            <Card className="border-amber-200 bg-amber-50 shadow-sm">
+              <div className="flex items-start gap-4">
+                <AlertTriangle className="mt-1 h-6 w-6 shrink-0 text-amber-600" aria-hidden="true" />
+                <div className="min-w-0">
+                  <CardTitle className="text-amber-950">{t('personality.improvement_title')}</CardTitle>
+                  <p className="mt-1 text-sm text-amber-800">{t('personality.improvement_description')}</p>
+                  <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {improvementAreas.map((area) => (
+                      <li key={area.key} className="rounded-xl border border-amber-200 bg-white/70 p-3">
+                        <div className="flex items-center justify-between gap-3">
+                          <span className="font-bold text-amber-950">{area.key}</span>
+                          <span className="text-sm font-semibold text-amber-900">
+                            {t('personality.improvement_score', { score: formatScore(area.score, locale) })}
+                          </span>
+                        </div>
+                        <p className="mt-1 text-sm text-amber-900">{area.trait}</p>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
               </div>
             </Card>
           )}
@@ -393,4 +424,8 @@ function oceanLevel(score: number, t: ReturnType<typeof useTranslations>): strin
   if (score >= 40) return t('personality.medium');
 
   return t('personality.low');
+}
+
+function formatScore(score: number, locale: string): string {
+  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 }).format(score);
 }

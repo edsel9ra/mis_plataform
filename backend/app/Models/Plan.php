@@ -13,9 +13,11 @@ class Plan extends Model
 
     protected $fillable = [
         'client_type',
+        'code',
         'name',
         'description',
         'features',
+        'entitlements',
         'price_monthly',
         'price_yearly',
         'max_sessions_per_month',
@@ -30,6 +32,7 @@ class Plan extends Model
             'name' => 'array',
             'description' => 'array',
             'features' => 'array',
+            'entitlements' => 'array',
             'price_monthly' => 'decimal:2',
             'price_yearly' => 'decimal:2',
             'is_active' => 'boolean',
@@ -39,6 +42,18 @@ class Plan extends Model
     public function subscriptions(): HasMany
     {
         return $this->hasMany(Subscription::class);
+    }
+
+    public function hasEntitlement(string $key): bool
+    {
+        $entitlements = $this->entitlements;
+
+        if (!is_array($entitlements) || !array_key_exists($key, $entitlements)) {
+            return false;
+        }
+
+        return filter_var($entitlements[$key], FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE)
+            ?? (is_numeric($entitlements[$key]) && (float) $entitlements[$key] > 0);
     }
 
     public function getNameAttribute($value)

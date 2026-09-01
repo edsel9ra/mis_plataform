@@ -13,6 +13,7 @@ use App\Models\Session;
 use App\Models\SessionAttendee;
 use App\Services\ContentAccessService;
 use App\Models\User;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
@@ -45,7 +46,7 @@ class CreateSessionAction
             $source = $this->lockSource($relationship);
             $plan = $this->planForSource($relationship, $source);
 
-            if ($plan && $this->monthlySessionCount($relationship) >= $plan->max_sessions_per_month) {
+            if ($plan && $this->monthlySessionCount($relationship, Carbon::parse($data['scheduled_at'])) >= $plan->max_sessions_per_month) {
                 throw ValidationException::withMessages([
                     'session' => [__('sessions.plan_limit_reached')],
                 ]);
@@ -147,14 +148,14 @@ class CreateSessionAction
         );
     }
 
-    private function monthlySessionCount(MentorshipRelationship $relationship): int
+    private function monthlySessionCount(MentorshipRelationship $relationship, Carbon $scheduledAt): int
     {
         return Session::query()
             ->whereHas('relationship', function ($query) use ($relationship) {
                 $query->whereIn('source_type', $this->sourceTypes($relationship->source_type))
                     ->where('source_id', $relationship->source_id);
             })
-            ->whereBetween('scheduled_at', [now()->startOfMonth(), now()->endOfMonth()])
+            ->whereBetween('scheduled_at', [$scheduledAt->copy()->startOfMonth(), $scheduledAt->copy()->endOfMonth()])
             ->where('status', '!=', 'canceled')
             ->count();
     }

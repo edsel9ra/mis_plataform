@@ -9,7 +9,6 @@ use App\Models\Employee;
 use App\Models\FamilyGroup;
 use App\Models\FamilyMember;
 use App\Models\MentorshipRelationship;
-use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Support\Collection;
 
@@ -21,6 +20,10 @@ class MentorAssignmentService
         'grupal' => 'cohort',
         'empresa' => 'company',
     ];
+
+    public function __construct(
+        private PlanEntitlementService $entitlements,
+    ) {}
 
     /**
      * @return Collection<int, array{user: User, assignments: array<int, array<string, mixed>>}>
@@ -36,7 +39,7 @@ class MentorAssignmentService
             ->active()
             ->where('mentor_id', $mentor->id)
             ->where('type', $mentor->client_type)
-            ->where('source_type', $sourceType)
+            ->whereIn('source_type', [$sourceType, $this->sourceClass($sourceType)])
             ->with('source')
             ->orderBy('created_at')
             ->get();
@@ -46,7 +49,6 @@ class MentorAssignmentService
             ->filter()
             ->unique(fn ($context) => $context->getKey())
             ->values();
-        $plans = $this->plansForContexts($contexts);
         $usersByContext = $this->usersByContext($sourceType, $contexts);
 
         $users = collect();
@@ -54,18 +56,21 @@ class MentorAssignmentService
         foreach ($relationships as $relationship) {
             $context = $relationship->source;
 
-            if (!$this->contextHasApplicablePlan($context, $relationship->type, $plans)) {
+            if (!$context) {
                 continue;
             }
 
-            $plan = $this->applicablePlan($context, $plans);
+            $access = $this->entitlements->forModel($context, $relationship->type);
+            if (!$this->shouldIncludeAssignment($relationship->type, $access['status'])) {
+                continue;
+            }
 
             foreach ($usersByContext[$context->getKey()] ?? [] as $user) {
                 if (!$user->is_active) {
                     continue;
                 }
 
-                $assignment = $this->assignmentSummary($relationship, $context, $plan);
+                $assignment = $this->assignmentSummary($relationship, $context, $access);
                 $existing = $users->get($user->id);
 
                 if ($existing) {
@@ -130,44 +135,27 @@ class MentorAssignmentService
         return self::SOURCE_BY_TYPE[$relationshipType] ?? null;
     }
 
-    private function plansForContexts(Collection $contexts): Collection
+    private function sourceClass(string $sourceType): string
     {
-        $planIds = $contexts
-            ->filter(fn ($context) => array_key_exists('plan_id', $context->getAttributes()))
-            ->pluck('plan_id')
-            ->filter()
-            ->unique()
-            ->values();
-
-        if ($planIds->isEmpty()) {
-            return collect();
-        }
-
-        return Plan::query()->whereIn('id', $planIds)->get()->keyBy('id');
+        return match ($sourceType) {
+            'user' => User::class,
+            'family_group' => FamilyGroup::class,
+            'cohort' => Cohort::class,
+            'company' => Company::class,
+            default => $sourceType,
+        };
     }
 
-    private function contextHasApplicablePlan(mixed $context, string $type, Collection $plans): bool
+    private function shouldIncludeAssignment(string $type, string $planStatus): bool
     {
-        if (!$context) {
-            return false;
-        }
-
-        if (!array_key_exists('plan_id', $context->getAttributes()) || !$context->plan_id) {
+        if ($type === 'personal') {
             return true;
         }
 
-        $plan = $plans->get($context->plan_id);
-
-        return (bool) ($plan?->is_active && $plan->client_type === $type);
-    }
-
-    private function applicablePlan(mixed $context, Collection $plans): ?Plan
-    {
-        if (!$context || !array_key_exists('plan_id', $context->getAttributes()) || !$context->plan_id) {
-            return null;
-        }
-
-        return $plans->get($context->plan_id);
+        // Existing group contexts keep their historical filtering behavior.
+        // Personal assignments are deliberately retained so the workspace can
+        // explain why an assignment is locked instead of hiding it.
+        return in_array($planStatus, ['active', 'no_plan'], true);
     }
 
     /** @return array<string, Collection<int, User>> */
@@ -238,15 +226,18 @@ class MentorAssignmentService
     }
 
     /** @return array<string, mixed> */
-    private function assignmentSummary(MentorshipRelationship $relationship, mixed $context, ?Plan $plan): array
+    private function assignmentSummary(MentorshipRelationship $relationship, mixed $context, array $access): array
     {
+        $plan = $access['plan'];
+        $sourceType = MentorshipRelationship::canonicalSourceType($relationship->source_type);
+
         return [
             'relationship_id' => $relationship->id,
             'type' => $relationship->type,
             'context' => [
-                'type' => $relationship->source_type,
+                'type' => $sourceType,
                 'id' => $relationship->source_id,
-                'name' => match ($relationship->source_type) {
+                'name' => match ($sourceType) {
                     'user' => $context->full_name,
                     'family_group' => $context->family_name,
                     'cohort' => $context->name,
@@ -255,9 +246,14 @@ class MentorAssignmentService
             ],
             'plan' => $plan ? [
                 'id' => $plan->id,
+                'code' => $plan->code,
                 'name' => $plan->name,
                 'client_type' => $plan->client_type,
             ] : null,
+            'plan_status' => $access['status'],
+            'locked' => $access['locked'],
+            'lock_reason' => $access['lock_reason'],
+            'entitlements' => $access['entitlements'],
         ];
     }
 }

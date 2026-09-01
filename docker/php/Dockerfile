@@ -26,6 +26,7 @@ COPY --from=composer:2.8.8 /usr/bin/composer /usr/local/bin/composer
 
 RUN mkdir -p \
     bootstrap/cache \
+    storage/app/public \
     storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \
