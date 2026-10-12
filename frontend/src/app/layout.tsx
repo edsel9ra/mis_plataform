@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
-import { Inter } from 'next/font/google';
+import { Fraunces, Instrument_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getMessages, getLocale, getTranslations } from 'next-intl/server';
 import { AuthProvider } from '@/components/auth/AuthProvider';
@@ -10,7 +10,18 @@ import './globals.css';
 
 const siteUrl = getSiteUrl();
 const authCookieName = process.env.AUTH_COOKIE_NAME || 'mis_auth_token';
-const inter = Inter({ subsets: ['latin'], weight: ['400', '500', '600', '700'] });
+const instrumentSans = Instrument_Sans({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-instrument',
+});
+
+const fraunces = Fraunces({
+  subsets: ['latin'],
+  display: 'swap',
+  variable: '--font-fraunces',
+  axes: ['SOFT', 'WONK', 'opsz'],
+});
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -76,14 +87,19 @@ export default async function RootLayout({
   };
 
   return (
-    <html lang={locale} dir="ltr" data-scroll-behavior="smooth">
+    <html
+      lang={locale}
+      dir="ltr"
+      data-scroll-behavior="smooth"
+      className={`${instrumentSans.variable} ${fraunces.variable}`}
+    >
       <head>
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }}
         />
       </head>
-      <body className={`${inter.className} min-h-screen bg-gray-50 antialiased`}>
+      <body className="min-h-screen bg-paper font-sans text-ink antialiased">
         <NextIntlClientProvider messages={messages}>
           <QueryProvider>
             <AuthProvider initialHasAuthCookie={initialHasAuthCookie}>
