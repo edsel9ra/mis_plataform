@@ -82,11 +82,11 @@ class ProgressPanelService
         $incomplete = [];
         $panel = ['period' => $this->currentState($now, $timezone)];
 
-        $panel['objectives'] = $this->guard('objectives', $incomplete, fn (): array => $this->objectivesBlock($subject, $now, $timezone));
-        $panel['sessions'] = $this->guard('sessions', $incomplete, fn (): array => $this->sessionsBlock($subject, $now, $timezone));
-        $panel['activities'] = $this->guard('activities', $incomplete, fn (): array => $this->activitiesBlock($subject, $now, $timezone));
-        $panel['competencies'] = $this->guard('competencies', $incomplete, fn (): array => $this->competenciesBlock($subject));
-        $panel['commitments'] = $this->guard('commitments', $incomplete, fn (): array => $this->commitmentsBlock($subject, $now, $timezone));
+        $panel['objectives'] = $this->guard($subject, 'objectives', $incomplete, fn (): array => $this->objectivesBlock($subject, $now, $timezone));
+        $panel['sessions'] = $this->guard($subject, 'sessions', $incomplete, fn (): array => $this->sessionsBlock($subject, $now, $timezone));
+        $panel['activities'] = $this->guard($subject, 'activities', $incomplete, fn (): array => $this->activitiesBlock($subject, $now, $timezone));
+        $panel['competencies'] = $this->guard($subject, 'competencies', $incomplete, fn (): array => $this->competenciesBlock($subject));
+        $panel['commitments'] = $this->guard($subject, 'commitments', $incomplete, fn (): array => $this->commitmentsBlock($subject, $now, $timezone));
 
         $panel['incomplete_blocks'] = $incomplete;
 
@@ -97,15 +97,17 @@ class ProgressPanelService
      * @param  array<int, string>  $incomplete
      * @return array<string, mixed>
      */
-    private function guard(string $block, array &$incomplete, callable $builder): array
+    private function guard(User $subject, string $block, array &$incomplete, callable $builder): array
     {
         try {
             return $builder();
         } catch (Throwable $exception) {
             $incomplete[] = $block;
 
-            Log::warning('Progress panel block failed', [
+            // Structured and free of objective content / personal data (P20, RNF-8).
+            Log::warning('progress.block_failed', [
                 'block' => $block,
+                'subject_id' => $subject->id,
                 'exception' => $exception::class,
             ]);
 

@@ -1,8 +1,8 @@
 # Spec 001 — Panel de progreso y seguimiento
 
-**Estado:** borrador para revisión
-**Versión:** 0.2.0
-**Fecha:** revisado 2026-10-11
+**Estado:** implementada
+**Versión:** 0.3.0
+**Fecha:** revisado 2026-10-12
 **Ámbito:** nueva funcionalidad de producto (el QUÉ y el POR QUÉ; sin decisiones de implementación)
 **Referencias:** `docs/constitution.md` (principios P1–P20; los aplicables se citan en el texto) y sus **decisiones de producto §3.1** (doc v1.1.0)
 **Naturaleza:** esta spec describe **qué** debe hacer la funcionalidad y **por qué**. No define endpoints, esquemas de base de datos ni componentes concretos; esos son decisiones de diseño posteriores.
@@ -382,19 +382,19 @@ La funcionalidad se considera terminada cuando:
 
 Resueltas el 2026-10-11 e incorporadas a `docs/constitution.md` §3.1 (ya reflejadas en RF-1, RF-5, RF-8, RF-10, RF-11, RF-14 y RNF-2): permisos de objetivos, ámbito de objetivos, sesiones realizadas, periodos predeterminados y privacidad colectiva.
 
-Pendientes:
+Resueltas el 2026-10-12 por el plan de implementación (`plan.md` §2, decisiones D1–D11) y ya reflejadas en el código:
 
-- **[NECESITA ACLARACIÓN]** El contenido del objetivo (título/descripción): ¿texto libre en un idioma o contenido multi-idioma (`{"es","en","pt"}`) como el resto del contenido i18n?
-- **[NECESITA ACLARACIÓN]** ¿«Actividades» incluye tanto retos como módulos de ruta de aprendizaje, o solo retos en v1? (En el modelo actual la finalización se registra por ruta, no por módulo.)
-- **[NECESITA ACLARACIÓN]** ¿El % de objetivos pondera por importancia o todos los objetivos valen igual? (La v1 asume todos iguales).
-- **[NECESITA ACLARACIÓN]** ¿Los objetivos `abandonado` y los eliminados lógicamente salen del denominador del % o permanecen?
-- **[NECESITA ACLARACIÓN]** Definición exacta de «participante elegible» para el umbral de 3 (¿solo miembros con proceso activo? ¿miembros con objetivos?).
-- **[NECESITA ACLARACIÓN]** Agregado del colectivo: ¿cómo se relacionan la suma agregada y la media por miembro cuando las bases difieren, y cuál es la cifra principal?
-- **[NECESITA ACLARACIÓN]** ¿Un objetivo colectivo se integra en el agregado por suma/media o se reporta como línea propia del colectivo?
-- **[NECESITA ACLARACIÓN]** ¿El umbral de 3 es fijo o configurable por organización (la decisión lo fija como «umbral inicial»)?
-- **[NECESITA ACLARACIÓN]** ¿El mentor ve también un agregado de su propia cartera de mentees, además del panel individual?
-- **[NECESITA ACLARACIÓN]** ¿Qué roles concretos son «responsables» de grupo/grupo de formación/empresa (p. ej. `company_admin`, `FamilyGroup.head`, creador de cohorte) y qué pasa si no hay responsable definido?
-- **[NECESITA ACLARACIÓN]** ¿Los admins de plataforma (`super_admin`/`admin`) ven todos los paneles o solo acceso de soporte con registro de auditoría?
+- **Contenido del objetivo**: **texto plano** en `title`/`description` (idioma del autor), no multi-idioma (D1). Lo escriben usuarios, no admins; traducirlo no es viable en v1.
+- **«Actividades»**: incluye **retos y módulos de ruta** (D2) — retos `assigned`/`in_progress` + rutas con progreso no completado, excluyendo `canceled`/`template`.
+- **% de objetivos**: **todos los objetivos valen igual**, sin ponderación por importancia (D3).
+- **Denominador del %**: los objetivos `abandonado` **permanecen** (son no logrados); los *soft-deleted* **salen** (D4).
+- **«Participante elegible»** (umbral de 3): miembro **activo con pertenencia vigente y ≥1 objetivo individual** (D5).
+- **Cifra principal del agregado**: la **media** del % individual; la **suma** logrados/total es conciliación secundaria (D6).
+- **Objetivo colectivo**: se reporta como **línea propia del colectivo** (bloque separado), fuera de la media individual (D7).
+- **Umbral de privacidad**: constante de config `progress.collective_privacy_threshold = 3` («umbral inicial»); la configuración por organización queda **fuera de alcance** (D8).
+- **Mentor / cartera**: **no** ve un agregado de su cartera en v1; ve panel individual por mentee + lista con banderas (D9).
+- **Roles «responsables» de colectivo**: `FamilyGroup.head_user_id`, `Cohort.created_by`, `Company.admin_id` (reutiliza `userCanManageSource`); si no hay responsable, no hay vista de responsable (D10).
+- **Admins de plataforma**: solo con **permiso explícito** `progress.view.support`, con registro de auditoría; sin él, `403` (D11).
 
 ---
 

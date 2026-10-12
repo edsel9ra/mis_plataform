@@ -32,6 +32,7 @@
 - **Certificados**: emitidos vía IPFS (Pinata) + contrato inteligente en Polygon (`blockchain/contracts/CertificateRegistry.sol`)
 - **Empleados de empresa**: sub-usuarios con `role=employee`, dashboard limitado, gestionados por el `company_admin`
 - **Mentor Workspace**: observaciones neurocognitivas, check-ins emocionales, retos + submissions + feedback con archivos, mapas sistémicos y alertas de estancamiento/desenganche, con entitlements por plan
+- **Panel de progreso (spec 001)**: objetivos como entidad de primera clase (`Objective`/`ObjectiveEvidence`, UUID, `scope` individual|colectivo, «vencido» derivado); indicadores calculados en el servidor con calculadoras puras (`app/Services/Progress/Calculators/*`) y orquestadores (`app/Services/Progress/*`); agregados de colectivo con supresión bajo el umbral de 3 (`config/progress.php`); permiso `progress.view.support` para soporte y auditoría vía `spatie/laravel-activitylog`. Rutas: `GET /progress/panel`, `GET /progress/collectives/{type}/{id}`, `GET /mentor/users/{user}/progress`, `GET /mentor/progress/overview`, `GET /admin/progress/panel`, CRUD `/objectives`
 
 ## Comandos
 - Setup completo: `bash setup.sh` verifica Docker, ejecuta `make build`, `make up`, composer install, migraciones, seeders y `storage:link`. El `APP_KEY` viene del archivo de entorno de Compose (no existe un target `make key`).
@@ -89,38 +90,41 @@ make meili                   # scout:import "App\Models\User"
 skills-lock.json              # Origen, ruta y hash de las 27 skills instaladas
 
 backend/
-├── app/Actions/              # 20 clases Action (CreateUser, CreateRelationship, etc.)
-├── app/Enums/                # ClientType, UserRole, SessionStatus, etc.
+├── app/Actions/              # 25 clases Action (CreateUser, CreateObjective, etc.)
+├── app/Enums/                # ClientType, UserRole, SessionStatus, ObjectiveScope/Status, etc.
 ├── app/Events/               # MessageSent, SessionReminder, NotificationPushed
-├── app/Http/Controllers/Api/ # 38 controladores REST, todos bajo /api/v1/
-├── app/Http/Requests/        # 19 clases Form Request
-├── app/Http/Resources/       # 40 transformadores API Resource
-├── app/Models/               # 39 modelos Eloquent (todos UUID, HasUuids, scopes añadidos)
-├── app/Policies/             # 10 policies (relaciones, sesiones, media, mapas sistémicos, alertas, etc.)
-├── app/Services/             # 10 servicios (Mentor*, GoogleMeet, Ipfs, Blockchain, PlanEntitlement, etc.)
+├── app/Http/Controllers/Api/ # 43 controladores REST, todos bajo /api/v1/
+├── app/Http/Requests/        # 58 Form Requests en 20 directorios (incl. Objective/)
+├── app/Http/Resources/       # 45 transformadores API Resource
+├── app/Models/               # 41 modelos Eloquent (todos UUID, HasUuids, scopes añadidos)
+├── app/Policies/             # 11 policies (relaciones, sesiones, media, mapas sistémicos, alertas, objetivo, etc.)
+├── app/Services/             # 11 grupos (Mentor*, Progress/*, GoogleMeet, Ipfs, Blockchain, PlanEntitlement, etc.)
+│                             # Progress/Calculators/: 6 calculadoras puras + orquestadores
 ├── app/Console/Commands/     # Programados: recordatorios, limpieza, sync de matches, alertas
-├── config/                   # Todos los archivos de configuración (incl. mentor.php)
-├── database/factories/       # 17 factories
-├── database/migrations/      # 34 archivos (PKs UUID, JSONB para contenido i18n)
+├── config/                   # Todos los archivos de configuración (incl. mentor.php, progress.php)
+├── database/factories/       # 19 factories
+├── database/migrations/      # 39 archivos (PKs UUID, JSONB para contenido i18n, objectives)
 ├── database/seeders/         # Roles+permisos, planes (6), skill tags (24), demo
-└── tests/                    # Pest (Feature: 21 archivos, incl. MentorWorkspace, Security*)
-                              # (Unit: Actions, Models, IpfsService, SetRequestLocale)
+└── tests/                    # Pest (Feature: 28 archivos, incl. Progress*, MentorWorkspace, Security*)
+                              # (Unit: Actions, Models, Progress/*, IpfsService, SetRequestLocale)
 
 frontend/
 └── src/
-    ├── app/[locale]/         # 31 páginas: login, register/[type], dashboard/{personal,familiar,grupal,empresa,mentor}
-    │                           # onboarding/test-personalidad, loading/error/not-found, sitemap, robots
+    ├── app/[locale]/         # 34 páginas: login, register/[type], dashboard/{personal,familiar,grupal,empresa,mentor}
+    │                           # dashboard/progreso y dashboard/mentor/progress/[id], onboarding/test-personalidad, ...
     ├── components/
     │   ├── auth/             # AuthProvider (React context)
     │   ├── mentor-workspace/ # Componentes del espacio del mentor (mapas, retos, feedback, planes)
+    │   ├── progress/         # Panel de progreso: bloques, formularios de objetivo y evidencias, tarjetas
     │   └── ui/               # Componentes reutilizables (Button, Input, Card, Badge, Alert, Avatar, Spinner, Select, Tabs)
-    ├── hooks/                # 7 archivos de hooks (auth, relationships, sessions, mentor-workspace, etc.)
-    ├── i18n/messages/{es,en,pt}/  # Archivos de traducción JSON
+    ├── hooks/                # 8 archivos de hooks (auth, relationships, sessions, progress, mentor-workspace, etc.)
+    ├── i18n/messages/{es,en,pt}/  # Archivos de traducción JSON (namespace `progress`)
     ├── lib/
     │   ├── api.ts            # ApiClient (fetch wrapper, credentials: 'include')
     │   ├── query-provider.tsx # Provider de React Query
-    │   ├── query-keys.ts     # Claves de query compartidas
-    │   ├── schemas/          # Esquemas Zod (auth, profile, mentor-workspace)
+    │   ├── query-keys.ts     # Claves de query compartidas (progress*, objective*)
+    │   ├── progress.ts       # Funciones puras del panel (estado→UI, formato, periodos)
+    │   ├── schemas/          # Esquemas Zod (auth, profile, objective, mentor-workspace)
     │   └── utils.ts          # utilidad cn()
     └── middleware.ts          # enrutamiento de locales + guard de auth
 

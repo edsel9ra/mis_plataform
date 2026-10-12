@@ -36,6 +36,7 @@ it('lets a mentee propose an objective without gaining administration rights', f
         ->postJson('/api/v1/objectives/proposals', [
             'title' => 'Quiero mejorar mi liderazgo',
             'success_criteria' => 'Liderar una reunión al mes',
+            'due_at' => now()->addMonth()->toIso8601String(),
         ])
         ->assertCreated()
         ->assertJsonPath('data.proposed_by', $this->mentee->id)
