@@ -1,7 +1,7 @@
 'use client';
 
 import { useTranslations } from 'next-intl';
-import { formatRatio, hasMetricData } from '@/lib/progress';
+import { hasMetricData } from '@/lib/progress';
 import type { ObjectivesBlock, ProgressPeriod } from '@/types/progress';
 import { MetricValue } from './MetricValue';
 import { ProgressCard } from './ProgressCard';
