@@ -1,12 +1,13 @@
-import { type HTMLAttributes, forwardRef } from 'react';
+import { type HTMLAttributes, type Ref } from 'react';
 import { cn } from '@/lib/utils';
 
 interface CardProps extends HTMLAttributes<HTMLDivElement> {
   padding?: 'sm' | 'md' | 'lg';
+  ref?: Ref<HTMLDivElement>;
 }
 
-export const Card = forwardRef<HTMLDivElement, CardProps>(
-  ({ className, padding = 'md', children, ...props }, ref) => (
+export function Card({ className, padding = 'md', children, ref, ...props }: CardProps) {
+  return (
     <div
       ref={ref}
       className={cn(
@@ -22,9 +23,8 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
     >
       {children}
     </div>
-  ),
-);
-Card.displayName = 'Card';
+  );
+}
 
 export function CardHeader({ className, children, ...props }: HTMLAttributes<HTMLDivElement>) {
   return (

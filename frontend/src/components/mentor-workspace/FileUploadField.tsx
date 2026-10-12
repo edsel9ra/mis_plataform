@@ -1,6 +1,6 @@
 'use client';
 
-import { forwardRef, useId, type InputHTMLAttributes } from 'react';
+import { useId, type InputHTMLAttributes, type Ref } from 'react';
 import { Upload } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -8,12 +8,10 @@ interface FileUploadFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   label: string;
   hint?: string;
   error?: string;
+  ref?: Ref<HTMLInputElement>;
 }
 
-export const FileUploadField = forwardRef<HTMLInputElement, FileUploadFieldProps>(function FileUploadField(
-  { label, hint, error, className, id, ...props },
-  ref,
-) {
+export function FileUploadField({ label, hint, error, className, id, ref, ...props }: FileUploadFieldProps) {
   const generatedId = useId();
   const inputId = id ?? generatedId;
   const errorId = `${inputId}-error`;
@@ -53,5 +51,4 @@ export const FileUploadField = forwardRef<HTMLInputElement, FileUploadFieldProps
       {error && <p id={errorId} className="text-sm text-red-600" role="alert">{error}</p>}
     </div>
   );
-});
-FileUploadField.displayName = 'FileUploadField';
+}
