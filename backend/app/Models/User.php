@@ -107,6 +107,11 @@ class User extends Authenticatable
         return $this->morphMany(MentorshipRelationship::class, 'source');
     }
 
+    public function objectives(): MorphMany
+    {
+        return $this->morphMany(Objective::class, 'owner');
+    }
+
     public function sessions(): HasManyThrough
     {
         return $this->hasManyThrough(

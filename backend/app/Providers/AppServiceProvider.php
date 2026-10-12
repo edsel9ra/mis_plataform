@@ -12,6 +12,7 @@ use App\Models\MediaAsset;
 use App\Models\MentorshipRelationship;
 use App\Models\NeurocognitiveAlert;
 use App\Models\NeurocognitiveObservation;
+use App\Models\Objective;
 use App\Models\Session;
 use App\Models\SystemicMap;
 use App\Models\User;
@@ -22,6 +23,7 @@ use App\Policies\FeedbackThreadPolicy;
 use App\Policies\MediaAssetPolicy;
 use App\Policies\NeurocognitiveAlertPolicy;
 use App\Policies\NeurocognitiveObservationPolicy;
+use App\Policies\ObjectivePolicy;
 use App\Policies\RelationshipPolicy;
 use App\Policies\SessionPolicy;
 use App\Policies\SystemicMapPolicy;
@@ -81,6 +83,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(MentorshipRelationship::class, RelationshipPolicy::class);
         Gate::policy(NeurocognitiveAlert::class, NeurocognitiveAlertPolicy::class);
         Gate::policy(NeurocognitiveObservation::class, NeurocognitiveObservationPolicy::class);
+        Gate::policy(Objective::class, ObjectivePolicy::class);
         Gate::policy(Session::class, SessionPolicy::class);
         Gate::policy(SystemicMap::class, SystemicMapPolicy::class);
     }

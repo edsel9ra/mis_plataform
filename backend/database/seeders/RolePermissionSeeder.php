@@ -20,6 +20,7 @@ class RolePermissionSeeder extends Seeder
             'manage_company', 'manage_employees', 'manage_plans',
             'manage_users', 'manage_mentors', 'manage_assessments', 'manage_all',
             'view_reports', 'issue_certificates', 'revoke_certificates',
+            'progress.view.support',
         ];
 
         foreach ($permissions as $permission) {
@@ -27,12 +28,13 @@ class RolePermissionSeeder extends Seeder
         }
 
         $roles = [
-            UserRole::SuperAdmin->value => ['manage_all', 'view_reports'],
+            UserRole::SuperAdmin->value => ['manage_all', 'view_reports', 'progress.view.support'],
             UserRole::Admin->value => [
                 'manage_users', 'manage_mentors', 'manage_plans',
                 'manage_sessions', 'manage_assessments',
                 'view_reports', 'issue_certificates', 'revoke_certificates',
                 'view_dashboard', 'view_sessions', 'view_messages',
+                'progress.view.support',
             ],
             UserRole::CompanyAdmin->value => [
                 'manage_company', 'manage_employees', 'manage_relationships',
