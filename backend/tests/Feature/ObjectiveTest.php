@@ -51,14 +51,14 @@ it('lets an assigned mentor create an individual objective with criteria and tit
         ->and(Objective::first()->relationship_id)->toBe($this->relationship->id);
 });
 
-it('rejects an objective without criteria or titular', function () {
+it('rejects an objective without criteria, titular or due date', function () {
     $this->actingAs($this->mentor)
         ->postJson('/api/v1/objectives', [
             'scope' => 'individual',
             'title' => 'Sin criterio ni titular',
         ])
         ->assertStatus(422)
-        ->assertJsonValidationErrors(['owner_id', 'success_criteria']);
+        ->assertJsonValidationErrors(['owner_id', 'success_criteria', 'due_at']);
 
     expect(Objective::count())->toBe(0);
 });

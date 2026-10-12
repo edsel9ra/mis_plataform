@@ -33,7 +33,8 @@ class StoreObjectiveRequest extends FormRequest
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:20000'],
             'success_criteria' => ['required', 'string', 'max:20000'],
-            'due_at' => ['nullable', 'date'],
+            // CA-1.3: a due date is required to create an objective.
+            'due_at' => ['required', 'date'],
 
             // Non-administrable fields must never be supplied by the client.
             'status' => ['prohibited'],

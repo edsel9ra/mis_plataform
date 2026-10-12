@@ -1,10 +1,12 @@
 'use client';
 
-import { useTranslations } from 'next-intl';
+import Link from 'next/link';
+import { useLocale, useTranslations } from 'next-intl';
 import { RotateCcw } from 'lucide-react';
 import { Alert } from '@/components/ui/alert';
-import { Button } from '@/components/ui/button';
+import { Button, buttonVariants } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
+import { localePath } from '@/i18n/paths';
 import type { ProgressBlockName, ProgressPanel as ProgressPanelData } from '@/types/progress';
 import { ActivitiesCard } from './ActivitiesCard';
 import { CollectiveProgressCard } from './CollectiveProgressCard';
@@ -51,6 +53,7 @@ function isPanelEmpty(panel: ProgressPanelData): boolean {
  */
 export function ProgressPanel({ query, relationshipId, showCollectives = true }: ProgressPanelProps) {
   const t = useTranslations();
+  const locale = useLocale();
 
   if (query.isLoading) {
     return (
@@ -84,6 +87,13 @@ export function ProgressPanel({ query, relationshipId, showCollectives = true }:
       <div className="rounded-2xl border border-dashed border-slate-300 bg-white p-10 text-center">
         <h2 className="text-lg font-semibold text-slate-900">{t('progress.empty_state_title')}</h2>
         <p className="mx-auto mt-2 max-w-md text-sm text-slate-500">{t('progress.empty_state_description')}</p>
+        {/* Guided empty state (case 16): a next step, never an error. */}
+        <Link
+          href={localePath('/mentors', locale)}
+          className={buttonVariants({ variant: 'primary', className: 'mt-5' })}
+        >
+          {t('progress.empty_state_cta')}
+        </Link>
       </div>
     );
   }

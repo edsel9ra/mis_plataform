@@ -26,7 +26,8 @@ export function CollectiveProgressCard({ collective }: { collective: CollectiveP
   if (collective.suppressed) {
     return (
       <ProgressCard title={name}>
-        <Alert variant="info">
+        {/* Suppression is announced to assistive tech (RNF-6): no figures, no base. */}
+        <Alert variant="info" role="status" aria-live="polite">
           <span className="inline-flex items-center gap-2">
             <EyeOff className="h-4 w-4 shrink-0" aria-hidden="true" />
             {t('progress.collective.suppressed', { threshold: COLLECTIVE_PRIVACY_THRESHOLD })}

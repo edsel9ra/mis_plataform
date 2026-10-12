@@ -20,7 +20,8 @@ class ProposeObjectiveRequest extends FormRequest
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string', 'max:20000'],
             'success_criteria' => ['required', 'string', 'max:20000'],
-            'due_at' => ['nullable', 'date'],
+            // CA-1.3: a proposal to create an objective also needs a due date.
+            'due_at' => ['required', 'date'],
             'relationship_id' => ['nullable', 'uuid'],
 
             // A proposer must not assign themselves an owner or status.

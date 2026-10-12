@@ -3,6 +3,7 @@
 use App\Models\Objective;
 use App\Models\User;
 use App\Services\PlanEntitlementService;
+use Illuminate\Support\Facades\Log;
 
 uses()->group('progress', 'panel');
 
@@ -75,12 +76,23 @@ it('marks a single failed block incomplete without blanking the panel', function
         $mock->shouldReceive('forModel')->andThrow(new RuntimeException('boom'));
     });
 
+    Log::spy();
+
     $this->actingAs($this->user)
         ->getJson('/api/v1/progress/panel')
         ->assertOk()
         ->assertJsonPath('data.competencies.state', 'incomplete')
         ->assertJsonPath('data.incomplete_blocks.0', 'competencies')
         ->assertJsonStructure(['data' => ['objectives', 'sessions', 'activities', 'commitments']]);
+
+    // The failure is logged structurally, with no objective/personal content (RNF-8).
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message, $context = []) => $message === 'progress.block_failed'
+            && ($context['block'] ?? null) === 'competencies'
+            && ($context['subject_id'] ?? null) === $this->user->id
+            && ! array_key_exists('objectives', $context)
+            && ! array_key_exists('title', $context))
+        ->once();
 });
 
 it('returns a guided empty state when there is no active process', function () {

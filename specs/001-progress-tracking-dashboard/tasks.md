@@ -358,126 +358,133 @@
 
 ## Fase 6 — Interfaz
 
-- [ ] **T-100 · i18n namespace `progress`**
+- [x] **T-100 · i18n namespace `progress`**
   RF: RF-15
   Dep: T-091
   Hecho cuando: `messages/{es,en,pt}/common.json` incluyen `progress` completo y ningún texto visible usa claves crudas.
 
-- [ ] **T-101 · `MetricValue` + `PeriodBadge`**
+- [x] **T-101 · `MetricValue` + `PeriodBadge`**
   RF: RF-13, RF-14
   Dep: T-100
   Hecho cuando: pintan «Sin datos», `0`, «incompleto» y el periodo de forma distinguible con `aria-label`.
 
-- [ ] **T-102 · `ObjectivesBlock`**
+- [x] **T-102 · `ObjectivesBlock`**
   RF: RF-1, RF-2
   Dep: T-101, T-095
   Hecho cuando: lista objetivos con estado y marca de vencido, y oculta acciones de administración si el usuario no puede gestionarlos (evidence-only).
 
-- [ ] **T-103 · `ObjectiveForm`**
+- [x] **T-103 · `ObjectiveForm`**
   RF: RF-1
   Dep: T-093
   Hecho cuando: alta/edición con react-hook-form + Zod, muestra errores claros y deshabilita submit mientras envía.
 
-- [ ] **T-104 · `ObjectiveProposalForm`**
+- [x] **T-104 · `ObjectiveProposalForm`**
   RF: RF-1, RF-12
   Dep: T-103
   Hecho cuando: el mentee propone un objetivo sin acceder a acciones de administración.
 
-- [ ] **T-105 · `ObjectiveEvidenceForm`**
+- [x] **T-105 · `ObjectiveEvidenceForm`**
   RF: RF-1
   Dep: T-095
   Hecho cuando: permite aportar nota/archivo y refleja éxito/error con estados de carga.
 
-- [ ] **T-106 · `ObjectiveStatusControl`**
+- [x] **T-106 · `ObjectiveStatusControl`**
   RF: RF-2
   Dep: T-102
   Hecho cuando: ofrece solo transiciones válidas y muestra el histórico de cambios de estado.
 
-- [ ] **T-107 · `ObjectiveAchievementCard`**
+- [x] **T-107 · `ObjectiveAchievementCard`**
   RF: RF-4
   Dep: T-101
   Hecho cuando: muestra el % con numerador/denominador visibles y «sin datos» si no hay objetivos.
 
-- [ ] **T-108 · `SessionsMetricCard`**
+- [x] **T-108 · `SessionsMetricCard`**
   RF: RF-5
   Dep: T-101
   Hecho cuando: distingue visualmente realizadas (mes actual) de programadas y etiqueta el periodo.
 
-- [ ] **T-109 · `ActivitiesCard`**
+- [x] **T-109 · `ActivitiesCard`**
   RF: RF-6
   Dep: T-101
   Hecho cuando: lista pendientes y vencidas con badge de vencido y sin contar canceladas/plantillas.
 
-- [ ] **T-110 · `CompetenciesCard`**
+- [x] **T-110 · `CompetenciesCard`**
   RF: RF-7
   Dep: T-101
   Hecho cuando: muestra «Skills» y «Personalidad» como fuentes separadas, con OCEAN en `no_data` o `blocked` con motivo.
 
-- [ ] **T-111 · `UpcomingCommitmentsCard`**
+- [x] **T-111 · `UpcomingCommitmentsCard`**
   RF: RF-8
   Dep: T-101
   Hecho cuando: lista compromisos ordenados por fecha con zona horaria y muestra estado vacío si no hay.
 
-- [ ] **T-112 · `CollectiveProgressCard`**
+- [x] **T-112 · `CollectiveProgressCard`**
   RF: RF-10, RF-11
   Dep: T-101, T-095
   Hecho cuando: muestra media + suma + tamaño de base y, si `suppressed`, solo el motivo sin cifras ni base.
 
-- [ ] **T-113 · `ProgressPanel` (orquestador UI)**
+- [x] **T-113 · `ProgressPanel` (orquestador UI)**
   RF: RF-3
   Dep: T-107, T-108, T-109, T-110, T-111, T-112
   Hecho cuando: compone los bloques con `aria-live` de carga, `role="alert"` en error con reintento y aviso de bloque incompleto.
 
-- [ ] **T-114 · Página `dashboard/progreso` + loading/error**
+- [x] **T-114 · Página `dashboard/progreso` + loading/error**
   RF: RF-3, RF-11
   Dep: T-113
   Hecho cuando: la ruta carga con shell RSC, `loading.tsx` y `error.tsx`, e incluye `CollectiveProgressCard` si el usuario es miembro.
 
-- [ ] **T-115 · `MenteeFlagsList`**
+- [x] **T-115 · `MenteeFlagsList`**
   RF: RF-9
   Dep: T-095
   Hecho cuando: lista la cartera con banderas de vencidos/sin actividad y enlaza al panel del mentee.
 
-- [ ] **T-116 · Página/tab de progreso del mentor**
+- [x] **T-116 · Página/tab de progreso del mentor**
   RF: RF-9
   Dep: T-113, T-115
   Hecho cuando: `dashboard/mentor/progress` y la vista del mentee renderizan con bloqueo con motivo si falta entitlement.
 
-- [ ] **T-117 · Enlace de navegación en `AppShell`**
+- [x] **T-117 · Enlace de navegación en `AppShell`**
   RF: RF-3
   Dep: T-114
   Hecho cuando: «Progreso» aparece traducido y usa `localePath()` (sin prefijo para `es`).
+
+> _Verificado 2026-10-12:_ 16 componentes en `frontend/src/components/progress/` (`MetricValue`, `PeriodBadge`, `ObjectivesBlock`, `ObjectiveForm`, `ObjectiveProposalForm`, `ObjectiveEvidenceForm`, `ObjectiveStatusControl`, `ObjectiveAchievementCard`, `SessionsMetricCard`, `ActivitiesCard`, `CompetenciesCard`, `UpcomingCommitmentsCard`, `CollectiveProgressCard`, `ProgressPanel`, `MenteeFlagsList` y tarjetas auxiliares), páginas `dashboard/progreso/*` y `dashboard/mentor/progress/*`, y namespace `progress` en `messages/{es,en,pt}/common.json` (108 claves cada uno). Verificado por inspección; `pnpm test` (49), `pnpm typecheck` y `pnpm lint` en verde.
 
 ---
 
 ## Fase 7 — Cierre y calidad
 
-- [ ] **T-120 · Degradación parcial y estado vacío guiado**
+- [x] **T-120 · Degradación parcial y estado vacío guiado**
   RF: RF-13 (casos 15/16)
   Dep: T-114
   Hecho cuando: al simular el fallo de una fuente, el bloque se marca incompleto y el resto se muestra; un usuario sin proceso ve CTA guiada, no error.
+  > _Verificado 2026-10-12:_ `ProgressPanelService::guard()` marca el bloque como incompleto y devuelve el resto; `ProgressPanel` muestra estado vacío guiado con CTA a `/mentors` vía `localePath`.
 
-- [ ] **T-121 · Accesibilidad**
+- [x] **T-121 · Accesibilidad**
   RF: RNF-6 (P16)
   Dep: T-116, T-117
   Hecho cuando: se recorre todo el panel con teclado, el foco es visible, la supresión se anuncia con `aria-live` y los estados no dependen solo del color.
+  > _Verificado 2026-10-12:_ supresión de colectivo con `role="status"` + `aria-live="polite"`; estados con etiqueta textual además del color; foco visible vía tokens de UI. Revisión por inspección (sin auditoría formal con herramienta).
 
-- [ ] **T-122 · Responsive móvil**
+- [x] **T-122 · Responsive móvil**
   RF: RNF-7
   Dep: T-121
   Hecho cuando: en viewport móvil los bloques se apilan en una columna, sin scroll horizontal y con acciones usables.
+  > _Verificado 2026-10-12:_ bloques con grid que colapsa a una columna y acciones con tamaño táctil; revisión por inspección.
 
-- [ ] **T-123 · Observabilidad**
+- [x] **T-123 · Observabilidad**
   RF: RNF-8 (P20)
   Dep: T-084
   Hecho cuando: los logs `progress.block_failed`/`progress.access_denied` son estructurados y no contienen contenido de objetivos ni datos personales.
+  > _Verificado 2026-10-12:_ `progress.block_failed` en `ProgressPanelService::guard()` y `progress.access_denied` en `ProgressAccessService::denied()`, ambos con solo ids; cubiertos por `ProgressPanelTest` y `ProgressSecurityTest`.
 
-- [ ] **T-124 · Actualizar documentación**
+- [x] **T-124 · Actualizar documentación**
   RF: criterios §8 spec
   Dep: T-120
   Hecho cuando: `AGENTS.md` (entidad, rutas, config, permiso), `MEMORY.md` (decisiones D1–D11/DT) y las dudas §9 de `spec.md` quedan actualizadas.
+  > _Verificado 2026-10-12:_ bullet «Panel de progreso» y contadores de estructura en `AGENTS.md`; `MEMORY.md` con estado y decisiones D1–D11; `spec.md` §9 marcado resuelto (v0.3.0) y Estado `implementada`.
 
-- [ ] **T-125 · Verificación final**
+- [x] **T-125 · Verificación final**
   RF: RNF-9 (P19)
   Dep: T-122, T-123, T-124
   Hecho cuando: `make test-backend`, `make test-frontend`, `pnpm typecheck`, `pnpm lint` y `pnpm build` pasan en verde sobre la rama final.

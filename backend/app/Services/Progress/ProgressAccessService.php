@@ -39,6 +39,7 @@ class ProgressAccessService
 
         // Admins only act with the explicit support permission (D11, RF-12).
         if ($viewer->isAdmin()) {
+            $this->denied($viewer, $subject->id, 'admin_without_permission');
             abort(403, __('progress.messages.access_denied'));
         }
 
@@ -52,18 +53,21 @@ class ProgressAccessService
                 ->first();
 
             if ($relationship === null) {
+                $this->denied($viewer, $subject->id, 'mentee_not_assigned');
                 abort(404);
             }
 
             $access = $this->entitlements->forModel($subject, 'personal');
 
             if (! $this->entitlements->allows($access['plan'], PlanEntitlementService::MENTOR_WORKSPACE)) {
+                $this->denied($viewer, $subject->id, 'workspace_locked');
                 abort(403, __('progress.messages.workspace_locked'));
             }
 
             return ['role' => 'mentor', 'relationship' => $relationship];
         }
 
+        $this->denied($viewer, $subject->id, 'not_authorized');
         abort(404);
     }
 
@@ -80,6 +84,7 @@ class ProgressAccessService
 
         // Admins only act with the explicit support permission (D11, RF-12).
         if ($viewer->isAdmin()) {
+            $this->denied($viewer, $id, 'admin_without_permission');
             abort(403, __('progress.messages.access_denied'));
         }
 
@@ -91,6 +96,7 @@ class ProgressAccessService
             return ['role' => 'member'];
         }
 
+        $this->denied($viewer, $id, 'not_a_member');
         abort(403, __('progress.messages.access_denied'));
     }
 
@@ -102,6 +108,19 @@ class ProgressAccessService
         Log::info('progress.support.view', [
             'user_id' => $viewer->id,
             'subject_id' => $subjectId,
+        ]);
+    }
+
+    /**
+     * Structured denial record: identifiers and a reason, never panel content
+     * nor personal data (P20, RNF-8).
+     */
+    private function denied(User $viewer, string $subjectId, string $reason): void
+    {
+        Log::warning('progress.access_denied', [
+            'user_id' => $viewer->id,
+            'subject_id' => $subjectId,
+            'reason' => $reason,
         ]);
     }
 }

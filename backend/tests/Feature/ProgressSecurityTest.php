@@ -40,6 +40,24 @@ it('does not reveal another user panel through a manipulated subject_id', functi
         ->assertNotFound();
 });
 
+it('logs a structured access denial without panel content', function () {
+    $viewer = progressSecurityUser();
+    $other = progressSecurityUser();
+
+    Log::spy();
+
+    $this->actingAs($viewer)
+        ->getJson('/api/v1/progress/panel?subject_id='.$other->id)
+        ->assertNotFound();
+
+    Log::shouldHaveReceived('warning')
+        ->withArgs(fn ($message, $context = []) => $message === 'progress.access_denied'
+            && ($context['user_id'] ?? null) === $viewer->id
+            && ($context['subject_id'] ?? null) === $other->id
+            && ($context['reason'] ?? null) === 'not_authorized')
+        ->once();
+});
+
 it('does not let a mentor read an unassigned mentee through subject_id', function () {
     $mentor = progressSecurityUser(['role' => 'mentor']);
     $mentor->assignRole('mentor');
