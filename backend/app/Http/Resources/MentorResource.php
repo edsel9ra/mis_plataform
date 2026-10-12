@@ -18,7 +18,7 @@ class MentorResource extends JsonResource
             'created_at' => $this->created_at,
             'personality_assessment' => PersonalityAssessmentResource::make($this->whenLoaded('personalityAssessment')),
             'skills' => UserSkillResource::collection($this->whenLoaded('skills')),
-            'active_mentees_count' => $this->whenCounted('active_mentees_count'),
+            'active_mentees_count' => $this->when(isset($this->active_mentees_count), (int) $this->active_mentees_count),
             'relationships_count' => $this->whenCounted('mentorRelationships'),
         ];
     }

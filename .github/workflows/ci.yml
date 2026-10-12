@@ -1,0 +1,227 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_DB: mis_project_testing
+          POSTGRES_USER: mis_user
+          POSTGRES_PASSWORD: ci-only-postgres-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mis_user -d mis_project_testing"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    defaults:
+      run:
+        working-directory: backend
+    env:
+      APP_ENV: testing
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: mis_project_testing
+      DB_USERNAME: mis_user
+      DB_PASSWORD: ci-only-postgres-password
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      MATCHING_SERVICE_API_KEY: ci-only-matching-key
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_pgsql, redis, sockets
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+      - run: composer validate --strict
+      - run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - run: composer check-platform-reqs
+      - run: php artisan test
+
+  frontend:
+    name: Frontend quality
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: frontend
+    env:
+      API_INTERNAL_URL: http://127.0.0.1
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: pnpm/action-setup@7088e561eb65bb68695d245aa206f005ef30921d # v4.1.0
+        with:
+          version: 9.15.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint
+      - run: pnpm typecheck
+      - run: pnpm test
+      - run: pnpm build
+
+  matching:
+    name: Matching tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: matching-service
+    env:
+      DEBUG: 'false'
+      MATCHING_SERVICE_API_KEY: ci-only-matching-key
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        with:
+          python-version: '3.13'
+          cache: pip
+          cache-dependency-path: |
+            docker/python/requirements.txt
+            docker/python/requirements-dev.txt
+      - run: python -m pip install --no-cache-dir -r ../docker/python/requirements.txt -r ../docker/python/requirements-dev.txt
+      - run: python -m pip check
+      - name: Validate matching API contract
+        run: |
+          python - <<'PY'
+          from app.main import app
+
+          paths = app.openapi()["paths"]
+          required = {
+              "/api/v1/health",
+              "/api/v1/personality/score",
+              "/api/v1/personality/batch-score",
+              "/api/v1/matching/calculate",
+              "/api/v1/matching/suggestions",
+          }
+          missing = required.difference(paths)
+          if missing:
+              raise SystemExit(f"Missing API paths: {sorted(missing)}")
+          PY
+      - run: python -m pytest -q -p no:cacheprovider
+
+  compose:
+    name: Compose validation
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Create CI environment files
+        run: |
+          bash setup.sh --env-only
+      - run: docker compose config --quiet
+      - name: Validate production Compose without pulling images
+        env:
+          NGINX_IMAGE: ghcr.io/example/mis-nginx@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          BACKEND_IMAGE: ghcr.io/example/mis-backend@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          FRONTEND_IMAGE: ghcr.io/example/mis-frontend@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          MATCHING_IMAGE: ghcr.io/example/mis-matching@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          POSTGRES_IMAGE: postgres@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          REDIS_IMAGE: redis@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          MEILI_IMAGE: getmeili/meilisearch@sha256:0000000000000000000000000000000000000000000000000000000000000000
+          BACKEND_ENV_FILE: .env.backend
+          FRONTEND_ENV_FILE: .env.frontend
+          MATCHING_ENV_FILE: .env.matching
+          REDIS_PASSWORD: ci-only-redis-password
+        run: docker compose -f docker-compose.production.yml config --quiet
+
+  compose-smoke:
+    name: Compose build and readiness smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Create CI environment files
+        run: bash setup.sh --env-only
+      - name: Build matching development image
+        run: docker compose build --pull=false matching
+      - name: Build matching production artifact
+        run: docker build --file docker/python/Dockerfile.production --tag mis-matching:ci .
+      - name: Build backend production artifact
+        run: docker build --file docker/php/Dockerfile.production --tag mis-backend:ci .
+      - name: Build Nginx production artifact
+        run: docker build --file docker/nginx/Dockerfile.production --tag mis-nginx:ci .
+      - name: Validate Nginx production configuration
+        run: >-
+          docker run --rm --read-only
+          --tmpfs /var/cache/nginx:uid=101,gid=101,mode=0755
+          --tmpfs /var/run:uid=101,gid=101,mode=0755
+          --tmpfs /tmp:uid=101,gid=101,mode=1777
+          --add-host backend:127.0.0.1
+          --add-host frontend:127.0.0.1
+          --add-host reverb:127.0.0.1
+          --entrypoint nginx mis-nginx:ci -t
+      - name: Start matching dependencies
+        run: docker compose up -d postgres redis matching
+      - name: Wait for healthchecks
+        run: bash wait-for-services.sh postgres redis matching
+      - name: Check matching health endpoint
+        run: curl --fail --silent http://127.0.0.1:8000/api/v1/health
+      - name: Tear down smoke stack
+        if: always()
+        run: docker compose down --volumes --remove-orphans
+
+  static-audit:
+    name: Static Docker and workflow audit
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Check whitespace and tracked secret patterns
+        run: |
+          git diff --check
+          ! grep -RInE '^[[:space:]]+POSTGRES_PASSWORD:[[:space:]]*[^$[:space:]]|^[[:space:]]+MEILI_MASTER_KEY:[[:space:]]*[^$[:space:]]|mis_secret|mis_meili_master_key' \
+            docker-compose.yml docker-compose.production.yml docker/ .env*.example
+      - name: Run optional Hadolint audit
+        run: |
+          if command -v hadolint >/dev/null 2>&1; then
+            hadolint docker/php/Dockerfile docker/php/Dockerfile.production docker/node/Dockerfile \
+              docker/python/Dockerfile docker/python/Dockerfile.production docker/nginx/Dockerfile.production
+          else
+            echo 'hadolint is not installed on this runner; skipping.'
+          fi
+      - name: Run optional Trivy config audit
+        run: |
+          if command -v trivy >/dev/null 2>&1; then
+            trivy config --exit-code 1 --severity HIGH,CRITICAL .
+          else
+            echo 'trivy is not installed on this runner; skipping.'
+          fi

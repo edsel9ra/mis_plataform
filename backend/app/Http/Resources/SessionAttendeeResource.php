@@ -11,7 +11,7 @@ class SessionAttendeeResource extends JsonResource
     {
         return [
             'id' => $this->id,
-            'user' => UserResource::make($this->whenLoaded('user')),
+            'user' => UserSummaryResource::make($this->whenLoaded('user')),
             'attended' => $this->attended,
             'joined_at' => $this->joined_at,
         ];

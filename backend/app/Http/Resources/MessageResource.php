@@ -15,9 +15,10 @@ class MessageResource extends JsonResource
             'sender_id' => $this->sender_id,
             'content' => $this->content,
             'type' => $this->type,
+            'attachment_url' => $this->attachment_url,
             'read_at' => $this->read_at,
             'created_at' => $this->created_at,
-            'sender' => UserResource::make($this->whenLoaded('sender')),
+            'sender' => UserSummaryResource::make($this->whenLoaded('sender')),
         ];
     }
 }

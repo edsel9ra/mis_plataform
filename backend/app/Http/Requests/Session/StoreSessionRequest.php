@@ -20,8 +20,7 @@ class StoreSessionRequest extends FormRequest
             'description' => ['nullable', 'string'],
             'scheduled_at' => ['required', 'date', 'after:now'],
             'duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
-            'attendee_ids' => ['nullable', 'array'],
-            'attendee_ids.*' => ['exists:users,id'],
+            'attendee_ids' => ['prohibited'],
         ];
     }
 }

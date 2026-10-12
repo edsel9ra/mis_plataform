@@ -4,7 +4,10 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\ProfileController;
 use App\Http\Controllers\Api\MentorController;
+use App\Http\Controllers\Api\MentorSkillController;
+use App\Http\Controllers\Api\SkillTagController;
 use App\Http\Controllers\Api\RelationshipController;
+use App\Http\Controllers\Api\RelationshipContextController;
 use App\Http\Controllers\Api\SessionController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlanController;
@@ -18,18 +21,39 @@ use App\Http\Controllers\Api\CertificateController;
 use App\Http\Controllers\Api\LearningPathController;
 use App\Http\Controllers\Api\ResourceController;
 use App\Http\Controllers\Api\ReviewController;
-use App\Http\Controllers\Api\MatchingController;
 use App\Http\Controllers\Api\NotificationController;
 use App\Http\Controllers\Api\AdminController;
+use App\Http\Controllers\Api\EvaluationController;
+use App\Http\Controllers\Api\MentorDashboardController;
+use App\Http\Controllers\Api\MentorAlertController;
+use App\Http\Controllers\Api\MentorChallengeController;
+use App\Http\Controllers\Api\MentorFeedbackController;
+use App\Http\Controllers\Api\MentorMediaController;
+use App\Http\Controllers\Api\MentorObservationController;
+use App\Http\Controllers\Api\MentorSystemicMapController;
+use App\Http\Controllers\Api\MentorWorkspaceController;
+use App\Http\Controllers\Api\MentorNeurocognitiveController;
+use App\Http\Controllers\Api\MentorEmotionalCheckInController;
+use App\Http\Controllers\Api\MediaAssetController;
+use App\Http\Controllers\Api\MenteeChallengeController;
+use App\Http\Controllers\Api\MenteeCheckInController;
+use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
+use App\Http\Controllers\Api\ObjectiveController;
+use App\Http\Controllers\Api\ProgressPanelController;
+use App\Http\Controllers\Api\CollectiveProgressController;
+use App\Http\Controllers\Api\MentorProgressController;
+use App\Http\Controllers\Api\AdminProgressController;
 
 Route::prefix('v1')->group(function () {
     // Auth
-    Route::post('/auth/register', [AuthController::class, 'register']);
-    Route::post('/auth/login', [AuthController::class, 'login']);
+    Route::post('/auth/register', [AuthController::class, 'register'])->middleware('throttle:auth-register');
+    Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
+    Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
+        ->middleware('throttle:auth-forgot-password');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
-    Route::post('/auth/refresh', [AuthController::class, 'refresh']);
+    Route::post('/auth/refresh', [AuthController::class, 'refresh'])->middleware(['auth:sanctum', 'active']);
 
     // Public
     Route::get('/mentors', [MentorController::class, 'index']);
@@ -38,20 +62,26 @@ Route::prefix('v1')->group(function () {
     Route::get('/plans/{id}', [PlanController::class, 'show']);
 
     // Authenticated
-    Route::middleware('auth:sanctum')->group(function () {
+    Route::middleware(['auth:sanctum', 'active'])->group(function () {
         // Profile
         Route::get('/profile', [ProfileController::class, 'show']);
         Route::put('/profile', [ProfileController::class, 'update']);
         Route::put('/profile/avatar', [ProfileController::class, 'updateAvatar']);
         Route::put('/profile/locale', [ProfileController::class, 'updateLocale']);
 
+        // Mentor specialty catalog
+        Route::get('/skill-tags', [SkillTagController::class, 'index']);
+
         // Personality
         Route::post('/personality/start-test', [PersonalityController::class, 'startTest']);
-        Route::post('/personality/submit-answers', [PersonalityController::class, 'submitAnswers']);
+         Route::post('/personality/submit-answers', [PersonalityController::class, 'submitAnswers'])
+             ->middleware('throttle:personality-score');
         Route::get('/personality/report', [PersonalityController::class, 'report']);
-        Route::post('/personality/calculate', [PersonalityController::class, 'calculate']);
+         Route::post('/personality/calculate', [PersonalityController::class, 'calculate'])
+             ->middleware('throttle:personality-score');
 
         // Relationships
+        Route::get('/relationship-contexts', [RelationshipContextController::class, 'index']);
         Route::post('/relationships', [RelationshipController::class, 'store']);
         Route::get('/relationships', [RelationshipController::class, 'index']);
         Route::get('/relationships/{id}', [RelationshipController::class, 'show']);
@@ -109,23 +139,84 @@ Route::prefix('v1')->group(function () {
         Route::get('/learning-paths/{id}', [LearningPathController::class, 'show']);
         Route::put('/learning-paths/{id}/progress', [LearningPathController::class, 'updateProgress']);
 
+        // Evaluations
+        Route::get('/evaluations', [EvaluationController::class, 'index']);
+        Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
+        Route::post('/evaluations/{id}/submit', [EvaluationController::class, 'submit']);
+        Route::get('/mentor/evaluation-results', [EvaluationController::class, 'mentorResults']);
+
+        // Objectives / progress tracking (RF-1, RF-2)
+        Route::get('/objectives', [ObjectiveController::class, 'index']);
+        Route::post('/objectives/proposals', [ObjectiveController::class, 'proposals']);
+        Route::post('/objectives', [ObjectiveController::class, 'store']);
+        Route::put('/objectives/{objective}', [ObjectiveController::class, 'update']);
+        Route::post('/objectives/{objective}/status', [ObjectiveController::class, 'status']);
+        Route::post('/objectives/{objective}/evidences', [ObjectiveController::class, 'evidences']);
+
+        // Progress panel and collective aggregate (RF-3..RF-12)
+        Route::get('/progress/panel', [ProgressPanelController::class, 'show']);
+        Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
+
+        // Mentee workspace activity. Every route resolves the relationship to
+        // the authenticated personal user before reading or writing data.
+        Route::get('/relationships/{relationship}/check-ins', [MenteeCheckInController::class, 'index']);
+        Route::post('/relationships/{relationship}/check-ins', [MenteeCheckInController::class, 'store']);
+        Route::get('/relationships/{relationship}/emotional-check-ins', [MenteeEmotionalCheckInController::class, 'index']);
+        Route::post('/relationships/{relationship}/emotional-check-ins', [MenteeEmotionalCheckInController::class, 'store']);
+        Route::get('/relationships/{relationship}/challenges', [MenteeChallengeController::class, 'index']);
+        Route::get('/challenges/{challenge}', [MenteeChallengeController::class, 'show']);
+        Route::get('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeIndex']);
+        Route::post('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeStore']);
+        Route::get('/challenges/{challenge}/submissions', [MenteeChallengeController::class, 'submissions']);
+        Route::post('/challenges/{challenge}/submissions', [MenteeChallengeController::class, 'storeSubmission']);
+        Route::get('/challenges/{challenge}/feedback', [MenteeChallengeController::class, 'feedback']);
+        Route::get('/media/{media}', [MediaAssetController::class, 'show'])->name('media.show');
+
+        Route::middleware('role:mentor')->prefix('mentor')->group(function () {
+            Route::put('/skills', [MentorSkillController::class, 'updateOwn']);
+            Route::get('/users', [MentorDashboardController::class, 'users']);
+            // Progress portfolio and mentee panel (RF-9).
+            Route::get('/progress/overview', [MentorProgressController::class, 'index']);
+            Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
+            Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
+            Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
+            Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);
+            Route::get('/users/{user}/neurocognitive', [MentorNeurocognitiveController::class, 'show']);
+            Route::put('/users/{user}/neurocognitive', [MentorObservationController::class, 'store']);
+            Route::get('/users/{user}/workspace', [MentorWorkspaceController::class, 'show']);
+            Route::get('/users/{user}/attention', [MentorWorkspaceController::class, 'show']);
+            Route::get('/users/{user}/observations', [MentorObservationController::class, 'index']);
+            Route::post('/users/{user}/observations', [MentorObservationController::class, 'store']);
+            Route::get('/users/{user}/emotional-check-ins', [MentorEmotionalCheckInController::class, 'index']);
+            Route::get('/users/{user}/challenges', [MentorChallengeController::class, 'index']);
+            Route::post('/users/{user}/challenges', [MentorChallengeController::class, 'store']);
+            Route::get('/users/{user}/systemic-map', [MentorSystemicMapController::class, 'show']);
+            Route::put('/users/{user}/systemic-map', [MentorSystemicMapController::class, 'update']);
+            Route::get('/users/{user}/alerts', [MentorAlertController::class, 'index']);
+            Route::get('/challenges', [MentorChallengeController::class, 'catalog']);
+            Route::post('/challenges', [MentorChallengeController::class, 'catalogStore']);
+            Route::get('/challenges/{challenge}', [MentorChallengeController::class, 'show']);
+            Route::put('/challenges/{challenge}', [MentorChallengeController::class, 'update']);
+            Route::get('/challenges/{challenge}/feedback', [MentorFeedbackController::class, 'index']);
+            Route::post('/challenges/{challenge}/feedback', [MentorFeedbackController::class, 'store']);
+            Route::get('/feedback', [MentorFeedbackController::class, 'all']);
+            Route::post('/feedback', [MentorFeedbackController::class, 'storeGeneral']);
+            Route::post('/media', [MentorMediaController::class, 'store']);
+            Route::get('/systemic-maps/{id}', [MentorSystemicMapController::class, 'showById']);
+            Route::patch('/alerts/{id}/resolve', [MentorAlertController::class, 'resolve']);
+        });
+
         // Resources
         Route::get('/resources', [ResourceController::class, 'index']);
         Route::get('/resources/{id}', [ResourceController::class, 'show']);
 
         // Certificates
         Route::get('/certificates', [CertificateController::class, 'index']);
-        Route::post('/certificates/issue', [CertificateController::class, 'issue']);
         Route::get('/certificates/{id}', [CertificateController::class, 'show']);
-        Route::get('/certificates/{id}/verify', [CertificateController::class, 'verify']);
 
         // Reviews
         Route::post('/reviews', [ReviewController::class, 'store']);
         Route::get('/reviews/session/{sessionId}', [ReviewController::class, 'index']);
-
-        // Matching
-        Route::post('/matching/suggestions', [MatchingController::class, 'suggestions']);
-        Route::post('/matching/calculate', [MatchingController::class, 'calculate']);
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
@@ -136,6 +227,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:super_admin|admin')->prefix('admin')->group(function () {
             // Users
             Route::get('/users', [AdminController::class, 'users']);
+            Route::get('/progress/panel', [AdminProgressController::class, 'show'])
+                ->middleware('permission:progress.view.support');
             Route::post('/users', [AdminController::class, 'userStore']);
             Route::get('/users/{id}', [AdminController::class, 'userShow']);
             Route::put('/users/{id}', [AdminController::class, 'userUpdate']);
@@ -146,7 +239,14 @@ Route::prefix('v1')->group(function () {
             Route::post('/mentors', [AdminController::class, 'mentorStore']);
             Route::get('/mentors/{id}', [AdminController::class, 'mentorShow']);
             Route::put('/mentors/{id}', [AdminController::class, 'mentorUpdate']);
+            Route::put('/mentors/{id}/skills', [MentorSkillController::class, 'updateForMentor']);
             Route::delete('/mentors/{id}', [AdminController::class, 'mentorDestroy']);
+
+            // Mentor specialty catalog
+            Route::get('/skill-tags', [SkillTagController::class, 'adminIndex']);
+            Route::post('/skill-tags', [SkillTagController::class, 'store']);
+            Route::put('/skill-tags/{id}', [SkillTagController::class, 'update']);
+            Route::delete('/skill-tags/{id}', [SkillTagController::class, 'destroy']);
 
             // Sessions
             Route::get('/sessions', [AdminController::class, 'sessions']);
@@ -163,10 +263,17 @@ Route::prefix('v1')->group(function () {
             Route::put('/assessments/{id}', [AdminController::class, 'assessmentUpdate']);
             Route::delete('/assessments/{id}', [AdminController::class, 'assessmentDestroy']);
 
+            // Configurable evaluation catalog
+            Route::get('/evaluation-catalog', [AdminController::class, 'evaluationCatalog']);
+            Route::post('/evaluation-catalog', [AdminController::class, 'evaluationCatalogStore']);
+            Route::get('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogShow']);
+            Route::put('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogUpdate']);
+            Route::delete('/evaluation-catalog/{id}', [AdminController::class, 'evaluationCatalogDestroy']);
+            Route::get('/evaluation-results', [AdminController::class, 'evaluationResults']);
+
             // Plans, Reports, Certificates
             Route::match(['get', 'post'], '/plans', [AdminController::class, 'plans']);
             Route::get('/reports', [AdminController::class, 'reports']);
-            Route::post('/certificates/{id}/revoke', [CertificateController::class, 'revoke']);
         });
 
         // Recommendations (authenticated, not admin)

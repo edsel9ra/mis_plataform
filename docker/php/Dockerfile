@@ -1,4 +1,4 @@
-FROM php:8.4-fpm-alpine
+FROM php:8.4-fpm-alpine3.21
 
 WORKDIR /var/www/backend
 
@@ -9,7 +9,7 @@ RUN apk add --no-cache \
 
 COPY php.ini /usr/local/etc/php/conf.d/99-mis.ini
 
-COPY --from=mlocati/php-extension-installer \
+COPY --from=mlocati/php-extension-installer:2.7.8 \
     /usr/bin/install-php-extensions \
     /usr/local/bin/
 
@@ -22,12 +22,11 @@ RUN install-php-extensions \
     redis \
     sockets
 
-RUN curl -sS https://getcomposer.org/installer | php -- \
-    --install-dir=/usr/local/bin \
-    --filename=composer
+COPY --from=composer:2.8.8 /usr/bin/composer /usr/local/bin/composer
 
 RUN mkdir -p \
     bootstrap/cache \
+    storage/app/public \
     storage/framework/cache/data \
     storage/framework/sessions \
     storage/framework/views \

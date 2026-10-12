@@ -13,6 +13,7 @@ class SkillTagResource extends JsonResource
             'id' => $this->id,
             'name' => $this->name,
             'category' => $this->category,
+            'is_active' => (bool) $this->is_active,
         ];
     }
 }

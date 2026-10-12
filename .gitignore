@@ -1,13 +1,17 @@
 # Docker
+.env
+.env.production
 .env.backend
 .env.frontend
 .env.matching
+.env.*.production
 
 # Backend
 backend/vendor/
 backend/node_modules/
 backend/.env
 backend/.env.*
+!backend/.env.example
 backend/storage/framework/cache/data/*
 backend/storage/framework/sessions/*
 backend/storage/framework/views/*
@@ -25,13 +29,19 @@ backend/storage/app/public/avatars
 frontend/node_modules/
 frontend/.next/
 frontend/out/
+frontend/*.tsbuildinfo
+frontend/coverage/
 
 # Matching
 matching-service/__pycache__/
+matching-service/**/__pycache__/
+matching-service/**/*.pyc
 matching-service/.venv/
 matching-service/venv/
 matching-service/*.egg-info/
 matching-service/.pytest_cache/
+__pycache__/
+*.py[cod]
 
 # IDE
 .vscode/
@@ -43,3 +53,15 @@ matching-service/.pytest_cache/
 
 # Logs
 *.log
+
+# Node & PNPM
+node_modules/
+.pnpm-store/
+.next/
+dist/
+build/
+
+# Laravel
+/backend/vendor/
+/backend/storage/*.key
+/backend/.env

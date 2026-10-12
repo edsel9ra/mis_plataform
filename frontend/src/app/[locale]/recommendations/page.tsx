@@ -1,12 +1,17 @@
 'use client';
 
 import { useQuery } from '@tanstack/react-query';
-import { useTranslations } from 'next-intl';
+import { useLocale, useTranslations } from 'next-intl';
 import Link from 'next/link';
 import { api } from '@/lib/api';
+import { apiErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-keys';
+import { localePath } from '@/i18n/paths';
+import { AppShell } from '@/components/layout/AppShell';
+import { useAuth } from '@/components/auth/AuthProvider';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import { Alert } from '@/components/ui/alert';
 import { PageSpinner } from '@/components/ui/spinner';
 import {
   Users,
@@ -19,19 +24,44 @@ import {
 } from 'lucide-react';
 
 interface Recommendations {
-  recommended_mentors: any[];
-  recommended_sessions: any[];
-  recommended_evaluations: any[];
+  message?: string;
+  recommended_mentors: MentorRecommendation[];
+  recommended_sessions: SessionRecommendation[];
+  recommended_evaluations: EvaluationRecommendation[];
   user_ocean: Record<string, number> | null;
 }
 
-const OCEAN_NAMES: Record<string, string> = {
-  O: 'Apertura',
-  C: 'Responsabilidad',
-  E: 'Extraversión',
-  A: 'Amabilidad',
-  N: 'Neuroticismo',
-};
+interface MentorRecommendation {
+  id: string;
+  name?: string;
+  last_name?: string | null;
+  full_name?: string;
+  email?: string;
+  client_type?: string | null;
+  compatibility_score?: number;
+  active_mentees_count?: number;
+  personality_assessment?: {
+    results?: { factors?: Record<string, number> };
+  } | null;
+}
+
+interface SessionRecommendation {
+  id: string;
+  title: string;
+  status: string;
+  scheduled_at: string;
+  relationship?: {
+    mentor?: { name?: string; last_name?: string | null; full_name?: string } | null;
+  } | null;
+}
+
+interface EvaluationRecommendation {
+  id: string;
+  title: string;
+  description: string;
+  reason: string;
+  type: string;
+}
 
 const OCEAN_COLORS: Record<string, string> = {
   O: 'bg-violet-500',
@@ -43,36 +73,58 @@ const OCEAN_COLORS: Record<string, string> = {
 
 export default function RecommendationsPage() {
   const t = useTranslations();
+  const locale = useLocale();
+  const { user } = useAuth();
 
   const { data, isLoading, error } = useQuery<Recommendations>({
-    queryKey: ['personality-recommendations'],
-    queryFn: () => api.get<Recommendations>('/personality/recommendations'),
-    retry: 1,
+    queryKey: queryKeys.recommendations,
+    queryFn: ({ signal }) => api.get<Recommendations>('/personality/recommendations', undefined, { signal }),
+    enabled: !!user,
   });
 
-  if (isLoading) return <PageSpinner />;
-
-  if (error || !data) {
+  if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center py-20 text-center">
-        <AlertTriangle className="h-12 w-12 text-amber-500" />
-        <h2 className="mt-4 text-xl font-bold text-gray-900">Completa tu test de personalidad</h2>
-        <p className="mt-2 text-gray-500">Necesitas completar el test para recibir recomendaciones.</p>
-        <Link href="/onboarding/test-personalidad">
-          <Button className="mt-6">Realizar Test</Button>
-        </Link>
-      </div>
+      <AppShell>
+        <PageSpinner />
+      </AppShell>
     );
   }
 
-  const hasData = (arr: any[]) => arr && arr.length > 0;
+  if (error) {
+    return (
+      <AppShell>
+        <Alert variant="error">
+          {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
+        </Alert>
+      </AppShell>
+    );
+  }
+
+  if (!data || !data.user_ocean) {
+    return (
+      <AppShell>
+        <div className="flex flex-col items-center justify-center py-20 text-center">
+          <AlertTriangle className="h-12 w-12 text-amber-500" aria-hidden="true" />
+          <h2 className="mt-4 text-xl font-bold text-gray-900">{t('recommendations.complete_test_title')}</h2>
+          <p className="mt-2 text-gray-500">{t('recommendations.complete_test_desc')}</p>
+          <Link
+            href={localePath('/onboarding/test-personalidad', locale)}
+            className="mt-6 inline-flex items-center justify-center rounded-lg bg-primary-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-primary-700 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+          >
+            {t('personality.banner_link')}
+          </Link>
+        </div>
+      </AppShell>
+    );
+  }
 
   return (
-    <div>
+    <AppShell>
+      <div>
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Recomendaciones Personalizadas</h1>
+        <h1 className="text-2xl font-bold text-gray-900">{t('recommendations.title')}</h1>
         <p className="mt-1 text-gray-500">
-          Basadas en los resultados de tu test de personalidad Big Five
+          {t('recommendations.subtitle')}
         </p>
       </div>
 
@@ -80,15 +132,15 @@ export default function RecommendationsPage() {
         <Card className="mb-8">
           <CardHeader>
             <div className="flex items-center gap-3">
-              <Brain className="h-6 w-6 text-primary-600" />
-              <CardTitle>Tu perfil OCEAN</CardTitle>
+              <Brain className="h-6 w-6 text-primary-600" aria-hidden="true" />
+              <CardTitle>{t('dashboard.ocean_profile')}</CardTitle>
             </div>
           </CardHeader>
           <div className="grid gap-4 sm:grid-cols-5">
             {Object.entries(data.user_ocean).map(([key, val]) => (
               <div key={key} className="text-center">
                 <span className="text-lg font-bold text-gray-800">{key}</span>
-                <p className="text-xs text-gray-500">{OCEAN_NAMES[key] || key}</p>
+                <p className="text-xs text-gray-500">{oceanName(key, t)}</p>
                 <div className="mt-2 h-2 rounded-full bg-gray-100">
                   <div
                     className={`h-2 rounded-full ${OCEAN_COLORS[key] || 'bg-gray-400'}`}
@@ -103,32 +155,36 @@ export default function RecommendationsPage() {
       )}
 
       <div className="space-y-8">
-        {/* Recommended Mentors */}
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <Users className="h-5 w-5 text-primary-600" />
-            <h2 className="text-xl font-bold text-gray-900">Mentores Recomendados</h2>
+            <Users className="h-5 w-5 text-primary-600" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-gray-900">{t('recommendations.mentors_title')}</h2>
           </div>
 
           {!hasData(data.recommended_mentors) ? (
             <p className="text-sm text-gray-400">
-              No hay mentores disponibles. Completa tu test para obtener mejores coincidencias.
+              {t('recommendations.no_mentors')}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {data.recommended_mentors.map((mentor: any) => (
+              {data.recommended_mentors.map((mentor) => (
                 <Card key={mentor.id}>
                   <CardHeader>
                     <div className="flex items-start justify-between">
                       <div>
                         <CardTitle className="text-base">
-                          {mentor.name} {mentor.last_name ?? ''}
+                          {mentorName(mentor)}
                         </CardTitle>
-                        <p className="text-sm text-gray-500">{mentor.email}</p>
+                        {mentor.email && <p className="text-sm text-gray-500">{mentor.email}</p>}
+                        {mentor.client_type && (
+                          <Badge variant="primary" className="mt-2">
+                            {t(`client_types.${mentor.client_type}`)}
+                          </Badge>
+                        )}
                       </div>
                       {mentor.compatibility_score && (
                         <div className="flex items-center gap-1 rounded-full bg-primary-50 px-2 py-1 text-xs font-medium text-primary-700">
-                          <Star className="h-3 w-3" />
+                          <Star className="h-3 w-3" aria-hidden="true" />
                           {mentor.compatibility_score}%
                         </div>
                       )}
@@ -136,20 +192,23 @@ export default function RecommendationsPage() {
                   </CardHeader>
                   <div className="space-y-2">
                     <div className="flex justify-between text-sm">
-                      <span className="text-gray-500">Mentorías activas</span>
+                      <span className="text-gray-500">{t('mentors.active_mentees')}</span>
                       <span className="font-medium">{mentor.active_mentees_count ?? 0}</span>
                     </div>
                     {mentor.personality_assessment?.results?.factors && (
                       <div className="flex flex-wrap gap-1">
-                        {Object.entries(mentor.personality_assessment.results.factors).map(([k, v]: [string, any]) => (
+                        {Object.entries(mentor.personality_assessment.results.factors).map(([k, v]) => (
                           <span key={k} className="rounded bg-gray-100 px-1.5 py-0.5 text-xs text-gray-600">
-                            {k}: {Math.round(v)}
+                             {oceanName(k, t)}: {Math.round(v)}
                           </span>
                         ))}
                       </div>
                     )}
-                    <Link href={`/mentors/${mentor.id}`}>
-                      <Button variant="outline" size="sm" className="w-full">Ver perfil</Button>
+                    <Link
+                      href={localePath(`/mentors/${mentor.id}`, locale)}
+                      className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                    >
+                      {t('mentors.view_profile')}
                     </Link>
                   </div>
                 </Card>
@@ -158,33 +217,32 @@ export default function RecommendationsPage() {
           )}
         </section>
 
-        {/* Recommended Sessions */}
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <Calendar className="h-5 w-5 text-primary-600" />
-            <h2 className="text-xl font-bold text-gray-900">Sesiones Próximas</h2>
+            <Calendar className="h-5 w-5 text-primary-600" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-gray-900">{t('recommendations.sessions_title')}</h2>
           </div>
 
           {!hasData(data.recommended_sessions) ? (
             <p className="text-sm text-gray-400">
-              No tienes sesiones programadas. Solicita una mentoría para comenzar.
+              {t('recommendations.no_sessions')}
             </p>
           ) : (
             <div className="space-y-3">
-              {data.recommended_sessions.map((session: any) => (
+              {data.recommended_sessions.map((session) => (
                 <Card key={session.id}>
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-base">{session.title}</CardTitle>
                       <p className="text-sm text-gray-500">
-                        {session.relationship?.mentor?.name} — {new Date(session.scheduled_at).toLocaleDateString()}
+                        {sessionMentorName(session)} - {new Date(session.scheduled_at).toLocaleDateString(locale)}
                       </p>
                     </div>
                     <Badge variant={
                       session.status === 'scheduled' ? 'primary' :
                       session.status === 'in_progress' ? 'warning' : 'default'
                     }>
-                      {session.status}
+                      {sessionStatusLabel(session.status, t)}
                     </Badge>
                   </div>
                 </Card>
@@ -193,43 +251,91 @@ export default function RecommendationsPage() {
           )}
 
           {!hasData(data.recommended_sessions) && hasData(data.recommended_mentors) && (
-            <Link href="/mentors">
-              <Button variant="outline" className="mt-3">Explorar mentores</Button>
+            <Link
+              href={localePath('/mentors', locale)}
+              className="mt-3 inline-flex items-center justify-center rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+            >
+              {t('dashboard.explore_mentors')}
             </Link>
           )}
         </section>
 
-        {/* Recommended Evaluations */}
         <section>
           <div className="mb-4 flex items-center gap-2">
-            <ClipboardCheck className="h-5 w-5 text-primary-600" />
-            <h2 className="text-xl font-bold text-gray-900">Evaluaciones Recomendadas</h2>
+            <ClipboardCheck className="h-5 w-5 text-primary-600" aria-hidden="true" />
+            <h2 className="text-xl font-bold text-gray-900">{t('recommendations.evaluations_title')}</h2>
           </div>
 
           {!hasData(data.recommended_evaluations) ? (
             <p className="text-sm text-gray-400">
-              No hay evaluaciones recomendadas disponibles en este momento.
+              {t('recommendations.no_evaluations')}
             </p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
-              {data.recommended_evaluations.map((evalItem: any) => (
-                <Card key={evalItem.id}>
-                  <CardHeader>
-                    <div className="flex items-start gap-3">
-                      <BarChart3 className="mt-1 h-5 w-5 shrink-0 text-primary-600" />
-                      <div>
+              {data.recommended_evaluations.map((evalItem) => (
+                  <Card key={evalItem.id}>
+                    <CardHeader>
+                      <div className="flex items-start gap-3">
+                        <BarChart3 className="mt-1 h-5 w-5 shrink-0 text-primary-600" aria-hidden="true" />
+                        <div>
                         <CardTitle className="text-base">{evalItem.title}</CardTitle>
                         <p className="mt-1 text-sm text-gray-500">{evalItem.description}</p>
                         <p className="mt-1 text-xs text-primary-600 italic">{evalItem.reason}</p>
+                        </div>
                       </div>
-                    </div>
-                  </CardHeader>
-                </Card>
-              ))}
+                    </CardHeader>
+                    <Link
+                      href={localePath(`/evaluations/${evalItem.id}`, locale)}
+                      className="inline-flex w-full items-center justify-center rounded-lg border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2"
+                    >
+                      {t('evaluations.start')}
+                    </Link>
+                  </Card>
+                ))}
             </div>
           )}
         </section>
       </div>
-    </div>
+      </div>
+    </AppShell>
   );
+}
+
+function hasData<T>(arr: T[] | undefined): arr is T[] {
+  return Boolean(arr && arr.length > 0);
+}
+
+function mentorName(mentor: MentorRecommendation): string {
+  return mentor.full_name || [mentor.name, mentor.last_name].filter(Boolean).join(' ') || mentor.email || '';
+}
+
+function sessionMentorName(session: SessionRecommendation): string {
+  const mentor = session.relationship?.mentor;
+  if (!mentor) return '';
+
+  return mentor.full_name || [mentor.name, mentor.last_name].filter(Boolean).join(' ');
+}
+
+function oceanName(key: string, t: ReturnType<typeof useTranslations>): string {
+  const names: Record<string, string> = {
+    O: t('personality.openness'),
+    C: t('personality.conscientiousness'),
+    E: t('personality.extraversion'),
+    A: t('personality.agreeableness'),
+    N: t('personality.neuroticism'),
+  };
+
+  return names[key] ?? t('common.not_applicable');
+}
+
+function sessionStatusLabel(status: string, t: ReturnType<typeof useTranslations>): string {
+  const labels: Record<string, string> = {
+    scheduled: t('session_statuses.scheduled'),
+    in_progress: t('session_statuses.in_progress'),
+    completed: t('session_statuses.completed'),
+    canceled: t('session_statuses.canceled'),
+    cancelled: t('session_statuses.cancelled'),
+  };
+
+  return labels[status] ?? t('common.not_applicable');
 }

@@ -10,16 +10,17 @@ class NotificationController
 {
     public function index(Request $request): JsonResponse
     {
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
         $notifications = Notification::where('user_id', $request->user()->id)
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
         return response()->json($notifications);
     }
 
-    public function markAsRead(string $id): JsonResponse
+    public function markAsRead(Request $request, string $id): JsonResponse
     {
-        $notification = Notification::findOrFail($id);
+        $notification = Notification::where('user_id', $request->user()->id)->findOrFail($id);
         $notification->update(['read_at' => now()]);
 
         return response()->json($notification);

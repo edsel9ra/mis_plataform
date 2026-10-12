@@ -10,6 +10,7 @@ import {
   type ReactNode,
   type HTMLAttributes,
 } from 'react';
+import { useTranslations } from 'next-intl';
 import { cn } from '@/lib/utils';
 import { X } from 'lucide-react';
 
@@ -61,8 +62,23 @@ interface DialogTriggerProps {
 export function DialogTrigger({ children, onClick }: DialogTriggerProps) {
   const { onOpenChange } = useDialog();
 
+  const openDialog = () => {
+    onOpenChange(true);
+    onClick?.();
+  };
+
   return (
-    <span onClick={() => { onOpenChange(true); onClick?.(); }}>
+    <span
+      role="button"
+      tabIndex={0}
+      onClick={openDialog}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault();
+          openDialog();
+        }
+      }}
+    >
       {children}
     </span>
   );
@@ -74,21 +90,67 @@ interface DialogContentProps extends HTMLAttributes<HTMLDivElement> {
 
 export function DialogContent({ className, children, showClose = true, ...props }: DialogContentProps) {
   const { open, onOpenChange } = useDialog();
+  const t = useTranslations();
   const overlayRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const onOpenChangeRef = useRef(onOpenChange);
 
   useEffect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onOpenChange(false);
+    onOpenChangeRef.current = onOpenChange;
+  }, [onOpenChange]);
+
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onOpenChangeRef.current(false);
+        return;
+      }
+
+      if (e.key !== 'Tab' || !contentRef.current) return;
+
+      const focusable = contentRef.current.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), textarea:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      );
+
+      if (focusable.length === 0) {
+        e.preventDefault();
+        contentRef.current.focus();
+        return;
+      }
+
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
     };
+
     if (open) {
-      document.addEventListener('keydown', handleEscape);
+      previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+      document.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
+      requestAnimationFrame(() => {
+        const focusTarget = contentRef.current?.querySelector<HTMLElement>(
+          '[data-autofocus], input:not([disabled]), textarea:not([disabled]), select:not([disabled])',
+        ) ?? contentRef.current?.querySelector<HTMLElement>(
+          'button:not([disabled]):not([data-dialog-close]), [href], [tabindex]:not([tabindex="-1"])',
+        );
+        (focusTarget ?? contentRef.current)?.focus();
+      });
     }
+
     return () => {
-      document.removeEventListener('keydown', handleEscape);
+      document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = '';
+      previouslyFocusedRef.current?.focus();
     };
-  }, [open, onOpenChange]);
+  }, [open]);
 
   if (!open) return null;
 
@@ -97,23 +159,26 @@ export function DialogContent({ className, children, showClose = true, ...props 
       ref={overlayRef}
       className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 animate-fade-in"
       onClick={(e) => { if (e.target === overlayRef.current) onOpenChange(false); }}
-      role="dialog"
-      aria-modal="true"
     >
       <div
+        ref={contentRef}
         className={cn(
           'relative w-full max-w-lg rounded-xl bg-white p-6 shadow-xl animate-slide-up',
           'max-h-[90vh] overflow-y-auto',
           className,
         )}
         onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
         {...props}
       >
         {showClose && (
           <button
+            data-dialog-close
             onClick={() => onOpenChange(false)}
             className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
-            aria-label="Close"
+            aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />
           </button>

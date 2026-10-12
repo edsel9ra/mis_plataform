@@ -4,10 +4,13 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateRelationshipAction;
 use App\Http\Requests\Relationship\StoreRelationshipRequest;
+use App\Http\Requests\Relationship\UpdateRelationshipStatusRequest;
 use App\Http\Resources\RelationshipResource;
 use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 
 class RelationshipController
 {
@@ -19,19 +22,35 @@ class RelationshipController
     {
         $user = $request->user();
 
-        $relationships = MentorshipRelationship::forUser($user->id)
+        $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
+
+        $relationships = MentorshipRelationship::forUser($user)
             ->with(['mentor', 'sessions' => function ($q) {
                 $q->latest()->limit(5);
             }])
             ->latest()
-            ->paginate($request->per_page ?? 20);
+            ->paginate($perPage);
 
-        return response()->json($relationships);
+        return RelationshipResource::collection($relationships)->response();
     }
 
     public function store(StoreRelationshipRequest $request): JsonResponse
     {
-        $relationship = $this->createRelationship->execute($request->validated());
+        $validated = $request->validated();
+
+        if ($validated['mentor_id'] === $request->user()->id) {
+            throw ValidationException::withMessages([
+                'mentor_id' => [__('relationships.cannot_request_self')],
+            ]);
+        }
+
+        Gate::authorize('create', [
+            MentorshipRelationship::class,
+            $validated['source_type'],
+            $validated['source_id'],
+        ]);
+
+        $relationship = $this->createRelationship->execute($validated);
 
         return response()->json(
             new RelationshipResource($relationship),
@@ -39,7 +58,7 @@ class RelationshipController
         );
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
         $relationship = MentorshipRelationship::with([
             'mentor.personalityAssessment',
@@ -49,16 +68,18 @@ class RelationshipController
             'certificates',
         ])->findOrFail($id);
 
+        Gate::authorize('view', $relationship);
+
         return response()->json(new RelationshipResource($relationship));
     }
 
-    public function updateStatus(Request $request, string $id): JsonResponse
+    public function updateStatus(UpdateRelationshipStatusRequest $request, string $id): JsonResponse
     {
-        $validated = $request->validate([
-            'status' => ['required', 'string', 'in:active,paused,completed,canceled'],
-        ]);
+        $validated = $request->validated();
 
         $relationship = MentorshipRelationship::findOrFail($id);
+
+        Gate::authorize('updateStatus', $relationship);
 
         $relationship->update([
             'status' => $validated['status'],
@@ -69,9 +90,12 @@ class RelationshipController
         return response()->json(new RelationshipResource($relationship->fresh()));
     }
 
-    public function destroy(string $id): JsonResponse
+    public function destroy(Request $request, string $id): JsonResponse
     {
         $relationship = MentorshipRelationship::findOrFail($id);
+
+        Gate::authorize('delete', $relationship);
+
         $relationship->delete();
 
         return response()->json(['message' => __('relationships.deleted')]);

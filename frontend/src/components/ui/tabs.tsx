@@ -5,12 +5,14 @@ import {
   useContext,
   useState,
   useCallback,
+  useId,
   type ReactNode,
   type HTMLAttributes,
 } from 'react';
 import { cn } from '@/lib/utils';
 
 interface TabsContextValue {
+  id: string;
   value: string;
   onValueChange: (value: string) => void;
 }
@@ -33,6 +35,7 @@ interface TabsProps {
 
 export function Tabs({ defaultValue, value: controlledValue, onValueChange, children, className }: TabsProps) {
   const [internalValue, setInternalValue] = useState(defaultValue ?? '');
+  const id = useId();
   const isControlled = controlledValue !== undefined;
   const value = isControlled ? controlledValue : internalValue;
 
@@ -45,7 +48,7 @@ export function Tabs({ defaultValue, value: controlledValue, onValueChange, chil
   );
 
   return (
-    <TabsContext.Provider value={{ value, onValueChange: handleValueChange }}>
+    <TabsContext.Provider value={{ id, value, onValueChange: handleValueChange }}>
       <div className={cn(className)} data-orientation="horizontal">
         {children}
       </div>
@@ -53,7 +56,7 @@ export function Tabs({ defaultValue, value: controlledValue, onValueChange, chil
   );
 }
 
-interface TabsListProps extends HTMLAttributes<HTMLDivElement> {}
+type TabsListProps = HTMLAttributes<HTMLDivElement>;
 
 export function TabsList({ className, children, ...props }: TabsListProps) {
   return (
@@ -63,6 +66,7 @@ export function TabsList({ className, children, ...props }: TabsListProps) {
         className,
       )}
       role="tablist"
+      aria-orientation="horizontal"
       {...props}
     >
       {children}
@@ -74,16 +78,46 @@ interface TabsTriggerProps extends HTMLAttributes<HTMLButtonElement> {
   value: string;
 }
 
-export function TabsTrigger({ className, value, children, ...props }: TabsTriggerProps) {
-  const { value: selectedValue, onValueChange } = useTabs();
+export function TabsTrigger({ className, value, children, onClick, onKeyDown, id, ...props }: TabsTriggerProps) {
+  const { id: tabsId, value: selectedValue, onValueChange } = useTabs();
   const isSelected = selectedValue === value;
+  const triggerId = id ?? `${tabsId}-tab-${value}`;
+  const panelId = `${tabsId}-panel-${value}`;
 
   return (
     <button
+      type="button"
+      id={triggerId}
       role="tab"
       aria-selected={isSelected}
+      aria-controls={panelId}
+      tabIndex={isSelected ? 0 : -1}
       data-state={isSelected ? 'active' : 'inactive'}
-      onClick={() => onValueChange(value)}
+      onClick={(event) => {
+        onClick?.(event);
+        if (!event.defaultPrevented) onValueChange(value);
+      }}
+      onKeyDown={(event) => {
+        onKeyDown?.(event);
+        if (event.defaultPrevented) return;
+
+        const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown'
+          ? 1
+          : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
+            ? -1
+            : 0;
+        if (direction === 0) return;
+
+        const tabList = event.currentTarget.closest('[role="tablist"]');
+        const tabs = tabList ? Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]')) : [];
+        const currentIndex = tabs.indexOf(event.currentTarget);
+        if (currentIndex < 0 || tabs.length === 0) return;
+
+        event.preventDefault();
+        const nextIndex = (currentIndex + direction + tabs.length) % tabs.length;
+        tabs[nextIndex]?.focus();
+        tabs[nextIndex]?.click();
+      }}
       className={cn(
         'inline-flex items-center justify-center whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-all',
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
@@ -104,13 +138,15 @@ interface TabsContentProps extends HTMLAttributes<HTMLDivElement> {
 }
 
 export function TabsContent({ className, value, children, ...props }: TabsContentProps) {
-  const { value: selectedValue } = useTabs();
+  const { id: tabsId, value: selectedValue } = useTabs();
 
   if (selectedValue !== value) return null;
 
   return (
     <div
+      id={`${tabsId}-panel-${value}`}
       role="tabpanel"
+      aria-labelledby={`${tabsId}-tab-${value}`}
       data-state={selectedValue === value ? 'active' : 'inactive'}
       className={cn('mt-2', className)}
       {...props}

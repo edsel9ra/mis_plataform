@@ -19,6 +19,7 @@ contract CertificateRegistry {
     event CertificateRevoked(bytes32 indexed certificateHash, address indexed issuer, uint256 timestamp);
     event IssuerAdded(address indexed issuer);
     event IssuerRemoved(address indexed issuer);
+    event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can call this function");
@@ -71,6 +72,7 @@ contract CertificateRegistry {
     function revoke(bytes32 _certificateHash) external onlyIssuer {
         require(certificates[_certificateHash].issuedAt > 0, "Certificate does not exist");
         require(!certificates[_certificateHash].revoked, "Certificate already revoked");
+        require(msg.sender == admin || certificates[_certificateHash].issuer == msg.sender, "Only admin or original issuer");
 
         certificates[_certificateHash].revoked = true;
 
@@ -88,8 +90,10 @@ contract CertificateRegistry {
 
     function transferAdmin(address _newAdmin) external onlyAdmin {
         require(_newAdmin != address(0), "Invalid address");
+        address previousAdmin = admin;
         issuers[_newAdmin] = true;
         issuers[admin] = true;
         admin = _newAdmin;
+        emit AdminTransferred(previousAdmin, _newAdmin);
     }
 }

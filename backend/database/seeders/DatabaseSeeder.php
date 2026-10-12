@@ -13,6 +13,9 @@ class DatabaseSeeder extends Seeder
             AdminUserSeeder::class,
             PlanSeeder::class,
             SkillTagSeeder::class,
+            EvaluationCatalogSeeder::class,
+            DemoLearningPathSeeder::class,
+            DemoMentorshipSeeder::class,
         ]);
     }
 }

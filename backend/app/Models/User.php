@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Database\Eloquent\Relations\MorphOne;
@@ -15,11 +16,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Laravel\Scout\Searchable;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, HasUuids, HasRoles, Notifiable, SoftDeletes;
+    use HasApiTokens, HasFactory, HasUuids, HasRoles, Notifiable, Searchable, SoftDeletes;
 
     protected $fillable = [
         'client_type',
@@ -54,9 +57,34 @@ class User extends Authenticatable
         ];
     }
 
+    protected static function booted(): void
+    {
+        static::updated(function (User $user) {
+            if ($user->wasChanged('is_active') && !$user->is_active) {
+                $user->tokens()->delete();
+            }
+        });
+
+        static::deleting(function (User $user) {
+            $user->tokens()->delete();
+        });
+    }
+
+    public function setEmailAttribute(?string $value): void
+    {
+        $this->attributes['email'] = $value === null
+            ? null
+            : mb_strtolower(trim($value));
+    }
+
     public function company(): BelongsTo
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function oauthAccounts(): HasMany
+    {
+        return $this->hasMany(OAuthAccount::class);
     }
 
     public function employee(): HasOne
@@ -79,9 +107,21 @@ class User extends Authenticatable
         return $this->morphMany(MentorshipRelationship::class, 'source');
     }
 
-    public function sessions(): HasMany
+    public function objectives(): MorphMany
     {
-        return $this->hasMany(Session::class, 'mentor_id');
+        return $this->morphMany(Objective::class, 'owner');
+    }
+
+    public function sessions(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            Session::class,
+            MentorshipRelationship::class,
+            'mentor_id',
+            'relationship_id',
+            'id',
+            'id',
+        );
     }
 
     public function attendedSessions(): HasMany
@@ -112,6 +152,56 @@ class User extends Authenticatable
     public function learningProgress(): HasMany
     {
         return $this->hasMany(UserLearningProgress::class);
+    }
+
+    public function assessmentResults(): HasMany
+    {
+        return $this->hasMany(AssessmentResult::class);
+    }
+
+    public function challengesAsMentor(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'mentor_id');
+    }
+
+    public function challengesAsMentee(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'mentee_id');
+    }
+
+    public function challengeSubmissions(): HasMany
+    {
+        return $this->hasMany(ChallengeSubmission::class, 'mentee_id');
+    }
+
+    public function emotionalCheckIns(): HasMany
+    {
+        return $this->hasMany(EmotionalCheckIn::class, 'mentee_id');
+    }
+
+    public function observationsAsMentor(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveObservation::class, 'mentor_id');
+    }
+
+    public function observationsAsMentee(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveObservation::class, 'mentee_id');
+    }
+
+    public function alertsAsMentor(): HasMany
+    {
+        return $this->hasMany(NeurocognitiveAlert::class, 'mentor_id');
+    }
+
+    public function systemicMapsAsMentor(): HasMany
+    {
+        return $this->hasMany(SystemicMap::class, 'mentor_id');
+    }
+
+    public function mediaAssets(): HasMany
+    {
+        return $this->hasMany(MediaAsset::class, 'uploaded_by');
     }
 
     public function matchScoresAsMentee(): HasMany
@@ -171,6 +261,67 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return in_array($this->role, [UserRole::Admin->value, UserRole::SuperAdmin->value]);
+    }
+
+    public function isSuperAdmin(): bool
+    {
+        return $this->role === UserRole::SuperAdmin->value;
+    }
+
+    public function canAccessCompany(Company|string $company): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $companyId = $company instanceof Company ? $company->id : $company;
+
+        return Company::where('id', $companyId)->where('admin_id', $this->id)->exists()
+            || Employee::active()
+                ->where('company_id', $companyId)
+                ->where('user_id', $this->id)
+                ->exists();
+    }
+
+    public function canManageCompany(Company|string $company): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        $companyId = $company instanceof Company ? $company->id : $company;
+
+        return Company::where('id', $companyId)->where('admin_id', $this->id)->exists();
+    }
+
+    public function syncApplicationRole(?string $role = null): void
+    {
+        $roleName = $role ?? $this->role;
+
+        if (!$roleName) {
+            return;
+        }
+
+        try {
+            if (Role::where('name', $roleName)->exists()) {
+                $this->syncRoles([$roleName]);
+            }
+        } catch (\Throwable) {
+            // Role tables may not exist yet during early setup commands.
+        }
+    }
+
+    public function toSearchableArray(): array
+    {
+        return [
+            'id' => $this->id,
+            'name' => $this->name,
+            'last_name' => $this->last_name,
+            'email' => $this->email,
+            'role' => $this->role,
+            'client_type' => $this->client_type,
+            'is_active' => $this->is_active,
+        ];
     }
 
     public function getFullNameAttribute(): string

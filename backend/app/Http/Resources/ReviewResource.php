@@ -12,10 +12,11 @@ class ReviewResource extends JsonResource
         return [
             'id' => $this->id,
             'session_id' => $this->session_id,
+            'rater_id' => $this->rater_id,
             'rating' => $this->rating,
             'comment' => $this->comment,
             'created_at' => $this->created_at,
-            'user' => UserResource::make($this->whenLoaded('user')),
+            'rater' => UserSummaryResource::make($this->whenLoaded('rater')),
         ];
     }
 }

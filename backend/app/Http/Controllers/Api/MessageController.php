@@ -3,7 +3,10 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
+use App\Http\Requests\Message\StoreMessageRequest;
+use App\Http\Resources\MessageResource;
 use App\Models\Message;
+use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -13,28 +16,24 @@ class MessageController
     {
         $user = $request->user();
 
+        $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
+
         $messages = Message::whereHas('relationship', function ($query) use ($user) {
-            $query->where('mentor_id', $user->id)
-                ->orWhere(function ($q) use ($user) {
-                    $q->where('source_type', 'user')
-                      ->where('source_id', $user->id);
-                });
+            $query->forUser($user);
         })
         ->with('sender')
         ->latest()
-        ->paginate($request->per_page ?? 50);
+        ->paginate($perPage);
 
-        return response()->json($messages);
+        return MessageResource::collection($messages)->response();
     }
 
-    public function store(Request $request): JsonResponse
+    public function store(StoreMessageRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'relationship_id' => ['required', 'exists:mentorship_relationships,id'],
-            'content' => ['required', 'string', 'max:5000'],
-            'type' => ['sometimes', 'string', 'in:text,file,system'],
-            'attachment_url' => ['nullable', 'string', 'max:2048'],
-        ]);
+        $validated = $request->validated();
+
+        $relationship = MentorshipRelationship::findOrFail($validated['relationship_id']);
+        abort_unless($relationship->involvesUser($request->user()), 403);
 
         $message = Message::create([
             'relationship_id' => $validated['relationship_id'],
@@ -48,21 +47,26 @@ class MessageController
 
         $message->load('sender');
 
-        return response()->json($message, 201);
+        return response()->json(new MessageResource($message), 201);
     }
 
-    public function show(string $id): JsonResponse
+    public function show(Request $request, string $id): JsonResponse
     {
-        $message = Message::with('sender')->findOrFail($id);
+        $message = Message::with(['sender', 'relationship'])->findOrFail($id);
 
-        return response()->json($message);
+        abort_unless($message->relationship->involvesUser($request->user()), 403);
+
+        return response()->json(new MessageResource($message));
     }
 
-    public function markAsRead(string $id): JsonResponse
+    public function markAsRead(Request $request, string $id): JsonResponse
     {
-        $message = Message::findOrFail($id);
+        $message = Message::with('relationship')->findOrFail($id);
+
+        abort_unless($message->relationship->involvesUser($request->user()), 403);
+
         $message->update(['read_at' => now()]);
 
-        return response()->json($message);
+        return response()->json(new MessageResource($message->load('sender')));
     }
 }

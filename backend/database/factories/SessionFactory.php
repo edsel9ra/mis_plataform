@@ -11,7 +11,7 @@ class SessionFactory extends Factory
     {
         return [
             'relationship_id' => MentorshipRelationship::factory(),
-            'session_type' => $this->faker->randomElement(['individual', 'family', 'group', 'corporate']),
+            'session_type' => 'individual',
             'title' => $this->faker->sentence(4),
             'description' => $this->faker->paragraph(),
             'scheduled_at' => $this->faker->dateTimeBetween('+1 hour', '+1 month'),

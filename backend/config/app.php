@@ -5,6 +5,7 @@ return [
     'env' => env('APP_ENV', 'production'),
     'debug' => (bool) env('APP_DEBUG', false),
     'url' => env('APP_URL', 'http://mis-project.local'),
+    'frontend_url' => env('FRONTEND_URL', 'http://localhost:3000'),
     'timezone' => 'America/Mexico_City',
     'locale' => 'es',
     'fallback_locale' => 'es',

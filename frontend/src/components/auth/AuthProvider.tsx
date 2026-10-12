@@ -1,7 +1,10 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, type ReactNode } from 'react';
-import { api } from '@/lib/api';
+import { createContext, useCallback, useContext, useState, useEffect, type ReactNode } from 'react';
+import { useTranslations } from 'next-intl';
+import { ApiError, api } from '@/lib/api';
+import { queryClient } from '@/lib/query-client';
+import type { UserSkill } from '@/lib/mentor-skills';
 
 interface PersonalityAssessment {
   id: string;
@@ -9,28 +12,44 @@ interface PersonalityAssessment {
   completed_at: string | null;
 }
 
-interface User {
+export interface User {
   id: string;
   name: string;
   last_name: string | null;
   email: string;
   sex: string | null;
   birth_date: string | null;
-  client_type: string;
+  client_type: string | null;
   role: string;
   avatar: string | null;
   locale: string;
   company_id: string | null;
   personality_assessment?: PersonalityAssessment | null;
+  skills?: UserSkill[];
+}
+
+export interface Subscription {
+  id: string;
+  plan_id: string;
+  status: string;
+  trial_ends_at: string | null;
+  starts_at: string | null;
+  ends_at: string | null;
+}
+
+interface RegistrationResponse {
+  user: User;
+  subscription: Subscription;
 }
 
 interface AuthContextType {
   user: User | null;
-  login: (email: string, password: string) => Promise<void>;
-  register: (data: RegisterData) => Promise<void>;
-  logout: () => void;
+  login: (email: string, password: string) => Promise<User>;
+  register: (data: RegisterData) => Promise<RegistrationResponse>;
+  logout: () => Promise<void>;
   isLoading: boolean;
-  refreshUser: () => Promise<void>;
+  authError: string | null;
+  refreshUser: () => Promise<User>;
 }
 
 interface RegisterData {
@@ -41,55 +60,112 @@ interface RegisterData {
   sex: string;
   birth_date: string;
   client_type: string;
+  plan_id: string;
+  locale: 'es' | 'en' | 'pt';
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
+export function AuthProvider({
+  children,
+  initialHasAuthCookie = false,
+}: {
+  children: ReactNode;
+  initialHasAuthCookie?: boolean;
+}) {
   const [user, setUser] = useState<User | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(initialHasAuthCookie);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const t = useTranslations();
 
-  useEffect(() => {
-    const token = api.getToken();
-    if (token) {
-      api.get<User>('/profile')
-        .then(setUser)
-        .catch(() => api.setToken(null))
-        .finally(() => setIsLoading(false));
-    } else {
-      setIsLoading(false);
-    }
-  }, []);
-
-  const login = async (email: string, password: string) => {
-    const res = await api.post<{ user: User; token: string }>('/auth/login', { email, password });
-    api.setToken(res.token);
-    setUser(res.user);
-  };
-
-  const register = async (data: RegisterData) => {
-    const res = await api.post<{ user: User; token: string }>('/auth/register', data);
-    api.setToken(res.token);
-    setUser(res.user);
-  };
-
-  const logout = () => {
-    api.post('/auth/logout').catch(() => {});
+  const clearSession = useCallback(() => {
     api.setToken(null);
     setUser(null);
-  };
+    setAuthError(null);
+    queryClient.clear();
+  }, []);
 
-  const refreshUser = async () => {
+  useEffect(() => {
+    const handleUnauthorized = () => clearSession();
+
+    window.addEventListener('auth:unauthorized', handleUnauthorized);
+
+    if (!initialHasAuthCookie) {
+      setIsLoading(false);
+      return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+    }
+
+    api.get<User>('/profile')
+      .then((profile) => {
+        setUser(profile);
+        setAuthError(null);
+      })
+      .catch((error) => {
+        if (error instanceof ApiError && error.status === 401) {
+          clearSession();
+          return;
+        }
+
+        setAuthError(t('auth.session_verification_error'));
+      })
+      .finally(() => setIsLoading(false));
+
+    return () => window.removeEventListener('auth:unauthorized', handleUnauthorized);
+  }, [clearSession, initialHasAuthCookie, t]);
+
+  const login = useCallback(async (email: string, password: string) => {
+    const res = await api.post<{ user: User }>('/auth/login', { email, password });
+    queryClient.clear();
+    setAuthError(null);
+    setUser(res.user);
+
+    return res.user;
+  }, []);
+
+  const register = useCallback(async (data: RegisterData) => {
+    const res = await api.post<RegistrationResponse>('/auth/register', data);
+    queryClient.clear();
+    setAuthError(null);
+    setUser(res.user);
+
+    return res;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await api.post('/auth/logout');
+    } catch (error) {
+      clearSession();
+
+      if (error instanceof ApiError && error.status === 401) return;
+
+      setAuthError(t('auth.logout_error'));
+      throw error;
+    }
+
+    clearSession();
+  }, [clearSession, t]);
+
+  const refreshUser = useCallback(async (): Promise<User> => {
     try {
       const profile = await api.get<User>('/profile');
       setUser(profile);
-    } catch {
-      logout();
+      setAuthError(null);
+
+      return profile;
+    } catch (error) {
+      if (error instanceof ApiError && error.status === 401) {
+        clearSession();
+      } else {
+        setAuthError(t('auth.session_verification_error'));
+      }
+
+      throw error;
     }
-  };
+  }, [clearSession, t]);
 
   return (
-    <AuthContext.Provider value={{ user, login, register, logout, isLoading, refreshUser }}>
+    <AuthContext.Provider value={{ user, login, register, logout, isLoading, authError, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

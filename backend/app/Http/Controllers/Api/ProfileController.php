@@ -2,11 +2,14 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\Profile\UpdateAvatarRequest;
+use App\Http\Requests\Profile\UpdateLocaleRequest;
 use App\Http\Requests\Profile\UpdateProfileRequest;
 use App\Http\Resources\UserProfileResource;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class ProfileController
 {
@@ -30,29 +33,28 @@ class ProfileController
         return response()->json(new UserProfileResource($user->fresh()));
     }
 
-    public function updateAvatar(Request $request): JsonResponse
+    public function updateAvatar(UpdateAvatarRequest $request): JsonResponse
     {
-        $request->validate([
-            'avatar' => ['required', 'image', 'max:2048'],
-        ]);
-
         $user = $request->user();
 
         if ($user->avatar) {
-            Storage::disk('public')->delete($user->avatar);
+            $oldPath = parse_url($user->avatar, PHP_URL_PATH) ?: $user->avatar;
+            $oldPath = Str::startsWith($oldPath, '/storage/')
+                ? Str::after($oldPath, '/storage/')
+                : ltrim($oldPath, '/');
+
+            Storage::disk('public')->delete($oldPath);
         }
 
         $path = $request->file('avatar')->store('avatars', 'public');
-        $user->update(['avatar' => Storage::url($path)]);
+        $user->update(['avatar' => Storage::disk('public')->url($path)]);
 
         return response()->json(['avatar' => $user->avatar]);
     }
 
-    public function updateLocale(Request $request): JsonResponse
+    public function updateLocale(UpdateLocaleRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'locale' => ['required', 'string', 'in:es,en,pt'],
-        ]);
+        $validated = $request->validated();
 
         $request->user()->update($validated);
 

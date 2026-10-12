@@ -1,23 +1,25 @@
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from typing import Optional
 from app.services.matcher import MentorshipMatcher
+import logging
 
 router = APIRouter()
 matcher = MentorshipMatcher()
+logger = logging.getLogger(__name__)
 
 
 class CalculateRequest(BaseModel):
-    user_id: str
-    mentor_id: str
-    client_type: str = Field(pattern="^(personal|familiar|grupal|corporate)$")
-    context_id: Optional[str] = None
+    user_id: str = Field(min_length=1, max_length=128)
+    mentor_id: str = Field(min_length=1, max_length=128)
+    client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
+    context_id: Optional[str] = Field(default=None, max_length=128)
 
 
 class SuggestionsRequest(BaseModel):
-    user_id: str
-    client_type: str = Field(pattern="^(personal|familiar|grupal|corporate)$")
-    context_id: Optional[str] = None
+    user_id: str = Field(min_length=1, max_length=128)
+    client_type: str = Field(pattern="^(personal|familiar|grupal|empresa)$")
+    context_id: Optional[str] = Field(default=None, max_length=128)
     limit: int = Field(default=10, ge=1, le=50)
 
 
@@ -31,8 +33,11 @@ async def calculate_match(request: CalculateRequest):
             context_id=request.context_id,
         )
         return result
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to calculate match")
+        raise HTTPException(status_code=500, detail="Internal matching error")
 
 
 @router.post("/suggestions")
@@ -45,12 +50,15 @@ async def get_suggestions(request: SuggestionsRequest):
             limit=request.limit,
         )
         return result
+    except NotImplementedError as e:
+        raise HTTPException(status_code=501, detail=str(e))
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        logger.exception("Failed to get matching suggestions")
+        raise HTTPException(status_code=500, detail="Internal matching error")
 
 
 @router.post("/analyze-profile")
-async def analyze_profile(user_id: str):
+async def analyze_profile(user_id: str = Query(min_length=1, max_length=128)):
     return {
         "user_id": user_id,
         "message": "Profile analysis requires data from Laravel API"

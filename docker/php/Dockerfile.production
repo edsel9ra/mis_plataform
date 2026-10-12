@@ -1,0 +1,64 @@
+FROM php:8.4-fpm-alpine3.21
+
+WORKDIR /var/www/backend
+
+RUN apk add --no-cache \
+    git \
+    unzip \
+    && mkdir -p \
+        bootstrap/cache \
+        public \
+        storage/app/public \
+        storage/framework/cache/data \
+        storage/framework/sessions \
+        storage/framework/views \
+        storage/logs
+
+COPY docker/php/php.ini /usr/local/etc/php/conf.d/99-mis.ini
+
+COPY --from=mlocati/php-extension-installer:2.7.8 \
+    /usr/bin/install-php-extensions \
+    /usr/local/bin/
+
+RUN install-php-extensions \
+    pdo_pgsql \
+    pgsql \
+    bcmath \
+    zip \
+    pcntl \
+    redis \
+    sockets
+
+COPY --from=composer:2.8.8 /usr/bin/composer /usr/local/bin/composer
+COPY backend/composer.json backend/composer.lock ./
+RUN composer install \
+    --no-dev \
+    --no-interaction \
+    --no-progress \
+    --prefer-dist \
+    --no-scripts \
+    --no-autoloader
+
+COPY backend/app ./app
+COPY backend/artisan ./artisan
+COPY backend/bootstrap/app.php ./bootstrap/app.php
+COPY backend/config ./config
+COPY backend/database ./database
+COPY backend/lang ./lang
+COPY backend/public/index.php ./public/index.php
+COPY backend/resources ./resources
+COPY backend/routes ./routes
+RUN composer dump-autoload --no-dev --classmap-authoritative --no-scripts \
+    && APP_ENV=production APP_DEBUG=false BROADCAST_CONNECTION=log php artisan package:discover --ansi \
+    && chown -R www-data:www-data bootstrap/cache storage \
+    && chmod -R 775 bootstrap/cache storage
+
+COPY docker/php/docker-entrypoint.sh /usr/local/bin/docker-entrypoint
+RUN chmod +x /usr/local/bin/docker-entrypoint
+
+USER www-data
+ENTRYPOINT ["docker-entrypoint"]
+
+EXPOSE 9000
+
+CMD ["php-fpm", "-F"]

@@ -3,11 +3,19 @@
 namespace App\Http\Requests\Auth;
 
 use App\Enums\ClientType;
+use App\Http\Requests\Concerns\NormalizesEmail;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rules\Password;
 
 class RegisterRequest extends FormRequest
 {
+    use NormalizesEmail;
+
+    protected function prepareForValidation(): void
+    {
+        $this->normalizeEmailInput();
+    }
+
     public function authorize(): bool
     {
         return true;
@@ -23,7 +31,8 @@ class RegisterRequest extends FormRequest
             'sex' => ['required', 'string', 'in:M,F,N'],
             'birth_date' => ['required', 'date', 'before:today'],
             'client_type' => ['required', 'string', 'in:' . implode(',', array_column(ClientType::cases(), 'value'))],
-            'locale' => ['nullable', 'string', 'in:es,en,pt'],
+            'plan_id' => ['required', 'uuid', 'exists:plans,id'],
+            'locale' => ['required', 'string', 'in:es,en,pt'],
         ];
     }
 }

@@ -31,7 +31,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->uuid('user_id'); // mentee
             $table->uuid('mentor_id');
-            $table->string('context_type', 30)->default('personal'); // personal, familiar, grupal, corporate
+            $table->string('context_type', 30)->default('personal'); // personal, familiar, grupal, empresa
             $table->uuid('context_id')->nullable();
             $table->decimal('score', 5, 2); // 0-100
             $table->jsonb('breakdown')->nullable(); // desglose del score

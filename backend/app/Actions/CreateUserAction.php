@@ -10,10 +10,10 @@ class CreateUserAction
 {
     public function execute(array $data, ?string $role = null): User
     {
-        return User::create([
+        $user = User::create([
             'name' => $data['name'],
             'last_name' => $data['last_name'] ?? null,
-            'email' => $data['email'],
+            'email' => mb_strtolower(trim((string) $data['email'])),
             'password' => Hash::make($data['password']),
             'sex' => $data['sex'] ?? 'N',
             'birth_date' => $data['birth_date'] ?? null,
@@ -21,5 +21,9 @@ class CreateUserAction
             'role' => $role ?? UserRole::Mentee->value,
             'locale' => $data['locale'] ?? app()->getLocale(),
         ]);
+
+        $user->syncApplicationRole();
+
+        return $user;
     }
 }

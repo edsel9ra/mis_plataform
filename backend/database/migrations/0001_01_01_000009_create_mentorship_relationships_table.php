@@ -10,7 +10,7 @@ return new class extends Migration
     {
         Schema::create('mentorship_relationships', function (Blueprint $table) {
             $table->uuid('id')->primary();
-            $table->string('type', 20); // personal, familiar, grupal, corporate
+            $table->string('type', 20); // personal, familiar, grupal, empresa
             $table->uuidMorphs('source'); // user, family_group, cohort, company
             $table->uuid('mentor_id');
             $table->decimal('match_score', 5, 2)->nullable(); // 0-100
