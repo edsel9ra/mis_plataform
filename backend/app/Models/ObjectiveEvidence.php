@@ -11,6 +11,8 @@ class ObjectiveEvidence extends Model
 {
     use HasFactory, HasUuids;
 
+    protected $table = 'objective_evidences';
+
     protected $fillable = [
         'objective_id',
         'user_id',

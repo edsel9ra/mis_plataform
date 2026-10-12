@@ -38,6 +38,7 @@ use App\Http\Controllers\Api\MediaAssetController;
 use App\Http\Controllers\Api\MenteeChallengeController;
 use App\Http\Controllers\Api\MenteeCheckInController;
 use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
+use App\Http\Controllers\Api\ObjectiveController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -139,6 +140,14 @@ Route::prefix('v1')->group(function () {
         Route::get('/evaluations/{id}', [EvaluationController::class, 'show']);
         Route::post('/evaluations/{id}/submit', [EvaluationController::class, 'submit']);
         Route::get('/mentor/evaluation-results', [EvaluationController::class, 'mentorResults']);
+
+        // Objectives / progress tracking (RF-1, RF-2)
+        Route::get('/objectives', [ObjectiveController::class, 'index']);
+        Route::post('/objectives/proposals', [ObjectiveController::class, 'proposals']);
+        Route::post('/objectives', [ObjectiveController::class, 'store']);
+        Route::put('/objectives/{objective}', [ObjectiveController::class, 'update']);
+        Route::post('/objectives/{objective}/status', [ObjectiveController::class, 'status']);
+        Route::post('/objectives/{objective}/evidences', [ObjectiveController::class, 'evidences']);
 
         // Mentee workspace activity. Every route resolves the relationship to
         // the authenticated personal user before reading or writing data.

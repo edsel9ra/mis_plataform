@@ -182,57 +182,57 @@
 
 ## Fase 3 — Escritura de objetivos
 
-- [ ] **T-050 · `CreateObjectiveAction`**
+- [x] **T-050 · `CreateObjectiveAction`**
   RF: RF-1
   Dep: T-016, T-021
   Hecho cuando: crea el objetivo exigiendo `success_criteria` y titular/colectivo mutuamente excluyente y fija `created_by`.
 
-- [ ] **T-051 · `ProposeObjectiveAction`**
+- [x] **T-051 · `ProposeObjectiveAction`**
   RF: RF-1
   Dep: T-050
   Hecho cuando: el mentee crea una propuesta con `proposed_by` **sin** otorgarse permisos de administración.
 
-- [ ] **T-052 · `UpdateObjectiveAction`**
+- [x] **T-052 · `UpdateObjectiveAction`**
   RF: RF-1
   Dep: T-050
   Hecho cuando: actualiza campos administrables sin alterar `owner` ni `scope`.
 
-- [ ] **T-053 · `TransitionObjectiveStatusAction`**
+- [x] **T-053 · `TransitionObjectiveStatusAction`**
   RF: RF-2
   Dep: T-019
   Hecho cuando: valida la transición, fija/limpia `achieved_at` y genera activity con autor, fecha y estado anterior→nuevo.
 
-- [ ] **T-054 · `AttachObjectiveEvidenceAction`**
+- [x] **T-054 · `AttachObjectiveEvidenceAction`**
   RF: RF-1
   Dep: T-015
   Hecho cuando: vincula nota o `media_asset_id` al objetivo con el usuario que aporta.
 
-- [ ] **T-055 · Form Requests de objetivo**
+- [x] **T-055 · Form Requests de objetivo**
   RF: RF-1, RF-2 (P17)
   Dep: T-050
   Hecho cuando: `Store`/`Update`/`Transition`/`Propose`/`Evidence` validan tipo, longitudes, `scope`↔`owner`, `success_criteria` obligatorio y estado destino válido; rechazan campos prohibidos.
 
-- [ ] **T-056 · `ObjectiveResource` + `ObjectiveEvidenceResource`**
+- [x] **T-056 · `ObjectiveResource` + `ObjectiveEvidenceResource`**
   RF: RF-1, RF-2, RF-13
   Dep: T-014
   Hecho cuando: serializan objetivo (con `is_overdue` **derivado**, nunca estado) y evidencia, sin campos internos sensibles.
 
-- [ ] **T-057 · `ObjectiveController`**
+- [x] **T-057 · `ObjectiveController`**
   RF: RF-1, RF-2
   Dep: T-052, T-053, T-054, T-055, T-056
   Hecho cuando: `index/store/update/status/proposals/evidences` operan con `$this->authorize` y devuelven resources; controller delgado (sin lógica de negocio).
 
-- [ ] **T-058 · Rutas `objectives/*`**
+- [x] **T-058 · Rutas `objectives/*`**
   RF: RF-1, RF-2
   Dep: T-057
   Hecho cuando: `routes/api.php` expone las 6 rutas bajo `/api/v1` con `auth:sanctum`+`active` y `php artisan route:list` las muestra.
 
-- [ ] **T-059 · Feature test `ObjectiveTest`**
+- [x] **T-059 · Feature test `ObjectiveTest`**
   RF: RF-1, RF-2
   Dep: T-058
   Hecho cuando: los tests verifican alta válida, `422` sin criterio/titular, transición con histórico conservado y reversión de `achieved` sin perder el registro.
 
-- [ ] **T-060 · Feature test `ObjectiveAuthorizationTest`**
+- [x] **T-060 · Feature test `ObjectiveAuthorizationTest`**
   RF: RF-1, RF-12
   Dep: T-058
   Hecho cuando: los tests verifican que el mentee propone/aporta pero recibe `403` al administrar, que el mentor solo administra su mentee, y que el ajeno recibe `404`/`403` sin datos.
