@@ -24,7 +24,8 @@
     "main": "Main navigation",
     "assigned_users": "Assigned users",
     "mentor_challenges": "Mentor challenges",
-    "mentor_feedback": "Mentor feedback"
+    "mentor_feedback": "Mentor feedback",
+    "progress": "Progress"
   },
   "auth": {
     "email": "Email",
@@ -791,5 +792,147 @@
     "professional": "Professional",
     "family": "Family",
     "business": "Business"
+  },
+  "progress": {
+    "title": "Progress",
+    "subtitle": "Your follow-up on objectives, sessions and commitments",
+    "loading": "Loading your progress…",
+    "error": "Progress could not be loaded",
+    "retry": "Try again",
+    "incomplete_block": "Incomplete data in this section. Please try again later.",
+    "empty_state_title": "Nothing to show yet",
+    "empty_state_description": "Complete your onboarding or explore mentors to start building progress.",
+    "empty_state_cta": "Explore mentors",
+    "metric": {
+      "no_data": "No data",
+      "no_data_hint": "There is no information in this source yet",
+      "incomplete": "Incomplete data",
+      "suppressed": "Not available",
+      "blocked": "Not included in your plan"
+    },
+    "periods": {
+      "current_month": "Current month",
+      "current_state": "Current state",
+      "next_7_days": "Next 7 days"
+    },
+    "objectives": {
+      "title": "Objectives",
+      "achievement_title": "Objectives achieved",
+      "ratio": "{achieved}/{total} achieved",
+      "overdue": "Overdue",
+      "overdue_count": "{count, plural, =0 {No overdue} one {# overdue} other {# overdue}}",
+      "empty": "You have no objectives yet",
+      "add": "New objective",
+      "edit": "Edit objective",
+      "propose": "Propose objective",
+      "by_status": "By status",
+      "status": {
+        "not_started": "Not started",
+        "in_progress": "In progress",
+        "achieved": "Achieved",
+        "abandoned": "Abandoned"
+      }
+    },
+    "form": {
+      "title_label": "Title",
+      "description_label": "Description",
+      "success_criteria_label": "Success criteria",
+      "due_at_label": "Due date",
+      "scope_label": "Scope",
+      "scope_individual": "Individual",
+      "scope_collective": "Collective",
+      "owner_type_label": "Responsible collective",
+      "owner_type_family_group": "Family group",
+      "owner_type_cohort": "Cohort",
+      "owner_type_company": "Company",
+      "submit_create": "Create objective",
+      "submit_update": "Save changes",
+      "submit_propose": "Send proposal",
+      "cancel": "Cancel",
+      "save_error": "Could not save. Check the data and try again.",
+      "saved": "Objective saved",
+      "proposed": "Proposal sent"
+    },
+    "evidence": {
+      "title": "Add evidence",
+      "note_label": "Note",
+      "note_placeholder": "Describe your progress…",
+      "submit": "Attach evidence",
+      "saved": "Evidence added",
+      "error": "Could not add the evidence"
+    },
+    "status_control": {
+      "title": "Change status",
+      "history_title": "Change history",
+      "changed_by": "by {name}",
+      "no_history": "No changes recorded",
+      "error": "Could not change the status"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "realized": "Held this month",
+      "scheduled": "Scheduled",
+      "empty": "No scheduled sessions"
+    },
+    "activities": {
+      "title": "Activities",
+      "pending": "Pending",
+      "overdue": "Overdue",
+      "completed": "Completed",
+      "empty": "No pending activities"
+    },
+    "competencies": {
+      "title": "Competencies",
+      "skills_title": "Skills",
+      "personality_title": "Personality (OCEAN)",
+      "skills_empty": "No skills recorded yet",
+      "ocean_no_data": "Personality assessment not completed",
+      "ocean_blocked": "Your plan does not include the OCEAN profile",
+      "assessed_at": "Assessed on {date}",
+      "source_skills": "Source: skills",
+      "source_personality": "Source: personality"
+    },
+    "commitments": {
+      "title": "Upcoming commitments",
+      "empty": "You have no commitments in the next 7 days",
+      "kind": {
+        "session": "Session",
+        "activity": "Activity",
+        "objective": "Objective"
+      }
+    },
+    "collective": {
+      "title": "Collective progress",
+      "mean": "Average achievement",
+      "sum": "Achieved / total",
+      "contributing": "{count} members contributing data",
+      "no_data": "The collective has no data yet",
+      "suppressed": "At least {threshold} participants are needed to show this aggregate",
+      "types": {
+        "family_group": "Family group",
+        "cohort": "Cohort",
+        "company": "Company"
+      }
+    },
+    "mentor": {
+      "title": "Your portfolio progress",
+      "subtitle": "Spot blockers, pending items and overdue work",
+      "empty": "You have no assigned mentees yet",
+      "overdue_flag": "{count} overdue",
+      "pending_flag": "{count} pending",
+      "no_activity_flag": "No activity",
+      "workspace_locked": "The mentee's plan does not include the mentor workspace",
+      "last_activity": "Last activity: {date}",
+      "no_activity_ever": "No activity recorded",
+      "open_panel": "View panel",
+      "back": "Back to portfolio"
+    },
+    "viewer": {
+      "self": "Your progress",
+      "mentor": "Mentee panel",
+      "member": "Collective progress",
+      "support": "Support view",
+      "admin": "Support view"
+    }
   }
 }

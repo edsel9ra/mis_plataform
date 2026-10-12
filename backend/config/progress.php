@@ -26,4 +26,13 @@ return [
     | the source of truth (P1); the cache is invalidated by model observers.
     */
     'cache_ttl' => (int) env('PROGRESS_CACHE_TTL', 300),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Mentor portfolio inactivity window
+    |--------------------------------------------------------------------------
+    | A mentee is flagged as "no activity" when there is no objective, session
+    | or challenge movement within this many days (RF-9 CA-9.4).
+    */
+    'inactivity_days' => (int) env('PROGRESS_INACTIVITY_DAYS', 30),
 ];

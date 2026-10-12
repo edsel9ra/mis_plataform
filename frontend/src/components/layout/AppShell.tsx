@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Shield,
   Sparkles,
+  TrendingUp,
   User,
   Users,
   X,
@@ -32,6 +33,7 @@ import {
 
 const baseNavItems = [
   { href: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
+  { href: '/dashboard/progreso', label: 'nav.progress', icon: TrendingUp },
   { href: '/recommendations', label: 'nav.recommendations', icon: Sparkles },
   { href: '/evaluations', label: 'nav.evaluations', icon: ClipboardCheck },
   { href: '/mentors', label: 'nav.mentors', icon: Users },
@@ -58,6 +60,8 @@ export function AppShell({ children }: { children: ReactNode }) {
       ? [
         ...baseNavItems.map((item) => item.href === '/dashboard'
           ? { ...item, href: '/dashboard/mentor', label: 'nav.assigned_users' }
+          : item.href === '/dashboard/progreso'
+          ? { ...item, href: '/dashboard/mentor/progress' }
           : item),
         { href: '/dashboard/mentor/challenges', label: 'nav.mentor_challenges', icon: ListChecks },
         { href: '/dashboard/mentor/feedback', label: 'nav.mentor_feedback', icon: MessageSquare },

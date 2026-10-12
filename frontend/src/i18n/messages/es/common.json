@@ -24,7 +24,8 @@
     "main": "Navegación principal",
     "assigned_users": "Usuarios asignados",
     "mentor_challenges": "Retos del mentor",
-    "mentor_feedback": "Feedback del mentor"
+    "mentor_feedback": "Feedback del mentor",
+    "progress": "Progreso"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -791,5 +792,147 @@
     "professional": "Profesional",
     "family": "Familiar",
     "business": "Empresa"
+  },
+  "progress": {
+    "title": "Progreso",
+    "subtitle": "Tu seguimiento de objetivos, sesiones y compromisos",
+    "loading": "Cargando tu progreso…",
+    "error": "No se pudo cargar el progreso",
+    "retry": "Intentar de nuevo",
+    "incomplete_block": "Datos incompletos en esta sección. Vuelve a intentarlo más tarde.",
+    "empty_state_title": "Aún no hay nada que mostrar",
+    "empty_state_description": "Completa tu onboarding o explora mentores para comenzar a generar progreso.",
+    "empty_state_cta": "Explorar mentores",
+    "metric": {
+      "no_data": "Sin datos",
+      "no_data_hint": "Todavía no hay información en esta fuente",
+      "incomplete": "Datos incompletos",
+      "suppressed": "No disponible",
+      "blocked": "No incluido en tu plan"
+    },
+    "periods": {
+      "current_month": "Mes actual",
+      "current_state": "Estado actual",
+      "next_7_days": "Próximos 7 días"
+    },
+    "objectives": {
+      "title": "Objetivos",
+      "achievement_title": "Objetivos logrados",
+      "ratio": "{achieved}/{total} logrados",
+      "overdue": "Vencido",
+      "overdue_count": "{count, plural, =0 {Sin vencidos} one {# vencido} other {# vencidos}}",
+      "empty": "Aún no tienes objetivos",
+      "add": "Nuevo objetivo",
+      "edit": "Editar objetivo",
+      "propose": "Proponer objetivo",
+      "by_status": "Por estado",
+      "status": {
+        "not_started": "No iniciado",
+        "in_progress": "En progreso",
+        "achieved": "Logrado",
+        "abandoned": "Abandonado"
+      }
+    },
+    "form": {
+      "title_label": "Título",
+      "description_label": "Descripción",
+      "success_criteria_label": "Criterio de logro",
+      "due_at_label": "Fecha límite",
+      "scope_label": "Ámbito",
+      "scope_individual": "Individual",
+      "scope_collective": "Colectivo",
+      "owner_type_label": "Colectivo responsable",
+      "owner_type_family_group": "Grupo familiar",
+      "owner_type_cohort": "Cohorte",
+      "owner_type_company": "Empresa",
+      "submit_create": "Crear objetivo",
+      "submit_update": "Guardar cambios",
+      "submit_propose": "Enviar propuesta",
+      "cancel": "Cancelar",
+      "save_error": "No se pudo guardar. Revisa los datos e inténtalo de nuevo.",
+      "saved": "Objetivo guardado",
+      "proposed": "Propuesta enviada"
+    },
+    "evidence": {
+      "title": "Aportar evidencia",
+      "note_label": "Nota",
+      "note_placeholder": "Describe tu avance…",
+      "submit": "Adjuntar evidencia",
+      "saved": "Evidencia añadida",
+      "error": "No se pudo añadir la evidencia"
+    },
+    "status_control": {
+      "title": "Cambiar estado",
+      "history_title": "Historial de cambios",
+      "changed_by": "por {name}",
+      "no_history": "Sin cambios registrados",
+      "error": "No se pudo cambiar el estado"
+    },
+    "sessions": {
+      "title": "Sesiones",
+      "realized": "Realizadas este mes",
+      "scheduled": "Programadas",
+      "empty": "Sin sesiones programadas"
+    },
+    "activities": {
+      "title": "Actividades",
+      "pending": "Pendientes",
+      "overdue": "Vencidas",
+      "completed": "Completadas",
+      "empty": "Sin actividades pendientes"
+    },
+    "competencies": {
+      "title": "Competencias",
+      "skills_title": "Skills",
+      "personality_title": "Personalidad (OCEAN)",
+      "skills_empty": "Aún no hay skills registradas",
+      "ocean_no_data": "Evaluación de personalidad no completada",
+      "ocean_blocked": "Tu plan no incluye el perfil OCEAN",
+      "assessed_at": "Evaluado el {date}",
+      "source_skills": "Fuente: skills",
+      "source_personality": "Fuente: personalidad"
+    },
+    "commitments": {
+      "title": "Próximos compromisos",
+      "empty": "No tienes compromisos en los próximos 7 días",
+      "kind": {
+        "session": "Sesión",
+        "activity": "Actividad",
+        "objective": "Objetivo"
+      }
+    },
+    "collective": {
+      "title": "Progreso del colectivo",
+      "mean": "Media de logro",
+      "sum": "Logrados / total",
+      "contributing": "{count} participantes aportando datos",
+      "no_data": "El colectivo aún no tiene datos",
+      "suppressed": "Se necesitan al menos {threshold} participantes para mostrar este agregado",
+      "types": {
+        "family_group": "Grupo familiar",
+        "cohort": "Cohorte",
+        "company": "Empresa"
+      }
+    },
+    "mentor": {
+      "title": "Progreso de tu cartera",
+      "subtitle": "Identifica bloqueos, pendientes y vencimientos",
+      "empty": "Aún no tienes mentees asignados",
+      "overdue_flag": "{count} vencidos",
+      "pending_flag": "{count} pendientes",
+      "no_activity_flag": "Sin actividad",
+      "workspace_locked": "El plan del mentee no incluye el espacio del mentor",
+      "last_activity": "Última actividad: {date}",
+      "no_activity_ever": "Sin actividad registrada",
+      "open_panel": "Ver panel",
+      "back": "Volver a la cartera"
+    },
+    "viewer": {
+      "self": "Tu progreso",
+      "mentor": "Panel del mentee",
+      "member": "Progreso del colectivo",
+      "support": "Vista de soporte",
+      "admin": "Vista de soporte"
+    }
   }
 }

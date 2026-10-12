@@ -80,4 +80,18 @@ export const queryKeys = {
     'alerts',
     relationshipId,
   ] as const,
+
+  // Progress panel & follow-up (spec 001)
+  progressRoot: ['progress'] as const,
+  progressPanel: (subjectId?: string) => ['progress', 'panel', subjectId ?? 'self'] as const,
+  collectiveProgress: (type: string, id: string) => ['progress', 'collectives', type, id] as const,
+  objectivesRoot: ['objectives'] as const,
+  objectives: (subjectType: string, subjectId: string, status = 'all') => [
+    'objectives',
+    { subjectType, subjectId, status },
+  ] as const,
+  objective: (objectiveId: string) => ['objectives', objectiveId] as const,
+  mentorProgressOverview: ['mentor', 'progress', 'overview'] as const,
+  mentorProgressPanel: (userId: string) => ['mentor', 'progress', 'users', userId] as const,
+  adminProgressPanel: (userId: string) => ['admin', 'progress', 'panel', userId] as const,
 } as const;

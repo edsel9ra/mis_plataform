@@ -39,6 +39,10 @@ use App\Http\Controllers\Api\MenteeChallengeController;
 use App\Http\Controllers\Api\MenteeCheckInController;
 use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
 use App\Http\Controllers\Api\ObjectiveController;
+use App\Http\Controllers\Api\ProgressPanelController;
+use App\Http\Controllers\Api\CollectiveProgressController;
+use App\Http\Controllers\Api\MentorProgressController;
+use App\Http\Controllers\Api\AdminProgressController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -149,6 +153,10 @@ Route::prefix('v1')->group(function () {
         Route::post('/objectives/{objective}/status', [ObjectiveController::class, 'status']);
         Route::post('/objectives/{objective}/evidences', [ObjectiveController::class, 'evidences']);
 
+        // Progress panel and collective aggregate (RF-3..RF-12)
+        Route::get('/progress/panel', [ProgressPanelController::class, 'show']);
+        Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
+
         // Mentee workspace activity. Every route resolves the relationship to
         // the authenticated personal user before reading or writing data.
         Route::get('/relationships/{relationship}/check-ins', [MenteeCheckInController::class, 'index']);
@@ -167,6 +175,9 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:mentor')->prefix('mentor')->group(function () {
             Route::put('/skills', [MentorSkillController::class, 'updateOwn']);
             Route::get('/users', [MentorDashboardController::class, 'users']);
+            // Progress portfolio and mentee panel (RF-9).
+            Route::get('/progress/overview', [MentorProgressController::class, 'index']);
+            Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
             Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);
@@ -216,6 +227,8 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:super_admin|admin')->prefix('admin')->group(function () {
             // Users
             Route::get('/users', [AdminController::class, 'users']);
+            Route::get('/progress/panel', [AdminProgressController::class, 'show'])
+                ->middleware('permission:progress.view.support');
             Route::post('/users', [AdminController::class, 'userStore']);
             Route::get('/users/{id}', [AdminController::class, 'userShow']);
             Route::put('/users/{id}', [AdminController::class, 'userUpdate']);

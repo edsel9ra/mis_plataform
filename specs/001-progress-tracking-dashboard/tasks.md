@@ -241,77 +241,79 @@
 
 ## Fase 4 — Lectura y agregados
 
-- [ ] **T-070 · `ProgressPanelService` (orquestador)**
+> _Verificado 2026-10-12: implementación de servicios/controladores/resources + tests (T-070–T-084) sobre la rama `feat/001-progress-tracking-dashboard`. Suite completa `make test-backend`: **229 passed (940 assertions)**. Rutas alineadas al plan §5: `GET /progress/panel`, `GET /mentor/users/{user}/progress`, `GET /mentor/progress/overview`, `GET /progress/collectives/{type}/{id}`, `GET /admin/progress/panel?user_id=`._
+
+- [x] **T-070 · `ProgressPanelService` (orquestador)**
   RF: RF-3–RF-8, RF-13, RF-14 (RNF-5, RNF-8)
   Dep: T-031, T-033, T-035, T-037, T-039, T-043, T-021
   Hecho cuando: carga fuentes, llama a las calculadoras, envuelve cada bloque en try/catch marcando `incomplete` y loguea el fallo sin datos personales.
 
-- [ ] **T-071 · `ProgressPanelResource`**
+- [x] **T-071 · `ProgressPanelResource`**
   RF: RF-3–RF-8, RF-13, RF-14
   Dep: T-070
   Hecho cuando: serializa los 6 bloques con `state`, valor, numerador/denominador, `period` y `source`, y **no** incluye información de terceros.
 
-- [ ] **T-072 · `ProgressPanelController::show` + ruta**
+- [x] **T-072 · `ProgressPanelController::show` + ruta**
   RF: RF-3
   Dep: T-071
   Hecho cuando: `GET /api/v1/progress/panel` devuelve el panel del propio usuario autenticado.
 
-- [ ] **T-073 · Feature test `ProgressPanelTest`**
+- [x] **T-073 · Feature test `ProgressPanelTest`**
   RF: RF-3–RF-8, RF-13, RF-14
   Dep: T-072
   Hecho cuando: los tests comprueban los 6 bloques, `no_data` vs `0`, periodo visible por indicador, bloque incompleto que no tumba el resto y estado vacío para usuario sin proceso.
 
-- [ ] **T-074 · `EligibleParticipantsResolver`**
+- [x] **T-074 · `EligibleParticipantsResolver`**
   RF: RF-10, RF-11
   Dep: T-014
   Hecho cuando: resuelve miembros activos con pertenencia vigente y ≥1 objetivo individual como participantes elegibles para familia/cohorte/empresa.
 
-- [ ] **T-075 · `CollectiveProgressService`**
+- [x] **T-075 · `CollectiveProgressService`**
   RF: RF-10, RF-11 (RNF-2)
   Dep: T-074, T-042
   Hecho cuando: arma el agregado (media + suma + base) o lo suprime bajo el umbral, con `no_data` si no hay miembros con objetivos, igual para responsable y miembro.
 
-- [ ] **T-076 · `CollectiveProgressResource`**
+- [x] **T-076 · `CollectiveProgressResource`**
   RF: RF-10, RF-11
   Dep: T-075
   Hecho cuando: serializa `subject`, `viewer_role`, métricas, `base` (solo si visible) y `suppression_reason`, sin listar miembros.
 
-- [ ] **T-077 · `CollectiveProgressController::show` + ruta**
+- [x] **T-077 · `CollectiveProgressController::show` + ruta**
   RF: RF-10, RF-11, RF-12
   Dep: T-076
   Hecho cuando: `GET /api/v1/progress/collectives/{type}/{id}` autoriza responsable/miembro y deniega sin datos a no-miembro.
 
-- [ ] **T-078 · Feature test `CollectiveProgressTest`**
+- [x] **T-078 · Feature test `CollectiveProgressTest`**
   RF: RF-10, RF-11, RNF-2
   Dep: T-077
   Hecho cuando: los tests verifican base ≥3 muestra media+suma, base <3 suprime **para responsable y miembro**, no-miembro `403`, y colectivo sin objetivos `no_data`.
 
-- [ ] **T-079 · `MentorProgressService`**
+- [x] **T-079 · `MentorProgressService`**
   RF: RF-9
   Dep: T-070
   Hecho cuando: construye el panel de un mentee reutilizando `MentorWorkspaceAccessService` (sin duplicar checks) y calcula banderas de vencidos/sin actividad.
 
-- [ ] **T-080 · Endpoints de mentor + rutas**
+- [x] **T-080 · Endpoints de mentor + rutas**
   RF: RF-9
   Dep: T-079
   Hecho cuando: existen `GET /mentor/users/{user}/progress` y `GET /mentor/progress/overview` bajo `role:mentor`.
 
-- [ ] **T-081 · Feature test `MentorProgressTest`**
+- [x] **T-081 · Feature test `MentorProgressTest`**
   RF: RF-9
   Dep: T-080
   Hecho cuando: los tests verifican acceso al mentee asignado, `404` al ajeno, bloqueo con motivo si el plan no habilita el espacio y banderas de cartera.
 
-- [ ] **T-082 · Endpoint de soporte admin**
+- [x] **T-082 · Endpoint de soporte admin**
   RF: RF-12
   Dep: T-077
   Hecho cuando: `GET /admin/progress/panel?user_id=` exige permiso `progress.view.support`, deniega `403` sin él y registra auditoría de la consulta.
 
-- [ ] **T-083 · Feature test `ProgressSecurityTest`**
+- [x] **T-083 · Feature test `ProgressSecurityTest`**
   RF: RF-12, RNF-1
   Dep: T-082, T-060
   Hecho cuando: los tests cubren IDOR (`subject_id`/`{id}` manipulados), admin sin permiso `403` y admin con permiso + registro de auditoría.
 
-- [ ] **T-084 · Invalidación de caché**
+- [x] **T-084 · Invalidación de caché**
   RF: RNF-5 (P1)
   Dep: T-070
   Hecho cuando: observadores en `Objective`/`Session`/`Challenge`/`UserLearningProgress`/`PersonalityAssessment` olvidan las claves del sujeto, y un test con `Cache::spy()` lo confirma; Redis no es fuente de verdad.
@@ -320,32 +322,34 @@
 
 ## Fase 5 — Contrato frontend
 
-- [ ] **T-090 · `frontend/src/types/progress.ts`**
+> _Verificado 2026-10-12: `types/progress.ts`, `lib/progress.ts` (+ Vitest), `lib/schemas/objective.ts`, claves de react-query y `hooks/use-progress.ts`. `pnpm typecheck` y `pnpm lint` limpios; `pnpm test`: **48 passed** (16 en `progress.test.ts`). Los tipos reflejan `state`/`suppressed`, la UI distingue `no_data` de `0` y de `incomplete`, y las mutaciones invalidan `progressRoot`/`objectivesRoot`._
+
+- [x] **T-090 · `frontend/src/types/progress.ts`**
   RF: todos
   Dep: T-071, T-076
   Hecho cuando: los tipos reflejan el contrato (incluido `state` y `suppressed`) y `pnpm typecheck` pasa.
 
-- [ ] **T-091 · `frontend/src/lib/progress.ts` (puro)**
+- [x] **T-091 · `frontend/src/lib/progress.ts` (puro)**
   RF: RF-13, RF-14
   Dep: T-090
   Hecho cuando: expone mapa `state`→UI (`no_data` ≠ `0`, `incomplete`), formateo de %/media con `null`, etiquetas de periodo y mensaje de supresión.
 
-- [ ] **T-092 · Vitest `progress.test.ts`**
+- [x] **T-092 · Vitest `progress.test.ts`**
   RF: RNF-9
   Dep: T-091
   Hecho cuando: `pnpm test` valida `no_data` vs `0`, formateo con `null`, orden de compromisos y mensaje de supresión.
 
-- [ ] **T-093 · `src/lib/schemas/objective.ts`**
+- [x] **T-093 · `src/lib/schemas/objective.ts`**
   RF: RF-1
   Dep: T-090
   Hecho cuando: el esquema Zod exige título, criterio y fecha, y valida `scope`↔titular/colectivo.
 
-- [ ] **T-094 · Claves de react-query**
+- [x] **T-094 · Claves de react-query**
   RF: RF-3–RF-11
   Dep: T-090
   Hecho cuando: `query-keys.ts` añade `progressPanel`, `collectiveProgress`, `objective*` y el borrado relacionado tras mutaciones.
 
-- [ ] **T-095 · `hooks/use-progress.ts`**
+- [x] **T-095 · `hooks/use-progress.ts`**
   RF: RF-1, RF-3, RF-9
   Dep: T-094
   Hecho cuando: los hooks hacen las queries/mutaciones con `api` y `credentials: 'include'`, e invalidan las claves al mutar.

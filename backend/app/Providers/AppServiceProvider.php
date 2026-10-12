@@ -13,9 +13,12 @@ use App\Models\MentorshipRelationship;
 use App\Models\NeurocognitiveAlert;
 use App\Models\NeurocognitiveObservation;
 use App\Models\Objective;
+use App\Models\PersonalityAssessment;
 use App\Models\Session;
 use App\Models\SystemicMap;
 use App\Models\User;
+use App\Models\UserLearningProgress;
+use App\Models\UserSkill;
 use App\Policies\ChallengePolicy;
 use App\Policies\ChallengeSubmissionPolicy;
 use App\Policies\CohortPolicy;
@@ -27,6 +30,7 @@ use App\Policies\ObjectivePolicy;
 use App\Policies\RelationshipPolicy;
 use App\Policies\SessionPolicy;
 use App\Policies\SystemicMapPolicy;
+use App\Services\Progress\ProgressCacheObserver;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Support\Facades\Gate;
@@ -86,5 +90,13 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Objective::class, ObjectivePolicy::class);
         Gate::policy(Session::class, SessionPolicy::class);
         Gate::policy(SystemicMap::class, SystemicMapPolicy::class);
+
+        // Progress panel cache invalidation (RNF-5, T-084).
+        Objective::observe(ProgressCacheObserver::class);
+        Session::observe(ProgressCacheObserver::class);
+        Challenge::observe(ProgressCacheObserver::class);
+        UserLearningProgress::observe(ProgressCacheObserver::class);
+        PersonalityAssessment::observe(ProgressCacheObserver::class);
+        UserSkill::observe(ProgressCacheObserver::class);
     }
 }
