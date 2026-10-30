@@ -60,7 +60,7 @@ it('shows a session', function () {
     $response->assertOk();
 });
 
-it('updates session status', function () {
+it('rejects direct session lifecycle status updates', function () {
     $mentor = User::factory()->mentor()->create();
     $relationship = MentorshipRelationship::factory()->create([
         'mentor_id' => $mentor->id,
@@ -72,10 +72,10 @@ it('updates session status', function () {
     $response = $this->withToken($mentor->createToken('test')->plainTextToken)
         ->putJson("/api/v1/sessions/{$session->id}/status", [
             'status' => 'completed',
-        ]);
+        ])
+        ->assertUnprocessable();
 
-    $response->assertOk()
-        ->assertJsonFragment(['status' => 'completed']);
+    expect($session->fresh()->status)->toBe('scheduled');
 });
 
 it('requires an active relationship and a matching session type', function () {

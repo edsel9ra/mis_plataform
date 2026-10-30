@@ -5,6 +5,8 @@ return [
     'boolean' => 'The :attribute field must be true or false.',
     'date' => 'The :attribute field must be a valid date.',
     'date_format' => 'The :attribute field must match the format :format.',
+    'availability_time_order' => 'The end time must be later than the start time.',
+    'availability_window_overlap' => 'The window overlaps another availability period on the same day.',
     'email' => 'The :attribute field must be a valid email address.',
     'exists' => 'The selected :attribute is invalid.',
     'integer' => 'The :attribute field must be an integer.',

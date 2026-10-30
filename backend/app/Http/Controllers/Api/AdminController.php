@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateSessionAction;
+use App\Actions\CancelSessionAction;
+use App\Actions\RescheduleSessionAction;
 use App\Enums\UserRole;
 use App\Http\Requests\Admin\StoreAdminAssessmentRequest;
 use App\Http\Requests\Admin\StoreAdminMentorRequest;
@@ -13,6 +15,8 @@ use App\Http\Requests\Admin\UpdateAdminAssessmentRequest;
 use App\Http\Requests\Admin\UpdateAdminMentorRequest;
 use App\Http\Requests\Admin\UpdateAdminSessionRequest;
 use App\Http\Requests\Admin\UpdateAdminSessionStatusRequest;
+use App\Http\Requests\Admin\RescheduleAdminSessionRequest;
+use App\Http\Requests\Session\CancelSessionRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\AssessmentResultResource;
@@ -30,12 +34,19 @@ use App\Models\PersonalityAssessment;
 use App\Models\Plan;
 use App\Models\Session;
 use App\Models\User;
+use App\Services\Scheduling\SchedulingAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Gate;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
 
 class AdminController
 {
+    public function __construct(
+        private SchedulingAuditLogger $schedulingAuditLogger,
+    ) {}
+
     // ──────────────────────────────────────────────
     // Users CRUD
     // ──────────────────────────────────────────────
@@ -216,6 +227,11 @@ class AdminController
         }
 
         $sessions = $query->latest('scheduled_at')->paginate($perPage);
+        $sessions->getCollection()->each(function (Session $session): void {
+            if ($session->status === 'canceled') {
+                $session->setAttribute('meet_link', null);
+            }
+        });
 
         return response()->json($sessions);
     }
@@ -225,20 +241,29 @@ class AdminController
         $session = Session::with(['relationship.mentor', 'relationship.source', 'attendees.user'])
             ->findOrFail($id);
 
+        if ($session->status === 'canceled') {
+            $session->setAttribute('meet_link', null);
+        }
+
         return response()->json($session);
     }
 
     public function sessionStore(StoreAdminSessionRequest $request, CreateSessionAction $createSession): JsonResponse
     {
         $validated = $request->validated();
-
-        $status = $validated['status'] ?? 'scheduled';
         unset($validated['status']);
 
-        $session = $createSession->execute($validated);
+        $session = $createSession->execute($validated, $request->user());
 
-        if ($status !== 'scheduled') {
-            $session->update(['status' => $status]);
+        $this->schedulingAuditLogger->record(
+            $session,
+            $request->user(),
+            'session.created',
+            array_keys($validated),
+        );
+
+        if (! Gate::allows('view', $session)) {
+            return response()->json(null, 204);
         }
 
         return response()->json(new SessionResource($session), 201);
@@ -249,6 +274,7 @@ class AdminController
         $session = Session::findOrFail($id);
 
         $validated = $request->validated();
+        $before = $this->schedulingAuditLogger->snapshot($session);
 
         if (array_key_exists('relationship_id', $validated) || array_key_exists('session_type', $validated)) {
             $relationship = MentorshipRelationship::findOrFail(
@@ -271,25 +297,94 @@ class AdminController
         }
 
         $session->update($validated);
+        $this->schedulingAuditLogger->record(
+            $session,
+            $request->user(),
+            'session.updated',
+            array_keys($validated),
+            $before,
+        );
+
+        if (! Gate::allows('view', $session)) {
+            return response()->json(null, 204);
+        }
 
         return response()->json(new SessionResource($session));
     }
 
-    public function sessionUpdateStatus(UpdateAdminSessionStatusRequest $request, string $id): JsonResponse
-    {
-        $session = Session::findOrFail($id);
-
+    public function sessionUpdateStatus(
+        UpdateAdminSessionStatusRequest $request,
+        string $id,
+        CancelSessionAction $cancelSession,
+    ): JsonResponse {
         $validated = $request->validated();
+        if ($validated['status'] !== 'canceled') {
+            throw ValidationException::withMessages([
+                'status' => [__('sessions.status_transition_not_allowed')],
+            ]);
+        }
 
-        $session->update($validated);
+        $session = $cancelSession->execute(
+            $id,
+            $validated['reason'],
+            $request->user(),
+            now(),
+        );
+
+        if (! Gate::allows('view', $session)) {
+            return response()->json(null, 204);
+        }
 
         return response()->json(new SessionResource($session));
     }
 
-    public function sessionDestroy(string $id): JsonResponse
+    public function sessionReschedule(
+        RescheduleAdminSessionRequest $request,
+        string $id,
+        RescheduleSessionAction $rescheduleSession,
+    ): JsonResponse {
+        $session = $rescheduleSession->execute(
+            $id,
+            $request->validated(),
+            $request->user(),
+            now(),
+        );
+
+        if (! Gate::allows('view', $session)) {
+            return response()->json(null, 204);
+        }
+
+        return response()->json(new SessionResource($session));
+    }
+
+    public function sessionCancel(CancelSessionRequest $request, string $id, CancelSessionAction $cancelSession): JsonResponse
+    {
+        $session = $cancelSession->execute(
+            $id,
+            $request->validated()['reason'],
+            $request->user(),
+            now(),
+        );
+
+        if (! Gate::allows('view', $session)) {
+            return response()->json(null, 204);
+        }
+
+        return response()->json(new SessionResource($session));
+    }
+
+    public function sessionDestroy(Request $request, string $id): JsonResponse
     {
         $session = Session::findOrFail($id);
+        $before = $this->schedulingAuditLogger->snapshot($session);
         $session->delete();
+        $this->schedulingAuditLogger->record(
+            $session,
+            $request->user(),
+            'session.deleted',
+            ['deleted_at'],
+            $before,
+        );
 
         return response()->json(['message' => __('admin.session_deleted')]);
     }

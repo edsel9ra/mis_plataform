@@ -12,7 +12,11 @@ class SessionAttendeeResource extends JsonResource
         return [
             'id' => $this->id,
             'user' => UserSummaryResource::make($this->whenLoaded('user')),
+            'attendance_status' => $this->attendance_status?->value,
             'attended' => $this->attended,
+            'confirmed_by' => $this->confirmed_by,
+            'confirmed_at' => $this->confirmed_at,
+            'left_at' => $this->left_at,
             'joined_at' => $this->joined_at,
         ];
     }

@@ -14,6 +14,8 @@ class Notification extends Model
         'user_id',
         'type',
         'dedupe_key',
+        'status',
+        'sent_at',
         'data',
         'read_at',
     ];
@@ -23,6 +25,7 @@ class Notification extends Model
         return [
             'data' => 'array',
             'read_at' => 'datetime',
+            'sent_at' => 'datetime',
         ];
     }
 

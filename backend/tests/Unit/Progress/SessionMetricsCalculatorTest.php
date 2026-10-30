@@ -17,10 +17,12 @@ it('counts only completed sessions with confirmed attendance in the calendar mon
         ['id' => 's2', 'status' => 'completed', 'scheduled_at' => '2026-06-11T10:00:00Z'],
         ['id' => 's3', 'status' => 'scheduled', 'scheduled_at' => '2026-06-12T10:00:00Z'],
         ['id' => 's4', 'status' => 'completed', 'scheduled_at' => '2026-05-30T10:00:00Z'],
+        ['id' => 's5', 'status' => 'not_completed', 'scheduled_at' => '2026-06-13T10:00:00Z'],
     ];
     $attendance = [
         's1' => ['u1' => ['attended' => true]],
         's2' => ['u1' => ['attended' => false]],
+        's5' => ['u1' => ['attended' => true]],
     ];
 
     $metric = $this->calc->realized($sessions, $attendance, 'u1', $this->now);

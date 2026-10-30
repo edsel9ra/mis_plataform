@@ -18,9 +18,11 @@ class UpdateAdminSessionRequest extends FormRequest
             'session_type' => ['sometimes', 'string', 'in:individual,family,group,corporate'],
             'title' => ['sometimes', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
-            'scheduled_at' => ['sometimes', 'date'],
-            'duration_minutes' => ['sometimes', 'integer', 'min:15', 'max:480'],
-            'status' => ['sometimes', 'string', 'in:scheduled,in_progress,completed,canceled'],
+            'scheduled_at' => ['prohibited'],
+            'duration_minutes' => ['prohibited'],
+            'timezone' => ['prohibited'],
+            'end_at' => ['prohibited'],
+            'status' => ['prohibited'],
         ];
     }
 }

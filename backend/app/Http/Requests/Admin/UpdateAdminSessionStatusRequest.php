@@ -14,7 +14,8 @@ class UpdateAdminSessionStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['required', 'string', 'in:scheduled,in_progress,completed,canceled'],
+            'status' => ['required', 'string'],
+            'reason' => ['required', 'string', 'not_regex:/^\s*$/u'],
         ];
     }
 }

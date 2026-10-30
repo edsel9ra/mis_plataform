@@ -109,7 +109,7 @@ it('uses privacy-safe summaries for session attendees', function () {
         'attended' => true,
     ]);
 
-    $response = $this->withToken($owner->createToken('test')->plainTextToken)
+    $response = $this->withToken($relationship->mentor->createToken('test')->plainTextToken)
         ->getJson("/api/v1/sessions/{$session->id}");
 
     $response->assertOk()

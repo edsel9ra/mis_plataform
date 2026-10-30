@@ -19,8 +19,14 @@ class StoreAdminSessionRequest extends FormRequest
             'title' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'scheduled_at' => ['required', 'date'],
-            'duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
-            'status' => ['sometimes', 'string', 'in:scheduled,in_progress,completed,canceled'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:'.config('scheduling.min_duration_minutes', 15),
+                'max:'.config('scheduling.max_duration_minutes', 480),
+            ],
+            'timezone' => ['sometimes', 'string', 'timezone'],
+            'status' => ['sometimes', 'string', 'in:scheduled'],
         ];
     }
 }

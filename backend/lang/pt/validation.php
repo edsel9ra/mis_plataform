@@ -5,6 +5,8 @@ return [
     'boolean' => 'O campo :attribute deve ser verdadeiro ou falso.',
     'date' => 'O campo :attribute deve ser uma data válida.',
     'date_format' => 'O campo :attribute deve corresponder ao formato :format.',
+    'availability_time_order' => 'A hora de término deve ser posterior à hora de início.',
+    'availability_window_overlap' => 'A janela se sobrepõe a outro período de disponibilidade no mesmo dia.',
     'email' => 'O campo :attribute deve ser um e-mail válido.',
     'exists' => 'O :attribute selecionado é inválido.',
     'integer' => 'O campo :attribute deve ser um número inteiro.',

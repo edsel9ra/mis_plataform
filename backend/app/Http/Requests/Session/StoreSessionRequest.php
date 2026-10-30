@@ -14,12 +14,18 @@ class StoreSessionRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'relationship_id' => ['required', 'exists:mentorship_relationships,id'],
+            'relationship_id' => ['required', 'uuid'],
             'session_type' => ['required', 'string', 'in:individual,family,group,corporate'],
             'title' => ['required', 'string', 'max:200'],
             'description' => ['nullable', 'string'],
             'scheduled_at' => ['required', 'date', 'after:now'],
-            'duration_minutes' => ['required', 'integer', 'min:15', 'max:480'],
+            'duration_minutes' => [
+                'required',
+                'integer',
+                'min:'.config('scheduling.min_duration_minutes', 15),
+                'max:'.config('scheduling.max_duration_minutes', 480),
+            ],
+            'timezone' => ['sometimes', 'string', 'timezone'],
             'attendee_ids' => ['prohibited'],
         ];
     }

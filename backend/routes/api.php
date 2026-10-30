@@ -9,6 +9,7 @@ use App\Http\Controllers\Api\SkillTagController;
 use App\Http\Controllers\Api\RelationshipController;
 use App\Http\Controllers\Api\RelationshipContextController;
 use App\Http\Controllers\Api\SessionController;
+use App\Http\Controllers\Api\AvailabilityController;
 use App\Http\Controllers\Api\MessageController;
 use App\Http\Controllers\Api\PlanController;
 use App\Http\Controllers\Api\SubscriptionController;
@@ -93,9 +94,25 @@ Route::prefix('v1')->group(function () {
         Route::post('/sessions', [SessionController::class, 'store']);
         Route::get('/sessions/{id}', [SessionController::class, 'show']);
         Route::put('/sessions/{id}', [SessionController::class, 'update']);
+        Route::put('/sessions/{id}/reschedule', [SessionController::class, 'reschedule']);
         Route::put('/sessions/{id}/status', [SessionController::class, 'updateStatus']);
+        Route::put('/sessions/{id}/attendance', [SessionController::class, 'confirmAttendance']);
+        Route::post('/sessions/{id}/cancel', [SessionController::class, 'cancel']);
         Route::delete('/sessions/{id}', [SessionController::class, 'destroy']);
         Route::post('/sessions/{id}/meet-link', [SessionController::class, 'generateMeetLink']);
+
+        // Mentor availability management (owner only; slots are exposed separately).
+        Route::get('/mentors/{mentor}/availability/slots', [AvailabilityController::class, 'slots']);
+        Route::get('/availability/windows', [AvailabilityController::class, 'windows']);
+        Route::post('/availability/windows', [AvailabilityController::class, 'storeWindow']);
+        Route::get('/availability/windows/{window}', [AvailabilityController::class, 'showWindow']);
+        Route::put('/availability/windows/{window}', [AvailabilityController::class, 'updateWindow']);
+        Route::delete('/availability/windows/{window}', [AvailabilityController::class, 'destroyWindow']);
+        Route::get('/availability/exceptions', [AvailabilityController::class, 'exceptions']);
+        Route::post('/availability/exceptions', [AvailabilityController::class, 'storeException']);
+        Route::get('/availability/exceptions/{exception}', [AvailabilityController::class, 'showException']);
+        Route::put('/availability/exceptions/{exception}', [AvailabilityController::class, 'updateException']);
+        Route::delete('/availability/exceptions/{exception}', [AvailabilityController::class, 'destroyException']);
 
         // Messages
         Route::get('/messages', [MessageController::class, 'index']);
@@ -249,12 +266,22 @@ Route::prefix('v1')->group(function () {
             Route::delete('/skill-tags/{id}', [SkillTagController::class, 'destroy']);
 
             // Sessions
-            Route::get('/sessions', [AdminController::class, 'sessions']);
-            Route::post('/sessions', [AdminController::class, 'sessionStore']);
-            Route::get('/sessions/{id}', [AdminController::class, 'sessionShow']);
-            Route::put('/sessions/{id}', [AdminController::class, 'sessionUpdate']);
-            Route::put('/sessions/{id}/status', [AdminController::class, 'sessionUpdateStatus']);
-            Route::delete('/sessions/{id}', [AdminController::class, 'sessionDestroy']);
+            Route::get('/sessions', [AdminController::class, 'sessions'])
+                ->middleware('permission:scheduling.view.support');
+            Route::post('/sessions', [AdminController::class, 'sessionStore'])
+                ->middleware('permission:scheduling.manage.support');
+            Route::get('/sessions/{id}', [AdminController::class, 'sessionShow'])
+                ->middleware('permission:scheduling.view.support');
+            Route::put('/sessions/{id}', [AdminController::class, 'sessionUpdate'])
+                ->middleware('permission:scheduling.manage.support');
+            Route::put('/sessions/{id}/reschedule', [AdminController::class, 'sessionReschedule'])
+                ->middleware('permission:scheduling.manage.support');
+            Route::put('/sessions/{id}/status', [AdminController::class, 'sessionUpdateStatus'])
+                ->middleware('permission:scheduling.manage.support');
+            Route::post('/sessions/{id}/cancel', [AdminController::class, 'sessionCancel'])
+                ->middleware('permission:scheduling.manage.support');
+            Route::delete('/sessions/{id}', [AdminController::class, 'sessionDestroy'])
+                ->middleware('permission:scheduling.manage.support');
 
             // Assessments
             Route::get('/assessments', [AdminController::class, 'assessments']);

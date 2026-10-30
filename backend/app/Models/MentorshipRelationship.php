@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -185,6 +186,56 @@ class MentorshipRelationship extends Model
         }
 
         return false;
+    }
+
+    public function scopeManagedBy(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $managed) use ($user) {
+            $userId = $user->id;
+
+            $managed->where(function (Builder $source) use ($userId) {
+                $source->whereIn('source_type', self::sourceTypes('user'))
+                    ->where('source_id', $userId);
+            })->orWhere(function (Builder $source) use ($userId) {
+                $source->whereIn('source_type', self::sourceTypes('family_group'))
+                    ->whereIn('source_id', FamilyGroup::query()
+                        ->select('id')
+                        ->where('head_user_id', $userId));
+            })->orWhere(function (Builder $source) use ($userId) {
+                $source->whereIn('source_type', self::sourceTypes('cohort'))
+                    ->whereIn('source_id', Cohort::query()
+                        ->select('id')
+                        ->where('created_by', $userId));
+            })->orWhere(function (Builder $source) use ($userId) {
+                $source->whereIn('source_type', self::sourceTypes('company'))
+                    ->whereIn('source_id', Company::query()
+                        ->select('id')
+                        ->where('admin_id', $userId));
+            });
+        });
+    }
+
+    public function scopeForAgendaUser(Builder $query, User $user): Builder
+    {
+        if ($user->isAdmin()) {
+            return $query;
+        }
+
+        return $query->where(function (Builder $agenda) use ($user) {
+            $agenda->forUser($user)
+                ->orWhere(function (Builder $managed) use ($user) {
+                    $managed->managedBy($user)
+                        ->whereIn('source_type', array_merge(
+                            self::sourceTypes('family_group'),
+                            self::sourceTypes('cohort'),
+                            self::sourceTypes('company'),
+                        ));
+                });
+        });
     }
 
     protected static function sourceTypes(string $alias): array

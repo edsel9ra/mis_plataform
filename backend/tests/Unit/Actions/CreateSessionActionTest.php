@@ -24,7 +24,7 @@ it('creates a session with attendees', function () {
         'scheduled_at' => now()->addDays(2)->toIso8601String(),
         'duration_minutes' => 60,
         'attendee_ids' => [$mentee->id],
-    ]);
+    ], $mentor);
 
     expect($session)->toBeInstanceOf(Session::class)
         ->and($session->attendees)->toHaveCount(2);
@@ -43,7 +43,7 @@ it('creates session without extra attendees', function () {
         'title' => 'Minimal Session',
         'scheduled_at' => now()->addDays(2)->toIso8601String(),
         'duration_minutes' => 30,
-    ]);
+    ], $mentor);
 
     expect($session->status)->toBe('scheduled');
 });
@@ -63,7 +63,7 @@ it('rejects a relationship with a missing source before creating a session', fun
             'title' => 'Must roll back',
             'scheduled_at' => now()->addDays(2)->toIso8601String(),
             'duration_minutes' => 30,
-        ]);
+        ], $mentor);
 
         $this->fail('Expected attendee creation to fail.');
     } catch (ModelNotFoundException) {

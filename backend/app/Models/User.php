@@ -124,6 +124,16 @@ class User extends Authenticatable
         );
     }
 
+    public function availabilityWindows(): HasMany
+    {
+        return $this->hasMany(MentorAvailabilityWindow::class);
+    }
+
+    public function availabilityExceptions(): HasMany
+    {
+        return $this->hasMany(MentorAvailabilityException::class);
+    }
+
     public function attendedSessions(): HasMany
     {
         return $this->hasMany(SessionAttendee::class);

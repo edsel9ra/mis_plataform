@@ -30,8 +30,8 @@ it('creates each session reminder once per time window', function () {
     $this->artisan('app:send-session-reminders')->assertExitCode(0);
     $this->artisan('app:send-session-reminders')->assertExitCode(0);
 
-    $this->assertDatabaseCount('notifications', 1);
-    Event::assertDispatched(SessionReminder::class, 1);
+    $this->assertDatabaseCount('notifications', 2);
+    Event::assertDispatched(SessionReminder::class, 2);
 });
 
 it('cleans expired trials independently of ends_at', function () {

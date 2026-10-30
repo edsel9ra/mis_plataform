@@ -2,6 +2,7 @@
 
 namespace Database\Factories;
 
+use App\Enums\SessionStatus;
 use App\Models\MentorshipRelationship;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -25,6 +26,13 @@ class SessionFactory extends Factory
         return $this->state(fn(array $attrs) => [
             'status' => 'completed',
             'scheduled_at' => now()->subDay(),
+        ]);
+    }
+
+    public function notCompleted(): static
+    {
+        return $this->state(fn (array $attrs): array => [
+            'status' => SessionStatus::NotCompleted->value,
         ]);
     }
 }

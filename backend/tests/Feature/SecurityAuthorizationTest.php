@@ -110,10 +110,10 @@ it('prevents accessing another user session by id', function () {
 
     $token = $other->createToken('test')->plainTextToken;
 
-    $this->withToken($token)->getJson("/api/v1/sessions/{$session->id}")->assertForbidden();
+    $this->withToken($token)->getJson("/api/v1/sessions/{$session->id}")->assertNotFound();
     $this->withToken($token)->putJson("/api/v1/sessions/{$session->id}/status", [
         'status' => 'completed',
-    ])->assertForbidden();
+    ])->assertNotFound();
 });
 
 it('prevents sending and reading messages in another relationship', function () {

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 
 class GoogleMeetService
 {
@@ -14,34 +15,61 @@ class GoogleMeetService
         // Token is loaded lazily so listing/viewing sessions does not require Google credentials.
     }
 
-    public function createMeetEvent(string $title, \DateTime $startTime, int $durationMinutes): array
+    public function createMeetEvent(
+        string $title,
+        \DateTimeInterface $startTime,
+        int $durationMinutes,
+        string $timezone,
+        string $idempotencyKey,
+    ): array
     {
-        $endTime = (clone $startTime)->modify("+{$durationMinutes} minutes");
-
-        $event = [
-            'summary' => $title,
-            'start' => [
-                'dateTime' => $startTime->format('c'),
-                'timeZone' => 'America/Mexico_City',
-            ],
-            'end' => [
-                'dateTime' => $endTime->format('c'),
-                'timeZone' => 'America/Mexico_City',
-            ],
+        // Calendar event IDs are base32hex. A lowercase hexadecimal SHA-256
+        // digest is a valid subset and is stable for every retry of this session.
+        $eventId = hash('sha256', 'mis-session-event:'.$idempotencyKey);
+        $event = array_merge($this->eventPayload($title, $startTime, $durationMinutes, $timezone), [
+            'id' => $eventId,
             'conferenceData' => [
                 'createRequest' => [
-                    'requestId' => uniqid(),
+                    // This IDs the Meet-conference request only; the stable
+                    // event ID below provides Calendar insert idempotency.
+                    'requestId' => (string) Str::uuid(),
                     'conferenceSolutionKey' => [
                         'type' => 'hangoutsMeet',
                     ],
                 ],
             ],
-        ];
+        ]);
 
         $response = Http::withToken($this->accessToken())
             ->connectTimeout((int) config('services.google.timeout', 10))
             ->timeout((int) config('services.google.timeout', 10))
             ->post('https://www.googleapis.com/calendar/v3/calendars/primary/events?conferenceDataVersion=1', $event);
+
+        if ($response->status() === 409) {
+            // A previous insert may have reached Google although MIS lost its
+            // response. Retrieve by the stable event ID, then reconcile its
+            // schedule to the current MIS values before persisting it locally.
+            $existing = Http::withToken($this->accessToken())
+                ->connectTimeout((int) config('services.google.timeout', 10))
+                ->timeout((int) config('services.google.timeout', 10))
+                ->get('https://www.googleapis.com/calendar/v3/calendars/primary/events/'.rawurlencode($eventId));
+
+            if (! $existing->successful()) {
+                throw new \RuntimeException(__('meet.create_error'));
+            }
+
+            $existingData = $existing->json();
+            $updated = $this->updateMeetEvent($eventId, $title, $startTime, $durationMinutes, $timezone);
+            if ($updated === null) {
+                throw new \RuntimeException(__('meet.create_error'));
+            }
+
+            return [
+                'meet_link' => $updated['meet_link'] ?? $existingData['hangoutLink'] ?? null,
+                'event_id' => $eventId,
+                'event_data' => $existingData,
+            ];
+        }
 
         if (!$response->successful()) {
             Log::error('Google Calendar API error', ['status' => $response->status()]);
@@ -52,17 +80,58 @@ class GoogleMeetService
 
         return [
             'meet_link' => $data['hangoutLink'] ?? null,
-            'event_id' => $data['id'],
+            'event_id' => $data['id'] ?? $eventId,
             'event_data' => $data,
+        ];
+    }
+
+    /**
+     * Update the existing Calendar event. A null result means Google confirms
+     * that the stored event no longer exists, so the caller may safely recreate it.
+     */
+    public function updateMeetEvent(
+        string $eventId,
+        string $title,
+        \DateTimeInterface $startTime,
+        int $durationMinutes,
+        string $timezone,
+    ): ?array {
+        $response = Http::withToken($this->accessToken())
+            ->connectTimeout((int) config('services.google.timeout', 10))
+            ->timeout((int) config('services.google.timeout', 10))
+            ->patch(
+                'https://www.googleapis.com/calendar/v3/calendars/primary/events/'.rawurlencode($eventId),
+                $this->eventPayload($title, $startTime, $durationMinutes, $timezone),
+            );
+
+        if ($response->status() === 404) {
+            return null;
+        }
+
+        if (! $response->successful()) {
+            Log::error('Google Calendar event update failed', ['status' => $response->status()]);
+            throw new \RuntimeException('Google Calendar event update failed.');
+        }
+
+        $data = $response->json();
+
+        return [
+            'meet_link' => $data['hangoutLink'] ?? null,
+            'event_id' => $data['id'] ?? $eventId,
         ];
     }
 
     public function deleteEvent(string $eventId): void
     {
-        Http::withToken($this->accessToken())
+        $response = Http::withToken($this->accessToken())
             ->connectTimeout((int) config('services.google.timeout', 10))
             ->timeout((int) config('services.google.timeout', 10))
-            ->delete("https://www.googleapis.com/calendar/v3/calendars/primary/events/{$eventId}");
+            ->delete('https://www.googleapis.com/calendar/v3/calendars/primary/events/'.rawurlencode($eventId));
+
+        if (! $response->successful() && $response->status() !== 404) {
+            Log::error('Google Calendar event deletion failed', ['status' => $response->status()]);
+            throw new \RuntimeException('Google Calendar event deletion failed.');
+        }
     }
 
     private function accessToken(): string
@@ -118,5 +187,27 @@ class GoogleMeetService
     private function base64UrlEncode(string $value): string
     {
         return rtrim(strtr(base64_encode($value), '+/', '-_'), '=');
+    }
+
+    private function eventPayload(
+        string $title,
+        \DateTimeInterface $startTime,
+        int $durationMinutes,
+        string $timezone,
+    ): array {
+        $startTime = \DateTimeImmutable::createFromInterface($startTime);
+        $endTime = $startTime->modify("+{$durationMinutes} minutes");
+
+        return [
+            'summary' => $title,
+            'start' => [
+                'dateTime' => $startTime->format('c'),
+                'timeZone' => $timezone,
+            ],
+            'end' => [
+                'dateTime' => $endTime->format('c'),
+                'timeZone' => $timezone,
+            ],
+        ];
     }
 }

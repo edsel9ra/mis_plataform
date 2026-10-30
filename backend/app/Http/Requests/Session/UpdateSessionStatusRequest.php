@@ -14,7 +14,8 @@ class UpdateSessionStatusRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'status' => ['sometimes', 'string', 'in:scheduled,in_progress,completed,canceled'],
+            'status' => ['sometimes', 'string'],
+            'reason' => ['required_if:status,canceled', 'string', 'not_regex:/^\s*$/u'],
             'mentor_notes' => ['nullable', 'string'],
             'mentee_notes' => ['nullable', 'string'],
         ];
