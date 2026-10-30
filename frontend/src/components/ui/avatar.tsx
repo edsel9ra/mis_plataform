@@ -38,10 +38,14 @@ export function Avatar({ className, src, alt = '', size = 'md', fallback, ...pro
         sizes[size],
         className,
       )}
-      aria-label={alt || undefined}
       {...props}
     >
-      {fallback ?? <User className={cn({ 'h-4 w-4': size === 'sm', 'h-5 w-5': size === 'md', 'h-7 w-7': size === 'lg' })} aria-hidden="true" />}
+      {fallback ?? (
+        <span aria-hidden="true">
+          <User className={cn({ 'h-4 w-4': size === 'sm', 'h-5 w-5': size === 'md', 'h-7 w-7': size === 'lg' })} />
+        </span>
+      )}
+      {alt && <span className="sr-only">{alt}</span>}
     </div>
   );
 }

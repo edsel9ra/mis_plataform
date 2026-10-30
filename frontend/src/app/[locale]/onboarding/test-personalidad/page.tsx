@@ -178,24 +178,35 @@ export default function PersonalityTestPage() {
             <span>{t('personality.question')} {current + 1} {t('personality.of')} {totalQuestions}</span>
             <span>{Math.round(progress)}%</span>
           </div>
-          <div className="mt-2 h-2 rounded-full bg-gray-200">
+          <progress className="mt-2 h-2 w-full rounded-full bg-gray-200 appearance-none" value={progress} max="100" aria-label={t('personality.progress_label')} style={{ width: `${progress}%` }}>
             <div className="h-2 rounded-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} />
-          </div>
+          </progress>
         </div>
 
         <div className="rounded-xl border bg-white p-8 shadow-sm">
           <h2 className="text-xl font-medium text-gray-900">{questions[current].text}</h2>
 
           <div className="mt-8 space-y-3">
-            {select.map(({ id, text }) => (
-              <button
-                key={id}
-                onClick={() => handleAnswer(id)}
-                className="w-full rounded-lg border p-4 text-left transition hover:border-primary-400 hover:bg-primary-50"
-              >
-                {text}
-              </button>
-            ))}
+            <fieldset>
+              <legend className="sr-only">{t('personality.select_answer')}</legend>
+              {select.map(({ id, text }) => (
+                <label
+                  key={id}
+                  className="flex items-center gap-3 w-full rounded-lg border p-4 text-left transition hover:border-primary-400 hover:bg-primary-50 cursor-pointer"
+                >
+                  <input
+                    type="radio"
+                    name="personality-answer"
+                    value={id}
+                    checked={answers[questions[current].id] === id}
+                    onChange={() => handleAnswer(id)}
+                    className="h-4 w-4 text-primary-600 border-gray-300 focus:ring-primary-500"
+                    aria-label={text}
+                  />
+                  <span>{text}</span>
+                </label>
+              ))}
+            </fieldset>
           </div>
 
           <div className="mt-6 flex justify-between">

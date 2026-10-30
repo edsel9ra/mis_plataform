@@ -68,9 +68,8 @@ export function DialogTrigger({ children, onClick }: DialogTriggerProps) {
   };
 
   return (
-    <span
-      role="button"
-      tabIndex={0}
+    <button
+      type="button"
       onClick={openDialog}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
@@ -80,7 +79,7 @@ export function DialogTrigger({ children, onClick }: DialogTriggerProps) {
       }}
     >
       {children}
-    </span>
+    </button>
   );
 }
 
