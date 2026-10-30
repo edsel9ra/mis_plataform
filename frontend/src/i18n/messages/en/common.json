@@ -3,7 +3,12 @@
     "name": "MIS - Systemic Mentoring Platform",
     "tagline": "Transforming lives through neuroscience-based mentoring",
     "sidebar_subtitle": "Integral mentoring",
-    "keywords": ["mentoring", "coaching", "Big Five", "neuroscience"]
+    "keywords": [
+      "mentoring",
+      "coaching",
+      "Big Five",
+      "neuroscience"
+    ]
   },
   "nav": {
     "home": "Home",
@@ -778,7 +783,8 @@
     "in_progress": "In progress",
     "completed": "Completed",
     "canceled": "Canceled",
-    "cancelled": "Canceled"
+    "cancelled": "Canceled",
+    "not_completed": "Not completed"
   },
   "session_types": {
     "individual": "Individual",
@@ -934,5 +940,20 @@
       "support": "Support view",
       "admin": "Support view"
     }
+  },
+  "calendar": {
+    "period_day": "Day",
+    "period_week": "Week",
+    "period_month": "Month",
+    "period_selector": "Calendar period",
+    "period_option": "View {period} period",
+    "today": "Today",
+    "no_sessions_in_day": "No sessions on this day.",
+    "participants": "Participants",
+    "collective_session": "Collective session",
+    "meet_pending": "Meet link pending",
+    "meet_available": "Meet link available",
+    "meet_hidden": "Meet link hidden",
+    "more_sessions": "more"
   }
 }

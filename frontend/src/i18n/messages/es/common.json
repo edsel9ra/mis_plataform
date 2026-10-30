@@ -3,7 +3,12 @@
     "name": "MIS - Mentorías Integrales Sistémicas",
     "tagline": "Transformando vidas a través de la mentoría basada en neurociencia",
     "sidebar_subtitle": "Mentoría integral",
-    "keywords": ["mentoría", "coaching", "Big Five", "neurociencia"]
+    "keywords": [
+      "mentoría",
+      "coaching",
+      "Big Five",
+      "neurociencia"
+    ]
   },
   "nav": {
     "home": "Inicio",
@@ -99,7 +104,7 @@
   "personality": {
     "test_title": "Test de Personalidad Big Five",
     "test_desc": "Descubre tu perfil OCEAN con el test orientativo IPIP-NEO-120",
-    "disclaimer": "Este test es una herramienta orientativa de autoconocimiento basada en Big Five/IPIP-NEO-120. No es una evaluaci\u00f3n cl\u00ednica, diagn\u00f3stica ni sustituye la opini\u00f3n de un profesional de salud mental.",
+    "disclaimer": "Este test es una herramienta orientativa de autoconocimiento basada en Big Five/IPIP-NEO-120. No es una evaluación clínica, diagnóstica ni sustituye la opinión de un profesional de salud mental.",
     "start_test": "Comenzar Test",
     "question": "Pregunta",
     "of": "de",
@@ -778,7 +783,8 @@
     "in_progress": "En progreso",
     "completed": "Completada",
     "canceled": "Cancelada",
-    "cancelled": "Cancelada"
+    "cancelled": "Cancelada",
+    "not_completed": "No completada"
   },
   "session_types": {
     "individual": "Individual",
@@ -934,5 +940,20 @@
       "support": "Vista de soporte",
       "admin": "Vista de soporte"
     }
+  },
+  "calendar": {
+    "period_day": "Día",
+    "period_week": "Semana",
+    "period_month": "Mes",
+    "period_selector": "Periodo del calendario",
+    "period_option": "Ver periodo {period}",
+    "today": "Hoy",
+    "no_sessions_in_day": "No hay sesiones en este día.",
+    "participants": "Participantes",
+    "collective_session": "Sesión colectiva",
+    "meet_pending": "Enlace de Meet pendiente",
+    "meet_available": "Enlace de Meet disponible",
+    "meet_hidden": "Enlace de Meet oculto",
+    "more_sessions": "más"
   }
 }

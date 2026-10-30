@@ -14,7 +14,13 @@ export interface Session {
   meet_link: string | null;
   relationship?: {
     mentor?: { id: string; full_name: string; avatar: string | null } | null;
+    source_type?: string | null;
+    source?: { id: string; type: string; name: string | null } | null;
   } | null;
+  attendees?: Array<{
+    id: string;
+    user?: { id: string; name: string | null; full_name: string | null; avatar: string | null; role: string } | null;
+  } | null> | null;
 }
 
 export function useSessions(page = 1, perPage = 20, enabled = true) {

@@ -23,6 +23,7 @@ export interface User {
   role: string;
   avatar: string | null;
   locale: string;
+  timezone?: string | null;
   company_id: string | null;
   personality_assessment?: PersonalityAssessment | null;
   skills?: UserSkill[];

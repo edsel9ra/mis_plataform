@@ -3,7 +3,12 @@
     "name": "MIS - Mentoria Integral Sistêmica",
     "tagline": "Transformando vidas através da mentoria baseada em neurociência",
     "sidebar_subtitle": "Mentoria integral",
-    "keywords": ["mentoria", "coaching", "Big Five", "neurociência"]
+    "keywords": [
+      "mentoria",
+      "coaching",
+      "Big Five",
+      "neurociência"
+    ]
   },
   "nav": {
     "home": "Início",
@@ -99,7 +104,7 @@
   "personality": {
     "test_title": "Teste de Personalidade Big Five",
     "test_desc": "Descubra seu perfil OCEAN com o teste orientativo IPIP-NEO-120",
-    "disclaimer": "Este teste \u00e9 uma ferramenta orientativa de autoconhecimento baseada em Big Five/IPIP-NEO-120. N\u00e3o \u00e9 uma avalia\u00e7\u00e3o cl\u00ednica ou diagn\u00f3stica e n\u00e3o substitui a orienta\u00e7\u00e3o de um profissional de sa\u00fade mental.",
+    "disclaimer": "Este teste é uma ferramenta orientativa de autoconhecimento baseada em Big Five/IPIP-NEO-120. Não é uma avaliação clínica ou diagnóstica e não substitui a orientação de um profissional de saúde mental.",
     "start_test": "Iniciar Teste",
     "question": "Pergunta",
     "of": "de",
@@ -778,7 +783,8 @@
     "in_progress": "Em andamento",
     "completed": "Concluída",
     "canceled": "Cancelada",
-    "cancelled": "Cancelada"
+    "cancelled": "Cancelada",
+    "not_completed": "Não concluída"
   },
   "session_types": {
     "individual": "Individual",
@@ -934,5 +940,20 @@
       "support": "Visão de suporte",
       "admin": "Visão de suporte"
     }
+  },
+  "calendar": {
+    "period_day": "Dia",
+    "period_week": "Semana",
+    "period_month": "Mês",
+    "period_selector": "Período do calendário",
+    "period_option": "Ver período {period}",
+    "today": "Hoje",
+    "no_sessions_in_day": "Não há sessões neste dia.",
+    "participants": "Participantes",
+    "collective_session": "Sessão coletiva",
+    "meet_pending": "Link do Meet pendente",
+    "meet_available": "Link do Meet disponível",
+    "meet_hidden": "Link do Meet oculto",
+    "more_sessions": "mais"
   }
 }

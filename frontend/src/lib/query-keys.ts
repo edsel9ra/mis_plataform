@@ -94,4 +94,8 @@ export const queryKeys = {
   mentorProgressOverview: ['mentor', 'progress', 'overview'] as const,
   mentorProgressPanel: (userId: string) => ['mentor', 'progress', 'users', userId] as const,
   adminProgressPanel: (userId: string) => ['admin', 'progress', 'panel', userId] as const,
+
+  // Scheduling calendar (spec 009): ranged reads share the `sessions` root.
+  sessionsRange: (from: string, to: string, includeCollectives = false) =>
+    ['sessions', 'range', { from, to, includeCollectives }] as const,
 } as const;
