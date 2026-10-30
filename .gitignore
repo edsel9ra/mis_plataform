@@ -69,3 +69,6 @@ build/
 # Secretos y artefactos de test (no commitear)
 backend/storage/app/google-service-account.json
 backend/storage/framework/testing/*
+
+# Cache de build del typecheck
+frontend/tsconfig.tsbuildinfo
