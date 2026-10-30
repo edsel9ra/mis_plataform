@@ -7,7 +7,7 @@ permissions:
   effect: deny
 - action: shell
   resource: "*"
-  effect: deny
+  effect: allow
 - action: webfetch
   resource: "*"
   effect: deny

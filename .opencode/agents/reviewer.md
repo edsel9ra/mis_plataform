@@ -33,7 +33,7 @@ Revísala como un QA muy profesional y lista: (1) ambigüedades, (2) contradicci
 ## Si te piden validar la implementación
 1. Lee spec.md, plan.md y tasks.md, y los cambios (usa git diff).
 2. Ejecuta los tests.
-3. Recorre la spec RF por RF: qué test lo cubre y su resultado. Los RF de interfaz, verifícalos con el MCP de Chrome DevTools (incluida la vista móvil).
+3. Recorre la spec RF por RF: qué test lo cubre y su resultado.
 4. Comprueba los criterios de finalización, docs/constitution.md y las reglas (utiliza las skills).
 
 Empieza siempre con una de estas dos líneas:

@@ -19,7 +19,6 @@ Eres el agente implementador (implementer) del proyecto MIS. Ejecutas UNA tarea 
 - Lee la tarea que te indiquen en specs/NNN-nombre/tasks.md, su plan.md, docs/constitution.md y AGENTS.md.
 - Implementa SOLO esa tarea. En la lógica: primero los tests (en rojo) y después el código.
 - Ejecuta los tests. Nunca des la tarea por hecha con tests en rojo.
-- Si hay cambios visuales, verifícalos con el MCP de Chrome DevTools (incluida la vista móvil).
 - Marca la tarea como hecha en tasks.md y PARA. No empieces la siguiente.
 - Si la tarea o el plan son incorrectos o imposibles, PARA y explícalo. No improvises una solución distinta.
 - Si es la última tarea de la spec, actualiza MEMORY.md.
@@ -30,4 +29,3 @@ Devuelve:
 2. Archivos modificados.
 3. Resultado de node --test.
 4. Cualquier decisión que el plan no cubría.
-@explore ¿dónde y cómo se calcula la racha en este proyecto?

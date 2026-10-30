@@ -85,9 +85,9 @@ make meili                   # scout:import "App\Models\User"
 ## Estructura del Proyecto
 
 ```
-.agents/skills/               # 27 skills de OpenCode (SKILL.md + referencias); ubicación versionada
+.agents/skills/               # 32 skills de OpenCode (SKILL.md + referencias); ubicación versionada
 .opencode/                    # commands/feature.md y opencode.json (declara skills: ["./.agents/skills"])
-skills-lock.json              # Origen, ruta y hash de las 27 skills instaladas
+skills-lock.json              # Origen, ruta y hash de las 31 skills instaladas (sdd es local, no va al lock)
 
 backend/
 ├── app/Actions/              # 25 clases Action (CreateUser, CreateObjective, etc.)
@@ -164,12 +164,15 @@ blockchain/contracts/         # Contrato inteligente Solidity (CertificateRegist
 
 ## Skills
 
-Ubicación versionada: **`.agents/skills/`** (27 skills, registradas en el `skills-lock.json` de la raíz). OpenCode las descubre automáticamente desde `.agents/skills` como fuente de compatibilidad de proyecto; además `.opencode/opencode.json` la declara explícitamente en `skills`.
+Ubicación versionada: **`.agents/skills/`** (32 skills: 31 instaladas registradas en el `skills-lock.json` de la raíz + `sdd`, skill local autorada in-project que no se registra en el lock porque este solo cubre skills con origen externo). OpenCode las descubre automáticamente desde `.agents/skills` como fuente de compatibilidad de proyecto; además `.opencode/opencode.json` la declara explícitamente en `skills`.
 
 ### Backend y API
 - `laravel-patterns` — Actions/Services/Controllers, Route Model Binding, patrones Eloquent, Query Objects, Form Requests, API Resources, eventos/jobs/colas, caché
 - `laravel-specialist` — flujo principal (analizar → diseñar → implementar → testear), >85% de cobertura, plantillas de modelos/migraciones/resources/jobs/tests, Sanctum, Horizon, Livewire, Pest/PHPUnit
 - `laravel-security` — autenticación, autorización, Eloquent seguro, CSRF, XSS, seguridad de API y configuración de despliegue
+- `laravel-tdd` — testing Laravel con PHPUnit/Pest: factories, HTTP tests, testing de Sanctum, mocking y cobertura
+- `spatie-laravel-php` — estándares de código de Spatie para Laravel/PHP/Blade (controllers, Eloquent, rutas, config, migraciones, tests) alineados a convenciones Laravel y PSR-12
+- `stripe-integration` — flujos de pago con Stripe: checkout, suscripciones y webhooks de forma segura/PCI-compliant
 - `fastapi` — APIs FastAPI, modelos Pydantic, dependencias, respuestas en streaming (SSE) y servido de apps frontend
 
 ### Frontend
@@ -195,6 +198,7 @@ Ubicación versionada: **`.agents/skills/`** (27 skills, registradas en el `skil
 - `docker-patterns` — Docker/Compose, desarrollo local, seguridad de contenedores, redes, volúmenes y orquestación multi-servicio
 - `github-actions-templates` — workflows de CI/CD listos para producción
 - `sql-optimization` — tuning de queries, indexación, planes de ejecución, paginación y batch (MySQL/PostgreSQL/SQL Server/Oracle)
+- `redis-patterns` — patrones de estructuras de datos Redis, caching, locks distribuidos, rate limiting, pub/sub y diseño de keys
 - `solidity-security` — seguridad de contratos inteligentes y patrones Solidity seguros
 - `find-skills` — descubrir e instalar skills de agente cuando se necesita una capacidad nueva
 - `systematic-debugging` — proceso de depuración en 4 fases (causa raíz → patrón → hipótesis → fix); úsalo ante cualquier bug, test roto o comportamiento inesperado
