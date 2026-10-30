@@ -1,14 +1,17 @@
 # Tareas — Spec 009: Calendario y consulta
 
-**Estado:** aprobado; T009-01 completada; quedan T009-02–04 pendientes.  
+**Estado:** aprobado; T009-01–02 completadas; quedan T009-03–04 pendientes.  
 **Spec:** `specs/009-agenda-calendar/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T009-01. Extender GET /sessions con rangos y autorización contractual.** RF-009.1, RF-009.4–009.5; CA hija RF-009.1/4/5; CA padre CA-4.1/4.6/4.7, CA-10.1/10.5/10.7.
   - Hecho cuando: consulta por rango filtra en servidor participante/responsable/soporte explícito, no revela sesiones ajenas y prueba que sigue usando fuente MIS única.
   - Resultado: `GET /sessions` acepta `from`/`to` ISO con offset, rango semiabierto y `include_collectives`; autorización soporta participantes/responsables y lectura de soporte con permiso explícito. La consulta sigue usando `sessions` MIS, preserva la lista legacy sin rango y el resource oculta el Meet cancelado. Pest focalizado: 6 tests/27 assertions; suite backend: 477 tests/2131 assertions.
-- [ ] **T009-02. Implementar rangos calendario puros y hooks de lectura.** RF-009.1–009.2; CA hija RF-009.1/2; CA padre CA-3.2/3.5, CA-4.1/4.3.
+- [x] **T009-02. Implementar rangos calendario puros y hooks de lectura.** RF-009.1–009.2; CA hija RF-009.1/2; CA padre CA-3.2/3.5, CA-4.1/4.3.
   - Hecho cuando: día/semana/mes se derivan con `now` y timezone explícitos; semana fija límites lunes 00:00→lunes siguiente 00:00 en la zona del espectador, iguales en es/en/pt; convierte ambos límites a instantes absolutos considerando DST (sin sumar 7×24 h); hooks/query keys solicitan esos rangos y tests verifican semanas normales y cambios DST hacia delante/atrás (RF-009.2, CA-009.2.1, RF-003.1/CA-3.5).
-- [ ] **T009-03. Integrar calendario, navegación y detalle de sesión.** RF-009.1–009.2; CA hija RF-009.1/2; CA padre CA-4.1–4.3.
+  - Resultado: `frontend/src/lib/scheduling.ts` con `CalendarRange.forPeriod` puro (day/week/month; lunes 00:00→lunes siguiente en zona del espectador, offsets reales por DST, semanas de 167/169 h verificadas); `frontend/src/hooks/use-scheduling.ts` con `fetchSessionsRange` + `useSessionsRange`; query key `sessionsRange` en `lib/query-keys.ts` bajo `['sessions','range',...]`; alias `@` añadido a `vitest.config.mts` para tests de hooks. Vitest: 10 archivos/68 tests en verde (19 nuevos; sin render de hook por ausencia de @testing-library/react, contrato cubierto con fetcher mockeado); typecheck y lint en verde. Backend sin cambios (suite 477/2131 intacta).
+- [x] **T009-03. Integrar calendario, navegación y detalle de sesión.** RF-009.1–009.2; CA hija RF-009.1/2; CA padre CA-4.1–4.3.
   - Hecho cuando: UI muestra hora/zona, duración, participantes, estado textual y link/pending, y permite periodo día/semana/mes y abrir detalle autorizado.
-- [ ] **T009-04. Añadir estados vacío/error y validar rendimiento de calendario.** RF-009.3, RNF-009.2; CA hija RF-009.3; CA padre CA-4.4/4.5 y RNF-12.
+  - Resultado: `sessions/page.tsx` reemplazado por vista de calendario (día/semana/mes) con `CalendarPeriodSelector`, `CalendarRange.forPeriod`, `useSessionsRange` y mapeo `CalendarSessionMapper.toCalendarItem`; `sessions/[id]/page.tsx` implementado con loading/error/detalle (hora en zona, duración, participantes, estado, Meet link/pending, marca colectiva, tipo). Typecheck/lint en verde; Vitest 11 archivos/98 tests (8 nuevos del mapper). i18n añadido (`calendar.*`, `session_statuses.not_completed`). Backend sin cambios.
+- [x] **T009-04. Añadir estados vacío/error y validar rendimiento de calendario.** RF-009.3, RNF-009.2; CA hija RF-009.3; CA padre CA-4.4/4.5 y RNF-12.
   - Hecho cuando: vacío ofrece CTA, error permite retry, feature tests cubren colectivos/soporte y benchmark representativo acredita p95 ≤2s sin N+1.
+  - Resultado: frontend `sessions/page.tsx` ahora distingue loading/error/empty/ready mediante `calendarViewState` (lib/scheduling.ts) y muestra estado vacío con CTA a `/mentors` (no existe ruta de creación de sesión en frontend; pendiente) + botón "Hoy", y error con retry; accesibilidad mínima (`role="region"`, `aria-live`, focus visible). Vitest 11 archivos/102 tests. Backend añade `SessionCalendarPerformanceTest` (dataset 300 sesiones, p95 ≤2000 ms, ≤10 queries). Suite backend 478 passed/2167 assertions; frontend typecheck/lint en verde.
