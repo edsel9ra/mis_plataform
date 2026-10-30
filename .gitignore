@@ -65,3 +65,7 @@ build/
 /backend/vendor/
 /backend/storage/*.key
 /backend/.env
+
+# Secretos y artefactos de test (no commitear)
+backend/storage/app/google-service-account.json
+backend/storage/framework/testing/*
