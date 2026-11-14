@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 contract CertificateRegistry {
     address public admin;
+    address public pendingAdmin;
     uint256 public certificateCount;
 
     struct Certificate {
@@ -20,6 +21,8 @@ contract CertificateRegistry {
     event IssuerAdded(address indexed issuer);
     event IssuerRemoved(address indexed issuer);
     event AdminTransferred(address indexed previousAdmin, address indexed newAdmin);
+    event AdminTransferStarted(address indexed previousAdmin, address indexed newAdmin);
+    event AdminTransferCanceled(address indexed admin, address indexed canceledAdmin);
 
     modifier onlyAdmin() {
         require(msg.sender == admin, "Only admin can call this function");
@@ -88,12 +91,30 @@ contract CertificateRegistry {
         return (cert.issuer, cert.issuedAt, cert.revoked);
     }
 
+    /// @notice Starts a two-step admin transfer; the candidate must call acceptAdmin() to complete it.
     function transferAdmin(address _newAdmin) external onlyAdmin {
         require(_newAdmin != address(0), "Invalid address");
+        require(_newAdmin != admin, "New admin is already admin");
+        pendingAdmin = _newAdmin;
+        emit AdminTransferStarted(admin, _newAdmin);
+    }
+
+    /// @notice Completes the admin transfer; can only be called by the pending admin.
+    function acceptAdmin() external {
+        require(msg.sender == pendingAdmin, "Only pending admin");
         address previousAdmin = admin;
-        issuers[_newAdmin] = true;
-        issuers[admin] = true;
-        admin = _newAdmin;
-        emit AdminTransferred(previousAdmin, _newAdmin);
+        issuers[previousAdmin] = false;
+        issuers[pendingAdmin] = true;
+        admin = pendingAdmin;
+        pendingAdmin = address(0);
+        emit AdminTransferred(previousAdmin, admin);
+    }
+
+    /// @notice Cancels a pending admin transfer; reverts when no transfer is pending.
+    function cancelAdminTransfer() external onlyAdmin {
+        require(pendingAdmin != address(0), "No pending transfer");
+        address canceledAdmin = pendingAdmin;
+        pendingAdmin = address(0);
+        emit AdminTransferCanceled(admin, canceledAdmin);
     }
 }
