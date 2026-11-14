@@ -8,4 +8,5 @@ return [
     'min_duration_minutes' => 15,
     'max_duration_minutes' => 480,
     'not_completed_after_hours' => 48,
+    'slots_max_range_days' => (int) env('SCHEDULING_SLOTS_MAX_RANGE_DAYS', 31),
 ];

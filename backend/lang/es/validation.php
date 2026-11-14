@@ -36,4 +36,5 @@ return [
     'relationship_source_type_invalid' => 'El contexto de relación no es válido.',
     'mentor_client_type_invalid' => 'El mentor no corresponde al tipo de cliente.',
     'relationship_exists' => 'Ya existe una relación activa con este mentor.',
+    'availability_slots_range' => 'El rango de consulta no puede superar :days días.',
 ];

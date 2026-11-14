@@ -36,4 +36,5 @@ return [
     'relationship_source_type_invalid' => 'The relationship context is invalid.',
     'mentor_client_type_invalid' => 'The mentor does not match the client type.',
     'relationship_exists' => 'An active relationship with this mentor already exists.',
+    'availability_slots_range' => 'The query range cannot exceed :days days.',
 ];

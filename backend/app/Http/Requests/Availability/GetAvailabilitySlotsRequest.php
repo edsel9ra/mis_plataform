@@ -50,6 +50,14 @@ class GetAvailabilitySlotsRequest extends FormRequest
 
             if ($to->lessThanOrEqualTo($from)) {
                 $validator->errors()->add('to', __('validation.after', ['attribute' => 'to', 'date' => 'from']));
+
+                return;
+            }
+
+            $maxDays = (int) config('scheduling.slots_max_range_days', 31);
+
+            if ($to->getTimestamp() - $from->getTimestamp() > $maxDays * 86400) {
+                $validator->errors()->add('to', __('validation.availability_slots_range', ['days' => $maxDays]));
             }
         }];
     }
