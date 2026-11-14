@@ -31,7 +31,8 @@
     "mentor_challenges": "Desafios do mentor",
     "mentor_feedback": "Feedback do mentor",
     "progress": "Progresso",
-    "availability": "Disponibilidade"
+    "availability": "Disponibilidade",
+    "my_challenges": "Meus desafios"
   },
   "auth": {
     "email": "E-mail",
@@ -430,7 +431,7 @@
     "plan_access_locked": "Os módulos ficam bloqueados até um plano elegível ser ativado.",
     "status_active": "Ativa",
     "status_trial": "Teste ativo",
-    "status_canceled": "Cancelada",
+    "status_canceled": "Cancelado",
     "status_expired": "Expirada",
     "status_past_due": "Pagamento pendente",
     "choose_plan_title": "Ative seu espaço integral",
@@ -563,7 +564,10 @@
     "media_feedback": "Feedback multimídia",
     "open_feedback": "Abrir feedback",
     "feature_load_error": "Não foi possível carregar este módulo. Verifique o acesso ou tente novamente.",
-    "save_error": "Não foi possível salvar as informações. Tente novamente."
+    "save_error": "Não foi possível salvar as informações. Tente novamente.",
+    "status_assigned": "Atribuído",
+    "status_abandoned": "Abandonado",
+    "status_template": "Modelo"
   },
   "admin": {
     "overview": "Painel Administrativo",
@@ -977,6 +981,20 @@
       "member": "Progresso do coletivo",
       "support": "Visão de suporte",
       "admin": "Visão de suporte"
+    },
+    "learning_paths": {
+      "title": "Trilhas de aprendizagem",
+      "activity_value": "{value} de atividade",
+      "completion_completed": "Concluído",
+      "completion_not_completed": "Não concluído",
+      "completion_no_data": "Sem dados",
+      "completion_incomplete": "Incompleto: há desafios sem estado reconhecido",
+      "linked_module": "Módulo vinculado",
+      "no_link": "Sem vínculo",
+      "save_link": "Salvar vínculo",
+      "link_saved": "Vínculo salvo",
+      "link_error_field": "Escolha um módulo válido ou remova o vínculo.",
+      "link_error_unavailable": "Não foi possível atualizar o vínculo. Tente novamente."
     }
   },
   "calendar": {
@@ -1222,5 +1240,21 @@
     "success_existing": "Esta sessão já estava reservada: {title}, {when}.",
     "view_session": "Ver a sessão",
     "book_another": "Reservar outra"
+  },
+  "challenges": {
+    "title": "Meus desafios",
+    "subtitle": "Seus desafios atribuídos e o módulo da trilha ao qual pertencem.",
+    "mentee_only": "Os desafios estão disponíveis apenas para mentorados.",
+    "no_relationships": "Você ainda não tem um mentor atribuído.",
+    "empty": "Você ainda não tem desafios atribuídos.",
+    "load_error": "Não foi possível carregar seus desafios. Tente novamente.",
+    "with_mentor": "Com {name}",
+    "due_at": "Entrega",
+    "status_label": "Estado",
+    "status_placeholder": "Alterar estado…",
+    "status_none": "não pode ser alterado",
+    "status_save": "Salvar estado",
+    "status_saved": "Estado atualizado",
+    "status_error": "Não foi possível alterar o estado."
   }
 }

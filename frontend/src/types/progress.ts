@@ -297,3 +297,40 @@ export interface ObjectiveEvidencePayload {
   note?: string | null;
   media_asset_id?: string | null;
 }
+
+// ---------------------------------------------------------------------------
+// Learning-path challenge/module metrics (spec 012, T012.7/T012.8)
+// ---------------------------------------------------------------------------
+
+export type ModuleCompletionState = 'completed' | 'not_completed' | 'no_data' | 'incomplete';
+
+export interface ModuleProgress {
+  id: string;
+  title: string;
+  position: number;
+  activity_rate: MetricValue;
+  completion: {
+    state: ModuleCompletionState;
+    completed_at: string | null;
+  };
+}
+
+/** One entry of `GET /progress/learning-paths` (and the mentor variant). */
+export interface LearningPathProgress {
+  learning_path: {
+    id: string;
+    title: string | Record<string, string>;
+  };
+  rate: MetricValue;
+  modules: ModuleProgress[];
+}
+
+/** `PUT /challenges/{challenge}/path-module` response body. */
+export interface ChallengePathModuleLink {
+  challenge_id: string;
+  path_module: {
+    id: string;
+    title: string;
+    learning_path_id: string;
+  } | null;
+}

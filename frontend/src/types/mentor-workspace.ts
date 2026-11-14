@@ -128,6 +128,7 @@ export interface MentorChallenge {
   content_name?: string | null;
   content_type?: string | null;
   status?: string | null;
+  path_module_id?: string | null;
   due_at?: string | null;
   created_at?: string | null;
   assigned_at?: string | null;

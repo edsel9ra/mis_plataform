@@ -20,7 +20,7 @@ export function CompetenciesCard({ block }: { block: CompetenciesBlock }) {
       <div className="grid gap-5 sm:grid-cols-2">
         <section aria-label={t('progress.competencies.skills_title')}>
           <h4 className="text-sm font-semibold text-slate-900">{t('progress.competencies.skills_title')}</h4>
-          <p className="mt-0.5 text-xs text-slate-400">{t('progress.competencies.source_skills')}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{t('progress.competencies.source_skills')}</p>
           {block.skills.length > 0 ? (
             <ul className="mt-2 flex flex-wrap gap-2">
               {block.skills.map((skill) => (
@@ -39,7 +39,7 @@ export function CompetenciesCard({ block }: { block: CompetenciesBlock }) {
 
         <section aria-label={t('progress.competencies.personality_title')}>
           <h4 className="text-sm font-semibold text-slate-900">{t('progress.competencies.personality_title')}</h4>
-          <p className="mt-0.5 text-xs text-slate-400">{t('progress.competencies.source_personality')}</p>
+          <p className="mt-0.5 text-xs text-slate-500">{t('progress.competencies.source_personality')}</p>
 
           {ocean.state === 'value' && ocean.factors ? (
             <>
@@ -52,7 +52,7 @@ export function CompetenciesCard({ block }: { block: CompetenciesBlock }) {
                 ))}
               </dl>
               {ocean.assessed_at ? (
-                <p className="mt-2 text-xs text-slate-400">
+                <p className="mt-2 text-xs text-slate-500">
                   {t('progress.competencies.assessed_at', {
                     date: new Date(ocean.assessed_at).toLocaleDateString(),
                   })}
@@ -60,7 +60,7 @@ export function CompetenciesCard({ block }: { block: CompetenciesBlock }) {
               ) : null}
             </>
           ) : ocean.state === 'blocked' ? (
-            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-slate-400">
+            <p className="mt-2 inline-flex items-center gap-1.5 text-sm font-medium text-slate-500">
               <Lock className="h-4 w-4" aria-hidden="true" />
               {t('progress.competencies.ocean_blocked')}
             </p>

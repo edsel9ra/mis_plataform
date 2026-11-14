@@ -7,6 +7,7 @@ const authCookieName = process.env.AUTH_COOKIE_NAME || 'mis_auth_token';
 const protectedPrefixes = [
   '/admin',
   '/availability',
+  '/challenges',
   '/dashboard',
   '/evaluations',
   '/certificates',

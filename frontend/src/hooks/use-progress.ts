@@ -5,8 +5,10 @@ import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedRe
 import { PROGRESS_ENDPOINTS } from '@/lib/progress';
 import { queryKeys } from '@/lib/query-keys';
 import type {
+  ChallengePathModuleLink,
   CollectiveProgress,
   CollectiveSubjectType,
+  LearningPathProgress,
   MenteeProgressFlag,
   Objective,
   ObjectiveEvidencePayload,
@@ -131,6 +133,63 @@ export function useMentorProgressPanel(userId: string, enabled = true) {
     },
     enabled: enabled && Boolean(userId),
     retry: false,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Learning-path progress & challenge-module link (spec 012)
+// ---------------------------------------------------------------------------
+
+export function useLearningPathProgress(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.progressLearningPaths(),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<{ data: LearningPathProgress[] }>(
+        PROGRESS_ENDPOINTS.learningPaths,
+        undefined,
+        { signal },
+      );
+
+      return unwrapCollection<LearningPathProgress>(response);
+    },
+    enabled,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useMentorLearningPathProgress(userId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.mentorLearningPaths(userId),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<{ data: LearningPathProgress[] }>(
+        PROGRESS_ENDPOINTS.mentorLearningPaths(userId),
+        undefined,
+        { signal },
+      );
+
+      return unwrapCollection<LearningPathProgress>(response);
+    },
+    enabled: enabled && Boolean(userId),
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useSetChallengePathModule(challengeId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (pathModuleId: string | null) => api.put<ChallengePathModuleLink>(
+      PROGRESS_ENDPOINTS.challengePathModule(challengeId),
+      { path_module_id: pathModuleId },
+    ),
+    onSettled: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.progressRoot });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.mentorChallenges });
+      void queryClient.invalidateQueries({ queryKey: ['mentor-workspace', 'challenges'] });
+      void queryClient.invalidateQueries({ queryKey: ['mentor', 'progress'] });
+    },
   });
 }
 

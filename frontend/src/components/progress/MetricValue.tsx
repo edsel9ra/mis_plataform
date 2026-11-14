@@ -26,10 +26,10 @@ const TONE_ICON: Record<MetricTone, LucideIcon> = {
 const TONE_TEXT: Record<MetricTone, string> = {
   value: 'text-slate-900',
   zero: 'text-slate-900',
-  empty: 'text-slate-400',
+  empty: 'text-slate-500',
   incomplete: 'text-amber-600',
-  suppressed: 'text-slate-400',
-  blocked: 'text-slate-400',
+  suppressed: 'text-slate-500',
+  blocked: 'text-slate-500',
 };
 
 /**

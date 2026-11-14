@@ -4,9 +4,11 @@
  * No IO, no React, no i18n runtime: components translate the returned keys.
  * The goal is that "no data" never renders as a misleading `0`.
  */
+import { ApiError } from '@/lib/api';
 import type {
   CollectiveAggregateState,
   CollectiveProgress,
+  LearningPathProgress,
   CommitmentItem,
   MetricState,
   MetricValue,
@@ -29,6 +31,9 @@ export const PROGRESS_ENDPOINTS = {
   mentorPortfolio: '/mentor/progress/overview',
   mentorPanel: (userId: string) => `/mentor/users/${userId}/progress`,
   adminPanel: '/admin/progress/panel',
+  learningPaths: '/progress/learning-paths',
+  mentorLearningPaths: (userId: string) => `/mentor/users/${userId}/progress/learning-paths`,
+  challengePathModule: (challengeId: string) => `/challenges/${challengeId}/path-module`,
 } as const;
 
 /** Minimum base size below which a collective aggregate is suppressed (RNF-2). */
@@ -210,4 +215,109 @@ export function isObjectiveOverdue(objective: Objective, now: Date = new Date())
   if (Number.isNaN(due.getTime())) return false;
 
   return due.getTime() < now.getTime();
+}
+
+// ---------------------------------------------------------------------------
+// Learning-path progress (spec 012)
+// ---------------------------------------------------------------------------
+
+export type ChallengeStatus =
+  | 'template'
+  | 'assigned'
+  | 'in_progress'
+  | 'completed'
+  | 'canceled'
+  | 'abandoned';
+
+/**
+ * Mirrors `Challenge::VALID_TRANSITIONS` on the backend (T012.2). The server
+ * stays authoritative; this only drives which status options a UI offers.
+ */
+export const CHALLENGE_TRANSITIONS: Record<ChallengeStatus, ChallengeStatus[]> = {
+  template: ['template'],
+  assigned: ['assigned', 'in_progress', 'canceled', 'completed', 'abandoned'],
+  in_progress: ['in_progress', 'completed', 'canceled', 'abandoned'],
+  completed: ['completed'],
+  canceled: ['canceled'],
+  abandoned: ['abandoned', 'assigned', 'in_progress'],
+};
+
+export function allowedChallengeTransitions(from: string): ChallengeStatus[] {
+  return CHALLENGE_TRANSITIONS[from as ChallengeStatus] ?? [];
+}
+
+/** i18n key for a module completion state (distinct text per state, RNF-012.3). */
+export function moduleCompletionLabelKey(state: string): string {
+  const keys: Record<string, string> = {
+    completed: 'progress.learning_paths.completion_completed',
+    not_completed: 'progress.learning_paths.completion_not_completed',
+    no_data: 'progress.learning_paths.completion_no_data',
+    incomplete: 'progress.learning_paths.completion_incomplete',
+  };
+
+  return keys[state] ?? keys.no_data;
+}
+
+/** Resolves JSONB `{es,en,pt}` titles (learning paths) or plain strings (modules). */
+export function localizedTitle(
+  title: string | Record<string, string> | null | undefined,
+  locale: string,
+): string {
+  if (title === null || title === undefined) return '';
+  if (typeof title === 'string') return title;
+
+  return title[locale] ?? title.es ?? Object.values(title)[0] ?? '';
+}
+
+export interface LinkableModuleGroup {
+  pathId: string;
+  pathTitle: string;
+  options: { value: string; label: string }[];
+}
+
+/** Modules the subject could link to, grouped per consultable path (optgroups). */
+export function linkableModuleOptions(
+  paths: LearningPathProgress[],
+  locale: string,
+): LinkableModuleGroup[] {
+  return paths
+    .filter((entry) => entry.modules.length > 0)
+    .map((entry) => ({
+      pathId: entry.learning_path.id,
+      pathTitle: localizedTitle(entry.learning_path.title, locale),
+      options: [...entry.modules]
+        .sort((a, b) => a.position - b.position)
+        .map((module) => ({ value: module.id, label: module.title })),
+    }));
+}
+
+export type LinkErrorMessage = { kind: 'field' | 'alert'; key: string } | null;
+
+/**
+ * 422 → field-level error; 404/403/network → generic "not available" alert that
+ * reveals nothing about the link (RF-012.10, mirrors the backend's 404 denials).
+ */
+export function linkErrorMessage(error: unknown): LinkErrorMessage {
+  if (error === null || error === undefined) return null;
+  if (error instanceof ApiError && error.status === 422) {
+    return { kind: 'field', key: 'progress.learning_paths.link_error_field' };
+  }
+
+  return { kind: 'alert', key: 'progress.learning_paths.link_error_unavailable' };
+}
+
+/** i18n key for a challenge status label (shared mentor/mentee surfaces). */
+export function challengeStatusKey(status: string | null | undefined): string {
+  const keys: Record<string, string> = {
+    template: 'mentor_workspace.status_template',
+    assigned: 'mentor_workspace.status_assigned',
+    in_progress: 'mentor_workspace.status_in_progress',
+    completed: 'mentor_workspace.status_completed',
+    canceled: 'mentor_workspace.status_canceled',
+    abandoned: 'mentor_workspace.status_abandoned',
+    not_started: 'mentor_workspace.status_not_started',
+    blocked: 'mentor_workspace.status_blocked',
+  };
+
+  return (status && keys[status]) || 'mentor_workspace.status_unknown';
 }

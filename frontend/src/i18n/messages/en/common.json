@@ -31,7 +31,8 @@
     "mentor_challenges": "Mentor challenges",
     "mentor_feedback": "Mentor feedback",
     "progress": "Progress",
-    "availability": "Availability"
+    "availability": "Availability",
+    "my_challenges": "My challenges"
   },
   "auth": {
     "email": "Email",
@@ -563,7 +564,10 @@
     "media_feedback": "Multimedia feedback",
     "open_feedback": "Open feedback",
     "feature_load_error": "This module could not be loaded. Check access or try again.",
-    "save_error": "The information could not be saved. Try again."
+    "save_error": "The information could not be saved. Try again.",
+    "status_assigned": "Assigned",
+    "status_abandoned": "Abandoned",
+    "status_template": "Template"
   },
   "admin": {
     "overview": "Admin Dashboard",
@@ -977,6 +981,20 @@
       "member": "Collective progress",
       "support": "Support view",
       "admin": "Support view"
+    },
+    "learning_paths": {
+      "title": "Learning paths",
+      "activity_value": "{value} activity",
+      "completion_completed": "Completed",
+      "completion_not_completed": "Not completed",
+      "completion_no_data": "No data",
+      "completion_incomplete": "Incomplete: some challenges have an unrecognized status",
+      "linked_module": "Linked module",
+      "no_link": "No link",
+      "save_link": "Save link",
+      "link_saved": "Link saved",
+      "link_error_field": "Choose a valid module or remove the link.",
+      "link_error_unavailable": "The link could not be updated. Please try again."
     }
   },
   "calendar": {
@@ -1222,5 +1240,21 @@
     "success_existing": "This session was already booked: {title}, {when}.",
     "view_session": "View session",
     "book_another": "Book another"
+  },
+  "challenges": {
+    "title": "My challenges",
+    "subtitle": "Your assigned challenges and the path module they belong to.",
+    "mentee_only": "Challenges are only available to mentees.",
+    "no_relationships": "You do not have an assigned mentor yet.",
+    "empty": "You have no assigned challenges yet.",
+    "load_error": "Your challenges could not be loaded. Please try again.",
+    "with_mentor": "With {name}",
+    "due_at": "Due",
+    "status_label": "Status",
+    "status_placeholder": "Change status…",
+    "status_none": "cannot be changed",
+    "status_save": "Save status",
+    "status_saved": "Status updated",
+    "status_error": "The status could not be changed."
   }
 }

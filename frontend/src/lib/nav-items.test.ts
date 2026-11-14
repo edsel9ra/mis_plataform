@@ -29,4 +29,19 @@ describe('buildNavItems (T017-06)', () => {
     expect(list).not.toContain('/availability');
     expect(list[list.length - 1]).toBe('/admin');
   });
+
+  it('gives mentees /challenges right after /dashboard/progreso', () => {
+    const items = buildNavItems('mentee', false);
+    const list = hrefs(items);
+
+    expect(list.indexOf('/challenges')).toBe(list.indexOf('/dashboard/progreso') + 1);
+    expect(items.find((item) => item.href === '/challenges')?.label).toBe('nav.my_challenges');
+  });
+
+  it('does not give /challenges to mentors, other roles or admins', () => {
+    for (const role of ['mentor', 'employee', 'company_admin', undefined]) {
+      expect(hrefs(buildNavItems(role, false))).not.toContain('/challenges');
+    }
+    expect(hrefs(buildNavItems('admin', true))).not.toContain('/challenges');
+  });
 });

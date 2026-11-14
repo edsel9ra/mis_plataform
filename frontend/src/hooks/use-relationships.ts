@@ -14,7 +14,7 @@ export interface Relationship {
   created_at: string;
 }
 
-export function useRelationships(page = 1, perPage = 20) {
+export function useRelationships(page = 1, perPage = 20, enabled = true) {
   return useQuery({
     queryKey: queryKeys.relationships(page, perPage),
     queryFn: async ({ signal }): Promise<PaginatedResponse<Relationship>> => {
@@ -25,6 +25,7 @@ export function useRelationships(page = 1, perPage = 20) {
 
       return normalizePaginatedResponse(response, { page, perPage });
     },
+    enabled,
   });
 }
 

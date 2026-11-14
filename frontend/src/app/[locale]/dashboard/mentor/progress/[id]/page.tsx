@@ -7,10 +7,11 @@ import { useLocale, useTranslations } from 'next-intl';
 import { ArrowLeft, LockKeyhole } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert } from '@/components/ui/alert';
+import { LearningPathsCard } from '@/components/progress/LearningPathsCard';
 import { ProgressPanel } from '@/components/progress/ProgressPanel';
 import { localePath } from '@/i18n/paths';
 import { ApiError } from '@/lib/api';
-import { useMentorProgressPanel } from '@/hooks/use-progress';
+import { useMentorLearningPathProgress, useMentorProgressPanel } from '@/hooks/use-progress';
 
 export default function MentorMenteeProgressPage() {
   const t = useTranslations();
@@ -25,6 +26,7 @@ export default function MentorMenteeProgressPage() {
 
   const enabled = user?.role === 'mentor' && Boolean(params.id);
   const query = useMentorProgressPanel(params.id, enabled);
+  const learningPaths = useMentorLearningPathProgress(params.id, enabled);
   const status = query.error instanceof ApiError ? query.error.status : 0;
 
   return (
@@ -46,7 +48,10 @@ export default function MentorMenteeProgressPage() {
           </span>
         </Alert>
       ) : (
-        <ProgressPanel query={query} relationshipId={relationshipId} showCollectives={false} />
+        <>
+          <ProgressPanel query={query} relationshipId={relationshipId} showCollectives={false} />
+          <LearningPathsCard query={learningPaths} />
+        </>
       )}
     </div>
   );

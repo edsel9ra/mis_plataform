@@ -36,6 +36,7 @@ const baseNavItems: NavItem[] = [
 ];
 
 const availabilityItem: NavItem = { href: '/availability', label: 'nav.availability', icon: CalendarClock };
+const myChallengesItem: NavItem = { href: '/challenges', label: 'nav.my_challenges', icon: ListChecks };
 
 export function buildNavItems(role: string | undefined, isAdmin: boolean): NavItem[] {
   if (isAdmin) {
@@ -57,6 +58,12 @@ export function buildNavItems(role: string | undefined, isAdmin: boolean): NavIt
       { href: '/dashboard/mentor/challenges', label: 'nav.mentor_challenges', icon: ListChecks },
       { href: '/dashboard/mentor/feedback', label: 'nav.mentor_feedback', icon: MessageSquare },
     ];
+  }
+
+  if (role === 'mentee') {
+    return baseNavItems.flatMap((item) =>
+      item.href === '/dashboard/progreso' ? [item, myChallengesItem] : [item],
+    );
   }
 
   return baseNavItems;

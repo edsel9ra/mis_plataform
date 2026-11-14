@@ -17,6 +17,8 @@ import {
   Target,
 } from 'lucide-react';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
+import { ChallengePathModuleSelect } from '@/components/progress/ChallengePathModuleSelect';
+import { ChallengeStatusSelect } from '@/components/mentor-workspace/ChallengeStatusSelect';
 import { AttentionComparison } from '@/components/mentor-workspace/AttentionComparison';
 import { FeedbackUploadForm } from '@/components/mentor-workspace/FeedbackUploadForm';
 import { MentorObservationForm } from '@/components/mentor-workspace/MentorObservationForm';
@@ -39,7 +41,10 @@ import {
   useMentorAlerts,
   useSaveMentorSystemicMap,
 } from '@/hooks/use-mentor-workspace';
+import { useMentorLearningPathProgress } from '@/hooks/use-progress';
 import { hasEntitlement, isOceanScoreBelowThreshold } from '@/lib/mentor-workspace';
+import { challengeStatusKey } from '@/lib/progress';
+import type { LearningPathProgress } from '@/types/progress';
 import type {
   ActiveSubscription,
   MentorChallenge,
@@ -318,6 +323,7 @@ function ChallengesPanel({ userId, relationshipId }: { userId: string; relations
   const t = useTranslations();
   const challengesQuery = useMentorUserChallenges(userId, relationshipId);
   const catalogQuery = useMentorChallenges();
+  const learningPathsQuery = useMentorLearningPathProgress(userId);
   const [selectedChallengeId, setSelectedChallengeId] = useState('');
   const assign = useAssignMentorChallenge(userId, relationshipId);
 
@@ -362,14 +368,21 @@ function ChallengesPanel({ userId, relationshipId }: { userId: string; relations
       {assign.error && <ErrorCard />}
       {challenges.length === 0 ? <Card><p className="text-sm text-slate-500">{t('mentor_workspace.no_challenges')}</p></Card> : (
         <div className="grid gap-4 xl:grid-cols-2">
-          {challenges.map((challenge) => <ChallengeActivityCard key={challenge.id} challenge={challenge} relationshipId={relationshipId} />)}
+          {challenges.map((challenge) => (
+            <ChallengeActivityCard
+              key={challenge.id}
+              challenge={challenge}
+              relationshipId={relationshipId}
+              learningPaths={learningPathsQuery.data}
+            />
+          ))}
         </div>
       )}
     </div>
   );
 }
 
-function ChallengeActivityCard({ challenge, relationshipId }: { challenge: MentorChallenge; relationshipId: string }) {
+function ChallengeActivityCard({ challenge, relationshipId, learningPaths }: { challenge: MentorChallenge; relationshipId: string; learningPaths?: LearningPathProgress[] }) {
   const t = useTranslations();
   const locale = useLocale();
   const [expanded, setExpanded] = useState(false);
@@ -391,6 +404,20 @@ function ChallengeActivityCard({ challenge, relationshipId }: { challenge: Mento
          {challenge.due_at && <span>{t('mentor_workspace.due_date')}: {formatDate(challenge.due_at, locale)}</span>}
         {contentUrl && <a href={contentUrl} target="_blank" rel="noreferrer" className="font-semibold text-primary-700 hover:underline"><FileText className="mr-1 inline h-3.5 w-3.5" aria-hidden="true" />{challenge.content_name || t('mentor_workspace.open_content')}</a>}
       </div>
+      {challenge.status !== 'template' ? (
+        <div className="mt-4 space-y-4 border-t border-slate-100 pt-3">
+          <ChallengeStatusSelect
+            challengeId={challenge.id}
+            relationshipId={relationshipId}
+            currentStatus={challenge.status}
+          />
+          <ChallengePathModuleSelect
+            challengeId={challenge.id}
+            currentModuleId={challenge.path_module_id}
+            paths={learningPaths}
+          />
+        </div>
+      ) : null}
       <Button type="button" variant="ghost" size="sm" className="mt-4" onClick={() => setExpanded((current) => !current)}>
         {expanded ? t('mentor_workspace.hide_activity') : t('mentor_workspace.view_activity')}
       </Button>
@@ -477,12 +504,5 @@ function formatDate(value?: string | null, locale = 'es'): string {
 }
 
 function statusLabel(status: string | null | undefined, t: ReturnType<typeof useTranslations>): string {
-  const labels: Record<string, string> = {
-    completed: t('mentor_workspace.status_completed'),
-    in_progress: t('mentor_workspace.status_in_progress'),
-    not_started: t('mentor_workspace.status_not_started'),
-    blocked: t('mentor_workspace.status_blocked'),
-  };
-
-  return (status && labels[status]) || t('mentor_workspace.status_unknown');
+  return t(challengeStatusKey(status));
 }
