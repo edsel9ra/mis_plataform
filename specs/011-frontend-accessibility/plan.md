@@ -1,6 +1,6 @@
 # Plan — Spec 011: Accesibilidad global del frontend
 
-Estado: propuesta pendiente de aprobación  
+Estado: aprobado (2026-10-12, confirmado por el usuario el 2026-11-14)  
 Base: `spec.md` aprobada por el usuario el 2026-10-12.
 
 ## Enfoque

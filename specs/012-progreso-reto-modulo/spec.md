@@ -1,6 +1,6 @@
 # Spec 012 — Progreso verificable de retos y módulos
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre aprobada:** `specs/001-progress-tracking-dashboard/spec.md`, v0.5.1 (2026-10-13). Esta spec desglosa únicamente los requisitos aprobados RF-17 y RF-20; no altera el baseline implementado v0.3.0 ni añade decisiones de producto.
 

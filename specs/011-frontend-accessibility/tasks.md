@@ -1,6 +1,6 @@
 # Tareas — Spec 011: Accesibilidad global del frontend
 
-Estado: propuesta pendiente de aprobación. Estas tareas ejecutan primero el inventario acordado; las correcciones se desglosarán en specs hijas después de priorizar hallazgos, para mantener cada unidad dentro del límite SDD de 10 tareas.
+Estado: aprobado (2026-10-12, confirmado por el usuario el 2026-11-14). Estas tareas ejecutan primero el inventario acordado; las correcciones se desglosarán en specs hijas después de priorizar hallazgos, para mantener cada unidad dentro del límite SDD de 10 tareas.
 
 - [x] **T-011.1. Construir la matriz de alcance y estados.** RNF-011.1, RNF-011.4
   - Enumerar las 34 páginas de `frontend/src/app/[locale]/**/page.tsx` y agruparlas por superficie: shell, pública, cuenta/onboarding, participante/progreso, mentor/administración y módulos funcionales.

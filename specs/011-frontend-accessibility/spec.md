@@ -1,6 +1,6 @@
 # Spec 011 — Accesibilidad global del frontend
 
-Estado: borrador
+Estado: aprobada
 
 ## Contexto y objetivo
 

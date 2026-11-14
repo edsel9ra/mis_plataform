@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 012: Progreso verificable de retos y módulos
 
-**Estado:** propuesto para implementación · **Spec:** aprobada
+**Estado:** implementado (todas las tareas completadas el 2026-11-14)
 **Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 ya implementado. Este plan es aditivo y no altera su plan ni su backlog históricos.
 **Dependencia:** ejecutar antes de Spec 013; Spec 015 consume sus eventos.
 
@@ -25,6 +25,8 @@ Ampliar los servicios de progreso existentes en Laravel/PostgreSQL. El servidor 
 - Persistir la completitud automática individual con clave única `(user_id, path_module_id)` y FKs UUID. No guardar porcentajes derivados. La fila `completed` existe solo cuando hay ≥1 reto aplicable y todos están explícitamente `completed`; ante cualquier reto aplicable con estado ausente/desconocido se revoca/no se crea. El registro de actividad conserva la transición previa al retiro para la auditoría P5.
 - `abandoned` se añade a `Challenge::VALID_STATUSES` y al ciclo de transiciones existente. Las transiciones y el vínculo se modifican por Actions; no aceptar actualizaciones de estado que evadan su validación y registro. En cambios de vínculo/estado, recalcular y persistir la finalización/revocación dentro de la misma transacción, con lock del módulo/sujeto para evitar carreras.
 - El objetivo colectivo/individual, porcentaje global estimado de ruta, `Challenge.progress` y asistencia quedan fuera de las fuentes de la tasa; el estado registrado del reto es la única señal.
+
+- **Borrados (añadido 2026-11-14, T012.6b):** borrar o restaurar un reto vinculado recalcula la completitud de su módulo dentro de la misma transacción que el borrado; borrar un módulo o una ruta registra, antes del borrado en cascada de la base de datos, la retirada de cada vínculo reto-módulo y la revocación de cada completitud afectada, con actor (o `system`) y evento desencadenante.
 
 ## 3. Funciones puras y contratos
 
