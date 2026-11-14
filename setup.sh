@@ -145,6 +145,8 @@ prepare_environment() {
         fi
     done
 
+    sync_secret .env.backend REVERB_APP_KEY .env.frontend REVERB_APP_KEY "Reverb app key"
+
     [ "$(env_value .env POSTGRES_DB)" = "$(env_value .env.backend DB_DATABASE)" ] \
         || die "POSTGRES_DB and DB_DATABASE must match"
     [ "$(env_value .env POSTGRES_USER)" = "$(env_value .env.backend DB_USERNAME)" ] \

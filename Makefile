@@ -1,4 +1,4 @@
-.PHONY: env up down build restart logs wait backend frontend matching shell migrate seed fresh test-backend test-frontend test-matching queue reverb storage cache meili npm-install composer-install production-config
+.PHONY: env up down build restart logs wait backend frontend matching shell migrate seed fresh test-backend test-frontend test-matching contracts-test queue reverb storage cache meili npm-install composer-install production-config
 
 env:
 	bash setup.sh --env-only
@@ -49,6 +49,9 @@ test-frontend:
 
 test-matching:
 	docker compose exec matching python -m pytest -p no:cacheprovider
+
+contracts-test:
+	docker run --rm -v $(PWD)/blockchain:/app -w /app --entrypoint forge ghcr.io/foundry-rs/foundry:v1.9.0 test -vv
 
 queue:
 	docker compose exec backend php artisan queue:work

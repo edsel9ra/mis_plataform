@@ -76,8 +76,9 @@ services:
     init: true
     logging: *default-logging
     command: php /var/www/backend/artisan reverb:start
-    expose:
-      - "8080"
+    # Direct host port: development only (production goes through the nginx ws. vhost).
+    ports:
+      - "127.0.0.1:8080:8080"
     volumes:
       - ./backend:/var/www/backend
     env_file:

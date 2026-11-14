@@ -69,6 +69,7 @@ jobs:
           restore-keys: composer-${{ runner.os }}-
       - run: composer validate --strict
       - run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - run: composer audit
       - run: composer check-platform-reqs
       - run: php artisan test
 
@@ -94,6 +95,7 @@ jobs:
           cache: pnpm
           cache-dependency-path: frontend/pnpm-lock.yaml
       - run: pnpm install --frozen-lockfile
+      - run: pnpm audit --prod --audit-level high
       - run: pnpm lint
       - run: pnpm typecheck
       - run: pnpm test
@@ -120,6 +122,7 @@ jobs:
             docker/python/requirements-dev.txt
       - run: python -m pip install --no-cache-dir -r ../docker/python/requirements.txt -r ../docker/python/requirements-dev.txt
       - run: python -m pip check
+      - run: pip-audit -r ../docker/python/requirements.txt
       - name: Validate matching API contract
         run: |
           python - <<'PY'
@@ -138,6 +141,20 @@ jobs:
               raise SystemExit(f"Missing API paths: {sorted(missing)}")
           PY
       - run: python -m pytest -q -p no:cacheprovider
+
+  contracts:
+    name: Contract tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: blockchain
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: foundry-rs/foundry-toolchain@dba66c27052e63476d886f22216e119ba7e615bf # v1.9.2
+        with:
+          version: v1.9.0
+      - run: forge test -vv
 
   compose:
     name: Compose validation
