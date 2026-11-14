@@ -1,8 +1,22 @@
 # Plan de implementación — Spec 013: Mapa y agregados de aprendizaje
 
-**Estado:** propuesto para implementación · **Spec:** aprobada
+**Estado:** aprobado con el ajuste de la sección 0 (usuario, 2026-11-14); en implementación · **Spec:** aprobada
 **Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 implementado.
 **Dependencia obligatoria:** Spec 012 antes de integrar tasas de reto/módulo. Spec 015 consume sus eventos, pero no es requisito para esta vista.
+
+## 0. Ajuste tras implementar la Spec 012 (aprobado por el usuario, 2026-11-14)
+
+La Spec 012 ya entregó piezas que este plan preveía crear:
+
+- `App\Services\Progress\PathProgressService::forSubject(User)`: rutas consultables del sujeto (`SubjectLearningPaths`, asignadas o iniciadas), módulos ordenados por `order`, tasa de actividad, completitud por módulo y tasa de ruta, en 4 consultas por lotes.
+- `GET /progress/learning-paths` y `GET /mentor/users/{user}/progress/learning-paths`, con la misma autorización del panel (`ProgressAccessService::assertUserPanel`).
+- `LearningPathsCard` en el panel propio y en el del mentor.
+
+Para no duplicar reglas ni consultas:
+
+1. **Mapa individual (T013.1, T013.2, T013.5, T013.7):** `LearningMap` no será un servicio paralelo. Se extiende `PathProgressService` (o se compone sobre él) para añadir, por módulo, los elementos con vínculo explícito —hoy solo retos vinculados (id, título, estado de la fuente)— con desempate estable por `id` en el orden de módulos. `GET /progress/map` y su variante de mentor reutilizan ese servicio y la misma autorización. Objetivos y logros no se ubican porque no tienen vínculo registrado con ruta o módulo (RF-013.4).
+2. **Vista (T013.8):** `/dashboard/progreso/mapa` es la vista independiente enlazada desde el panel; `LearningPathsCard` se mantiene como resumen y enlaza al mapa.
+3. **Agregados colectivos (T013.3, T013.4, T013.6):** sin cambios respecto a este plan; usan las tasas individuales de `PathProgressService` como entrada.
 
 ## 1. Alcance y archivos
 
