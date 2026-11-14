@@ -8,7 +8,11 @@ class StoreFamilyGroupRequest extends FormRequest
 {
     public function authorize(): bool
     {
-        return (bool) $this->user();
+        $user = $this->user();
+
+        return $user !== null
+            && $user->client_type === 'familiar'
+            && $user->role === 'mentee';
     }
 
     public function rules(): array

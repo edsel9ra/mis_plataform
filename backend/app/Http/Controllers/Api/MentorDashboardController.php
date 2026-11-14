@@ -10,6 +10,9 @@ use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use App\Services\PersonalityInterpretationService;
 use Illuminate\Http\JsonResponse;
+use App\Support\RelationshipScope;
+use App\Http\Requests\Mentor\IndexMentorUsersRequest;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
 
@@ -23,14 +26,9 @@ class MentorDashboardController
         private PlanEntitlementService $entitlements,
     ) {}
 
-    public function users(Request $request): JsonResponse
+    public function users(IndexMentorUsersRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'search' => ['nullable', 'string', 'max:100'],
-            'page' => ['nullable', 'integer', 'min:1'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-            'plan_filter' => ['nullable', 'string', 'in:all,basic,premium,locked'],
-        ]);
+        $validated = $request->validated();
         $search = mb_strtolower(trim($validated['search'] ?? ''));
         $users = $this->assignments->assignedUsers($request->user())
             ->when($search !== '', fn ($items) => $items->filter(function (array $entry) use ($search) {
@@ -65,7 +63,7 @@ class MentorDashboardController
             ->response();
     }
 
-    public function personality(Request $request, User $user): JsonResponse
+    public function personality(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $relationshipId = $this->relationshipId($request);
         $authorized = $this->workspaceAccess->mentorPair($request->user(), $user, $relationshipId);
@@ -123,9 +121,7 @@ class MentorDashboardController
 
     private function relationshipId(Request $request): string
     {
-        return $request->validate([
-            'relationship_id' => ['required', 'uuid'],
-        ])['relationship_id'];
+        return RelationshipScope::id($request);
     }
 
     private function safeNumericArray(mixed $values): array

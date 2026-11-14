@@ -3,6 +3,8 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\AssessmentResultResource;
+use App\Http\Requests\Evaluation\SubmitEvaluationRequest;
+use App\Support\LikePattern;
 use App\Http\Resources\EvaluationResource;
 use App\Models\Assessment;
 use App\Models\AssessmentResult;
@@ -52,17 +54,12 @@ class EvaluationController
         return response()->json((new EvaluationResource($evaluation))->resolve($request));
     }
 
-    public function submit(Request $request, string $id): JsonResponse
+    public function submit(SubmitEvaluationRequest $request, string $id): JsonResponse
     {
         $user = $request->user();
         $evaluation = $this->accessibleEvaluations($user)->findOrFail($id);
 
-        $validated = $request->validate([
-            'answers' => ['required', 'array'],
-            'answers.*.question_id' => ['required'],
-            'answers.*.option_index' => ['required', 'integer', 'min:0'],
-            'time_spent_seconds' => ['nullable', 'integer', 'min:0'],
-        ]);
+        $validated = $request->validated();
 
         $score = $this->score($evaluation, $validated['answers']);
 
@@ -122,13 +119,13 @@ class EvaluationController
             $term = $request->string('search')->toString();
             $query->where(function ($q) use ($term) {
                 $q->whereHas('user', function ($userQuery) use ($term) {
-                    $userQuery->where('name', 'ilike', "%{$term}%")
-                        ->orWhere('last_name', 'ilike', "%{$term}%")
-                        ->orWhere('email', 'ilike', "%{$term}%");
+                    $userQuery->where('name', 'ilike', LikePattern::contains($term))
+                        ->orWhere('last_name', 'ilike', LikePattern::contains($term))
+                        ->orWhere('email', 'ilike', LikePattern::contains($term));
                 })->orWhereHas('assessment', function ($assessmentQuery) use ($term) {
-                    $assessmentQuery->where('slug', 'ilike', "%{$term}%")
-                        ->orWhere('title->es', 'ilike', "%{$term}%")
-                        ->orWhere('title->en', 'ilike', "%{$term}%");
+                    $assessmentQuery->where('slug', 'ilike', LikePattern::contains($term))
+                        ->orWhere('title->es', 'ilike', LikePattern::contains($term))
+                        ->orWhere('title->en', 'ilike', LikePattern::contains($term));
                 });
             });
         }
@@ -211,65 +208,75 @@ class EvaluationController
 
     private function relationshipsByUser($relationships): array
     {
+        $bySourceType = $relationships->groupBy(
+            fn (MentorshipRelationship $relationship) => MentorshipRelationship::canonicalSourceType($relationship->source_type)
+        );
+
+        $sourceIds = fn (string $type) => $bySourceType
+            ->get($type, collect())
+            ->pluck('source_id')
+            ->filter()
+            ->unique()
+            ->values();
+
+        $familyHeadBySource = FamilyGroup::whereIn('id', $sourceIds('family_group'))
+            ->pluck('head_user_id', 'id');
+        $familyMembersBySource = FamilyMember::whereIn('family_group_id', $sourceIds('family_group'))
+            ->get(['family_group_id', 'user_id'])
+            ->groupBy('family_group_id');
+
+        $cohortMembersBySource = CohortMember::whereIn('cohort_id', $sourceIds('cohort'))
+            ->where('status', 'active')
+            ->get(['cohort_id', 'user_id'])
+            ->groupBy('cohort_id');
+
+        $companyAdminBySource = Company::whereIn('id', $sourceIds('company'))
+            ->pluck('admin_id', 'id');
+        $employeesBySource = Employee::whereIn('company_id', $sourceIds('company'))
+            ->where('status', 'active')
+            ->get(['company_id', 'user_id'])
+            ->groupBy('company_id');
+
+        $candidateIdsByRelationship = [];
+        $allCandidateIds = [];
+
+        foreach ($relationships as $relationship) {
+            $ids = match (MentorshipRelationship::canonicalSourceType($relationship->source_type)) {
+                'user' => [$relationship->source_id],
+                'family_group' => [
+                    $familyHeadBySource->get($relationship->source_id),
+                    ...$familyMembersBySource->get($relationship->source_id, collect())->pluck('user_id')->all(),
+                ],
+                'cohort' => $cohortMembersBySource->get($relationship->source_id, collect())->pluck('user_id')->all(),
+                'company' => [
+                    $companyAdminBySource->get($relationship->source_id),
+                    ...$employeesBySource->get($relationship->source_id, collect())->pluck('user_id')->all(),
+                ],
+                default => [],
+            };
+
+            $candidateIdsByRelationship[$relationship->id] = $ids;
+            $allCandidateIds = array_merge($allCandidateIds, $ids);
+        }
+
+        $activeIds = User::query()
+            ->whereIn('id', collect($allCandidateIds)->filter()->unique()->values())
+            ->where('is_active', true)
+            ->pluck('id')
+            ->flip();
+
         $byUser = [];
 
         foreach ($relationships as $relationship) {
-            foreach ($this->userIdsForRelationship($relationship) as $userId) {
-                $byUser[$userId][] = $relationship;
+            foreach ($candidateIdsByRelationship[$relationship->id] ?? [] as $userId) {
+                if ($userId && $activeIds->has($userId)) {
+                    $byUser[$userId][] = $relationship;
+                }
             }
         }
 
         return $byUser;
     }
-
-    private function userIdsForRelationship(MentorshipRelationship $relationship): array
-    {
-        if (in_array($relationship->source_type, ['user', User::class], true)) {
-            return User::query()
-                ->whereKey($relationship->source_id)
-                ->where('is_active', true)
-                ->pluck('id')
-                ->all();
-        }
-
-        if (in_array($relationship->source_type, ['family_group', FamilyGroup::class], true)) {
-            $familyHeadId = FamilyGroup::where('id', $relationship->source_id)->value('head_user_id');
-            $familyMemberIds = FamilyMember::where('family_group_id', $relationship->source_id)->pluck('user_id')->all();
-
-            return $this->activeUserIds([$familyHeadId, ...$familyMemberIds]);
-        }
-
-        if (in_array($relationship->source_type, ['cohort', \App\Models\Cohort::class], true)) {
-            $memberIds = CohortMember::where('cohort_id', $relationship->source_id)
-                ->where('status', 'active')
-                ->pluck('user_id')
-                ->all();
-
-            return $this->activeUserIds($memberIds);
-        }
-
-        if (in_array($relationship->source_type, ['company', Company::class], true)) {
-            $companyAdminId = Company::where('id', $relationship->source_id)->value('admin_id');
-            $employeeIds = Employee::where('company_id', $relationship->source_id)
-                ->where('status', 'active')
-                ->pluck('user_id')
-                ->all();
-
-            return $this->activeUserIds([$companyAdminId, ...$employeeIds]);
-        }
-
-        return [];
-    }
-
-    private function activeUserIds(array $ids): array
-    {
-        return User::query()
-            ->whereIn('id', collect($ids)->filter()->unique()->values())
-            ->where('is_active', true)
-            ->pluck('id')
-            ->all();
-    }
-
     private function relationshipSummary(MentorshipRelationship $relationship): array
     {
         return [

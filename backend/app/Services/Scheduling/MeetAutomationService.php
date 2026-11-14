@@ -5,6 +5,7 @@ namespace App\Services\Scheduling;
 use App\Models\Session;
 use App\Services\GoogleMeetService;
 use App\Services\Scheduling\Rules\MeetAutomationRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Support\Facades\DB;
@@ -24,7 +25,7 @@ final class MeetAutomationService
             }
 
             $scheduledAt = $session->getAttributes()['scheduled_at'] ?? null;
-            if ($scheduledAt === null || ! CarbonImmutable::parse($scheduledAt, 'UTC')
+            if ($scheduledAt === null || ! DbTime::fromRaw($scheduledAt)
                 ->greaterThan(CarbonImmutable::instance($now)->utc())) {
                 return;
             }
@@ -36,7 +37,7 @@ final class MeetAutomationService
             }
 
             try {
-                $start = CarbonImmutable::parse($scheduledAt, 'UTC');
+                $start = DbTime::fromRaw($scheduledAt);
                 $meetData = $session->meet_event_id === null
                     ? $this->googleMeetService->createMeetEvent(
                         $session->title,
@@ -74,7 +75,7 @@ final class MeetAutomationService
                     'meet_link' => $meetData['meet_link'] ?? $session->meet_link,
                     'meet_synced_schedule_hash' => MeetAutomationRules::scheduleFingerprint($session),
                     'meet_attempts' => 0,
-                    'meet_last_attempt_at' => $now,
+                    'meet_last_attempt_at' => DbTime::toRaw($now),
                     'meet_last_error' => null,
                 ])->save();
             } catch (Throwable) {
@@ -95,7 +96,7 @@ final class MeetAutomationService
                 $this->googleMeetService->deleteEvent($session->meet_event_id);
                 $session->forceFill([
                     'meet_attempts' => 0,
-                    'meet_last_attempt_at' => $now,
+                    'meet_last_attempt_at' => DbTime::toRaw($now),
                     'meet_last_error' => null,
                 ])->save();
             } catch (Throwable) {
@@ -110,7 +111,7 @@ final class MeetAutomationService
         $operationLabel = $operation === 'delete' ? 'deletion' : $operation;
         $session->forceFill([
             'meet_attempts' => $attempts,
-            'meet_last_attempt_at' => $now,
+            'meet_last_attempt_at' => DbTime::toRaw($now),
             'meet_last_error' => "Google Meet {$operationLabel} failed.",
         ])->save();
 
@@ -133,7 +134,7 @@ final class MeetAutomationService
             if (
                 $lockedSession->status !== 'scheduled'
                 || $scheduledAt === null
-                || ! CarbonImmutable::parse($scheduledAt, 'UTC')->greaterThan(CarbonImmutable::instance($now)->utc())
+                || ! DbTime::fromRaw($scheduledAt)->greaterThan(CarbonImmutable::instance($now)->utc())
             ) {
                 return null;
             }
@@ -152,7 +153,7 @@ final class MeetAutomationService
             try {
                 $meetData = $this->googleMeetService->createMeetEvent(
                     $lockedSession->title,
-                    CarbonImmutable::parse($lockedSession->getAttributes()['scheduled_at'], 'UTC'),
+                    DbTime::fromRaw($lockedSession->getAttributes()['scheduled_at']),
                     (int) $lockedSession->duration_minutes,
                     $lockedSession->timezone,
                     (string) $lockedSession->getKey(),
@@ -165,7 +166,7 @@ final class MeetAutomationService
                 $attempts = ((int) $lockedSession->meet_attempts) + 1;
                 $lockedSession->forceFill([
                     'meet_attempts' => $attempts,
-                    'meet_last_attempt_at' => $now,
+                    'meet_last_attempt_at' => DbTime::toRaw($now),
                     'meet_last_error' => 'Google Meet creation failed.',
                 ])->save();
 
@@ -182,7 +183,7 @@ final class MeetAutomationService
                 'meet_event_id' => $meetData['event_id'],
                 'meet_synced_schedule_hash' => MeetAutomationRules::scheduleFingerprint($lockedSession),
                 'meet_attempts' => 0,
-                'meet_last_attempt_at' => $now,
+                'meet_last_attempt_at' => DbTime::toRaw($now),
                 'meet_last_error' => null,
             ])->save();
 

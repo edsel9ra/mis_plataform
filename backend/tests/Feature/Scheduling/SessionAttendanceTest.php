@@ -40,7 +40,7 @@ function attendanceSessionFixture(
         'source_id' => $sourceId ?? $participant->id,
         'mentor_id' => $mentor->id,
     ]);
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'session_type' => $sessionType,
@@ -279,7 +279,7 @@ it('allows collective managers to confirm only eligible minors or company employ
         'status' => 'active',
     ]);
     [$companySession] = attendanceSessionFixture($mentor, $employeeUser, 'company', $company->id, 'corporate');
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     Carbon::setTestNow($endAt);
 
     $this->actingAs($familyManager)

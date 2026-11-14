@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateFeedbackEntryAction;
+use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\StoreFeedbackRequest;
 use App\Http\Resources\FeedbackEntryResource;
 use App\Http\Resources\FeedbackThreadResource;
@@ -14,6 +15,9 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\IndexFeedbackRequest;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
+use App\Http\Requests\Mentor\StoreGeneralFeedbackRequest;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
 
@@ -25,13 +29,9 @@ class MentorFeedbackController
         private PlanEntitlementService $entitlements,
     ) {}
 
-    public function all(Request $request): JsonResponse
+    public function all(IndexFeedbackRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'user_id' => ['nullable', 'uuid'],
-            'relationship_id' => ['nullable', 'uuid'],
-            'per_page' => ['nullable', 'integer', 'min:1', 'max:100'],
-        ]);
+        $validated = $request->validated();
 
         if (!empty($validated['user_id']) && !empty($validated['relationship_id'])) {
             $authorized = $this->access->mentorPair(
@@ -80,12 +80,9 @@ class MentorFeedbackController
         return FeedbackEntryResource::collection($entries)->response();
     }
 
-    public function storeGeneral(StoreFeedbackRequest $request): JsonResponse
+    public function storeGeneral(StoreGeneralFeedbackRequest $request): JsonResponse
     {
-        $required = $request->validate([
-            'user_id' => ['required', 'uuid'],
-            'relationship_id' => ['required', 'uuid'],
-        ]);
+        $required = $request->validated();
         $validated = $request->validated();
         $relationshipId = $required['relationship_id'];
         $mentee = User::findOrFail($required['user_id']);
@@ -116,7 +113,7 @@ class MentorFeedbackController
         return response()->json(new FeedbackEntryResource($entry), 201);
     }
 
-    public function index(Request $request, string $challenge): JsonResponse
+    public function index(RelationshipScopedRequest $request, string $challenge): JsonResponse
     {
         $challengeModel = Challenge::with('relationship.source')->findOrFail($challenge);
         $authorized = $this->access->mentorChallenge($request->user(), $challengeModel, $this->relationshipId($request));
@@ -182,6 +179,6 @@ class MentorFeedbackController
 
     private function relationshipId(Request $request): string
     {
-        return $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'];
+        return RelationshipScope::id($request);
     }
 }

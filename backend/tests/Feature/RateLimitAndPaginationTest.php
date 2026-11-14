@@ -51,3 +51,27 @@ it('caps paginated responses', function () {
         ->assertOk()
         ->assertJsonPath('per_page', 100);
 });
+
+it('returns pagination meta for public mentors', function () {
+    User::factory()->mentor()->count(3)->create();
+
+    $this->getJson('/api/v1/mentors?per_page=2')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 3)
+        ->assertJsonPath('meta.last_page', 2)
+        ->assertJsonCount(2, 'data');
+});
+
+it('returns pagination meta for admin mentors', function () {
+    $this->seed(\Database\Seeders\RolePermissionSeeder::class);
+    User::factory()->mentor()->count(3)->create();
+    $admin = User::factory()->admin()->create();
+    $admin->assignRole('admin');
+
+    $this->actingAs($admin)
+        ->getJson('/api/v1/admin/mentors?per_page=2')
+        ->assertOk()
+        ->assertJsonPath('meta.total', 3)
+        ->assertJsonPath('meta.last_page', 2)
+        ->assertJsonCount(2, 'data');
+});

@@ -8,6 +8,7 @@ use App\Models\Session;
 use App\Models\User;
 use App\Services\Scheduling\Rules\AvailabilityRules;
 use App\Services\Scheduling\Rules\TimezoneRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 
 final class AvailabilitySlotsService
@@ -45,14 +46,7 @@ final class AvailabilitySlotsService
         $exceptions = MentorAvailabilityException::query()
             ->where('user_id', $mentor->id)
             ->get(['mode', 'start_date', 'end_date', 'start_time', 'end_time', 'timezone'])
-            ->map(fn (MentorAvailabilityException $exception): array => [
-                'mode' => $exception->mode->value,
-                'start_date' => $exception->start_date->format('Y-m-d'),
-                'end_date' => $exception->end_date?->format('Y-m-d'),
-                'start_time' => $exception->start_time?->format('H:i:s'),
-                'end_time' => $exception->end_time?->format('H:i:s'),
-                'timezone' => $exception->timezone,
-            ])
+            ->map(fn (MentorAvailabilityException $exception): array => $exception->toRuleArray())
             ->all();
 
         $busy = $this->busyIntervals($mentor, $requester, $range['start'], $range['end']);
@@ -89,9 +83,9 @@ final class AvailabilitySlotsService
 
         $query = Session::query()
             ->whereNotIn('status', ['canceled', 'not_completed'])
-            ->where('scheduled_at', '>=', $from->subMinutes($lookbackMinutes))
-            ->where('scheduled_at', '<', $to)
-            ->whereRaw("scheduled_at + (duration_minutes * INTERVAL '1 minute') > ?", [$from])
+            ->where('scheduled_at', '>=', DbTime::toRaw($from->subMinutes($lookbackMinutes)))
+            ->where('scheduled_at', '<', DbTime::toRaw($to))
+            ->whereRaw("scheduled_at + (duration_minutes * INTERVAL '1 minute') > ?", [DbTime::toRaw($from)])
             ->where(function ($query) use ($participantIds): void {
                 $query->whereHas('relationship', fn ($relationship) => $relationship->whereIn('mentor_id', $participantIds))
                     ->orWhereHas('attendees', fn ($attendees) => $attendees->whereIn('user_id', $participantIds))
@@ -103,9 +97,9 @@ final class AvailabilitySlotsService
 
         return $query->get(['scheduled_at', 'duration_minutes'])
             ->map(function (Session $session): array {
-                // The sessions column is a timezone-less timestamp representing UTC.
-                // Parse its raw value explicitly instead of applying app.timezone.
-                $start = CarbonImmutable::parse($session->getRawOriginal('scheduled_at'), 'UTC');
+                // The sessions column is a timezone-less timestamp holding
+                // app.timezone wall time; convert to the real UTC instant.
+                $start = DbTime::fromRaw($session->getRawOriginal('scheduled_at'));
 
                 return [
                     'start' => $start,

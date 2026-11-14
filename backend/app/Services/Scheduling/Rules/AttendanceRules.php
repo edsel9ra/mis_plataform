@@ -38,15 +38,45 @@ final class AttendanceRules
         DateTimeInterface $now,
         int $windowHours = self::DEFAULT_WINDOW_HOURS,
     ): AttendanceDecision {
+        return self::assess(
+            $session,
+            $attendee,
+            $actorId,
+            $targetId,
+            $actorRelation,
+            $chargeableTargetIds,
+            $now,
+            $windowHours,
+        )[0];
+    }
+
+    /**
+     * Same evaluation as {@see evaluate()} plus the blocking reason.
+     *
+     * @param array{status: string|SessionStatus, end_at: DateTimeInterface|string|null, excluded_user_ids?: list<string>} $session
+     * @param array{user_id: string, created_at?: DateTimeInterface|string|null, left_at?: DateTimeInterface|string|null, confirmed_by?: string|null}|null $attendee
+     * @param list<string> $chargeableTargetIds
+     * @return array{0: AttendanceDecision, 1: ?string}
+     */
+    public static function assess(
+        array $session,
+        ?array $attendee,
+        string $actorId,
+        string $targetId,
+        AttendanceRelation $actorRelation,
+        array $chargeableTargetIds,
+        DateTimeInterface $now,
+        int $windowHours = self::DEFAULT_WINDOW_HOURS,
+    ): array {
         if ($attendee === null || (string) $attendee['user_id'] !== $targetId) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::NOT_REGISTERED];
         }
 
         if (in_array(self::statusValue($session['status']), [
             SessionStatus::Canceled->value,
             SessionStatus::NotCompleted->value,
         ], true)) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::TERMINAL_STATUS];
         }
 
         $endAt = self::instant($session['end_at'] ?? null);
@@ -54,41 +84,48 @@ final class AttendanceRules
         $leftAt = self::instant($attendee['left_at'] ?? null);
 
         if ($endAt === null || $createdAt === null || $createdAt > $endAt) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::NOT_REGISTERED];
         }
 
         if ($leftAt !== null && $leftAt <= $endAt) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::NOT_REGISTERED];
         }
 
         if (in_array($targetId, $session['excluded_user_ids'] ?? [], true)) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::EXCLUDED];
         }
 
         $now = self::utc($now);
 
-        if ($now < $endAt || $now >= self::windowEnd($endAt, $windowHours)) {
-            return AttendanceDecision::Reject;
+        if ($now < $endAt) {
+            return [AttendanceDecision::Reject, BlockReason::NOT_ENDED];
+        }
+
+        if ($now >= self::windowEnd($endAt, $windowHours)) {
+            return [AttendanceDecision::Reject, BlockReason::WINDOW_CLOSED];
         }
 
         if ($actorId === $targetId) {
-            return AttendanceDecision::Update;
+            return [AttendanceDecision::Update, null];
         }
 
         if ($actorRelation === AttendanceRelation::Mentor) {
-            return AttendanceDecision::Reject;
+            return [AttendanceDecision::Reject, BlockReason::FORBIDDEN];
         }
 
-        if ($actorRelation !== AttendanceRelation::Responsible
-            || ! in_array($targetId, $chargeableTargetIds, true)) {
-            return AttendanceDecision::Reject;
+        if ($actorRelation !== AttendanceRelation::Responsible) {
+            return [AttendanceDecision::Reject, BlockReason::FORBIDDEN];
+        }
+
+        if (! in_array($targetId, $chargeableTargetIds, true)) {
+            return [AttendanceDecision::Reject, BlockReason::NOT_CHARGEABLE];
         }
 
         if (($attendee['confirmed_by'] ?? null) === $targetId) {
-            return AttendanceDecision::Keep;
+            return [AttendanceDecision::Keep, BlockReason::ALREADY_CONFIRMED_BY_MEMBER];
         }
 
-        return AttendanceDecision::Update;
+        return [AttendanceDecision::Update, null];
     }
 
     private static function statusValue(string|SessionStatus $status): string

@@ -6,6 +6,7 @@ use App\Events\SessionRescheduled;
 use App\Models\Session;
 use App\Models\SessionScheduleChange;
 use App\Models\User;
+use App\Services\Scheduling\Rules\BlockReason;
 use App\Services\Scheduling\Rules\ChangeRules;
 use App\Services\Scheduling\SessionBookingService;
 use App\Services\Scheduling\SchedulingAuditLogger;
@@ -33,10 +34,11 @@ class RescheduleSessionAction
                 (string) config('app.timezone'),
             );
 
-            if (! ChangeRules::canReschedule($session->status, $existingStart, $now)) {
-                $field = $session->status !== 'scheduled' || $existingStart->lessThanOrEqualTo($now)
-                    ? 'reschedule_not_eligible'
-                    : 'reschedule_notice';
+            $blocker = ChangeRules::rescheduleBlocker($session->status, $existingStart, $now);
+            if ($blocker !== null) {
+                $field = $blocker === BlockReason::INSUFFICIENT_NOTICE
+                    ? 'reschedule_notice'
+                    : 'reschedule_not_eligible';
 
                 throw ValidationException::withMessages([
                     'scheduled_at' => [__('sessions.'.$field)],

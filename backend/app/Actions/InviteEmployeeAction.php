@@ -21,11 +21,17 @@ class InviteEmployeeAction
 
     public function execute(Company $company, array $data): Employee
     {
-        return DB::transaction(function () use ($company, $data) {
+        [$employee, $user] = DB::transaction(function () use ($company, $data) {
             $company = Company::query()->lockForUpdate()->findOrFail($company->id);
             $plan = $this->contentAccess->activePlanForSource('company', $company->id, 'empresa');
 
-            if ($plan && $company->employees()->count() >= $plan->max_members) {
+            if (! $plan) {
+                throw ValidationException::withMessages([
+                    'employee' => [__('companies.plan_required')],
+                ]);
+            }
+
+            if ($plan->max_members !== null && $company->employees()->count() >= $plan->max_members) {
                 throw ValidationException::withMessages([
                     'employee' => [__('companies.employee_limit_reached')],
                 ]);
@@ -54,9 +60,11 @@ class InviteEmployeeAction
                 'invited_at' => now(),
             ]);
 
-            Password::sendResetLink(['email' => $user->email]);
-
-            return $employee;
+            return [$employee, $user];
         });
+
+        Password::sendResetLink(['email' => $user->email]);
+
+        return $employee;
     }
 }

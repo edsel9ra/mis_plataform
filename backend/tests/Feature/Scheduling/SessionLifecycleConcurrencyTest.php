@@ -149,7 +149,7 @@ it('serializes concurrent member and responsible confirmations while preserving 
         'source_id' => $family->id,
         'mentor_id' => $mentor->id,
     ]);
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'session_type' => 'family',
@@ -198,7 +198,7 @@ it('rejects completion and confirmation concurrently at the inclusive auto-close
         'source_id' => $member->id,
         'mentor_id' => $mentor->id,
     ]);
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'scheduled_at' => $endAt->subHour(),
@@ -249,7 +249,7 @@ it('keeps automatic lifecycle unchanged before the no-completed window and close
         'source_id' => $member->id,
         'mentor_id' => $mentor->id,
     ]);
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'scheduled_at' => $endAt->subHour(),
@@ -283,7 +283,7 @@ it('excludes a case 41 member from completion initialization and realized-sessio
         'source_id' => $member->id,
         'mentor_id' => $mentor->id,
     ]);
-    $endAt = CarbonImmutable::parse('2026-10-14 13:00:00', 'UTC');
+    $endAt = dbInstant('2026-10-14 13:00:00');
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'scheduled_at' => $endAt->subHour(),

@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\UserNotificationResource;
 use App\Models\Notification;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -15,7 +16,16 @@ class NotificationController
             ->latest()
             ->paginate($perPage);
 
-        return response()->json($notifications);
+        return response()->json($notifications->through(fn ($notification) => (new UserNotificationResource($notification))->resolve($request)));
+    }
+
+    public function unreadCount(Request $request): JsonResponse
+    {
+        $count = Notification::where('user_id', $request->user()->id)
+            ->whereNull('read_at')
+            ->count();
+
+        return response()->json(['unread_count' => $count]);
     }
 
     public function markAsRead(Request $request, string $id): JsonResponse
@@ -23,7 +33,7 @@ class NotificationController
         $notification = Notification::where('user_id', $request->user()->id)->findOrFail($id);
         $notification->update(['read_at' => now()]);
 
-        return response()->json($notification);
+        return response()->json((new UserNotificationResource($notification))->resolve($request));
     }
 
     public function markAllAsRead(Request $request): JsonResponse

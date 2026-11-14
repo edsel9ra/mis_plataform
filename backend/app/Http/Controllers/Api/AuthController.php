@@ -8,6 +8,7 @@ use App\Actions\StartTrialSubscriptionAction;
 use App\Http\Requests\Auth\ForgotPasswordRequest;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Requests\Auth\RegisterRequest;
+use App\Http\Requests\Auth\ResetPasswordRequest;
 use App\Http\Resources\UserResource;
 use App\Http\Resources\SubscriptionResource;
 use App\Models\User;
@@ -15,9 +16,11 @@ use DomainException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Auth\Events\PasswordReset;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
@@ -182,10 +185,35 @@ class AuthController
 
     public function forgotPassword(ForgotPasswordRequest $request): JsonResponse
     {
-        $status = Password::sendResetLink($request->validated());
+        Password::sendResetLink($request->validated());
 
         return response()->json([
-            'status' => __($status),
+            'status' => __(Password::RESET_LINK_SENT),
+        ]);
+    }
+
+    public function resetPassword(ResetPasswordRequest $request): JsonResponse
+    {
+        $status = Password::reset(
+            $request->validated(),
+            function (User $user, string $password) {
+                $user->forceFill([
+                    'password' => Hash::make($password),
+                    'remember_token' => Str::random(60),
+                ])->save();
+
+                $user->tokens()->delete();
+
+                event(new PasswordReset($user));
+            }
+        );
+
+        if ($status === Password::PASSWORD_RESET) {
+            return response()->json(['status' => __($status)]);
+        }
+
+        throw ValidationException::withMessages([
+            'email' => [__($status)],
         ]);
     }
 

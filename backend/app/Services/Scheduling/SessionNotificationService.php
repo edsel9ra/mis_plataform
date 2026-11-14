@@ -2,6 +2,7 @@
 
 namespace App\Services\Scheduling;
 
+use App\Events\NotificationPushed;
 use App\Events\SessionCanceled;
 use App\Events\SessionReminder;
 use App\Events\SessionRescheduled;
@@ -167,10 +168,10 @@ class SessionNotificationService
         $attendees = $session->attendees
             ->map(fn (SessionAttendee $attendee): array => [
                 'user_id' => (string) $attendee->user_id,
-                'created_at' => CarbonImmutable::parse($attendee->created_at, 'UTC'),
+                'created_at' => CarbonImmutable::instance($attendee->created_at),
                 'left_at' => $attendee->left_at === null
                     ? null
-                    : CarbonImmutable::parse($attendee->left_at, 'UTC'),
+                    : CarbonImmutable::instance($attendee->left_at),
             ])
             ->all();
         $participantIds = ParticipantRules::participantsAtEnd(
@@ -182,7 +183,7 @@ class SessionNotificationService
                     ->all(),
             ],
             $attendees,
-            CarbonImmutable::parse($session->end_at, 'UTC'),
+            CarbonImmutable::instance($session->end_at),
             $now,
         );
 
@@ -330,6 +331,10 @@ class SessionNotificationService
                 'notification_id' => $notification->id,
                 'exception' => $exception::class,
             ]);
+        }
+
+        if ($inserted === 1) {
+            NotificationPushed::dispatch($notification);
         }
     }
 

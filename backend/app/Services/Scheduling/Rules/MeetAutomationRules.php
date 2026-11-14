@@ -3,6 +3,7 @@
 namespace App\Services\Scheduling\Rules;
 
 use App\Models\Session;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 
@@ -17,7 +18,7 @@ final class MeetAutomationRules
         $scheduledAt = $session->getAttributes()['scheduled_at'] ?? null;
 
         return $scheduledAt !== null
-            && CarbonImmutable::parse($scheduledAt, 'UTC')->greaterThan(CarbonImmutable::instance($now)->utc());
+            && DbTime::fromRaw($scheduledAt)->greaterThan(CarbonImmutable::instance($now)->utc());
     }
 
     public static function needsScheduleSynchronization(Session $session, DateTimeInterface $now): bool
@@ -28,7 +29,7 @@ final class MeetAutomationRules
             $session->status !== 'scheduled'
             || $session->meet_event_id === null
             || $scheduledAt === null
-            || ! CarbonImmutable::parse($scheduledAt, 'UTC')->greaterThan(CarbonImmutable::instance($now)->utc())
+            || ! DbTime::fromRaw($scheduledAt)->greaterThan(CarbonImmutable::instance($now)->utc())
         ) {
             return false;
         }
@@ -41,8 +42,7 @@ final class MeetAutomationRules
 
     public static function scheduleFingerprint(Session $session): string
     {
-        $scheduledAt = CarbonImmutable::parse($session->getAttributes()['scheduled_at'], 'UTC')
-            ->utc()
+        $scheduledAt = DbTime::fromRaw($session->getAttributes()['scheduled_at'])
             ->format('Y-m-d\TH:i:s.u\Z');
 
         return hash('sha256', json_encode([

@@ -30,7 +30,7 @@ function completeActionSession(string $start, int $duration = 60, string $status
     ]);
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => Carbon::parse($start, 'UTC'),
+        'scheduled_at' => dbInstant($start),
         'duration_minutes' => $duration,
         'status' => $status,
     ]);
@@ -39,7 +39,7 @@ function completeActionSession(string $start, int $duration = 60, string $status
 }
 
 it('allows only the relationship mentor to complete the session', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-14 11:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-14 11:00:00'));
     [$session, $mentor] = completeActionSession('2026-10-14 10:00:00');
     $admin = User::factory()->admin()->create();
     $mentee = User::factory()->create();
@@ -54,7 +54,7 @@ it('allows only the relationship mentor to complete the session', function (): v
     app(CompleteSessionAction::class)->execute(
         $session->id,
         $mentor,
-        Carbon::parse('2026-10-14 11:00:00', 'UTC'),
+        dbInstant('2026-10-14 11:00:00'),
     );
 
     expect($session->fresh()->status)->toBe(SessionStatus::Completed->value);
@@ -66,13 +66,13 @@ it('rejects completion before end and at the inclusive 48 hour deadline', functi
     expect(fn () => app(CompleteSessionAction::class)->execute(
         $session->id,
         $mentor,
-        Carbon::parse('2026-10-14 10:59:59', 'UTC'),
+        dbInstant('2026-10-14 10:59:59'),
     ))->toThrow(ValidationException::class);
 
     expect(fn () => app(CompleteSessionAction::class)->execute(
         $session->id,
         $mentor,
-        Carbon::parse('2026-10-16 11:00:00', 'UTC'),
+        dbInstant('2026-10-16 11:00:00'),
     ))->toThrow(ValidationException::class);
 
     expect($session->fresh()->status)->toBe(SessionStatus::Scheduled->value);
@@ -84,21 +84,21 @@ it('rejects terminal sessions without changing their state', function (string $s
     expect(fn () => app(CompleteSessionAction::class)->execute(
         $session->id,
         $mentor,
-        Carbon::parse('2026-10-14 11:00:00', 'UTC'),
+        dbInstant('2026-10-14 11:00:00'),
     ))->toThrow(ValidationException::class);
 
     expect($session->fresh()->status)->toBe($status);
 })->with(['completed', 'canceled', 'not_completed']);
 
 it('promotes a scheduled session then completes and audits both transitions at exact end', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-14 11:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-14 11:00:00'));
     Event::fake([SessionLifecycleTransitioned::class]);
     [$session, $mentor] = completeActionSession('2026-10-14 10:00:00');
 
     app(CompleteSessionAction::class)->execute(
         $session->id,
         $mentor,
-        Carbon::parse('2026-10-14 11:00:00', 'UTC'),
+        dbInstant('2026-10-14 11:00:00'),
     );
 
     $session->refresh();
@@ -112,7 +112,7 @@ it('promotes a scheduled session then completes and audits both transitions at e
     );
 
     expect($session->status)->toBe(SessionStatus::Completed->value)
-        ->and($session->getRawOriginal('completed_at'))->toBe('2026-10-14 11:00:00')
+        ->and($session->completed_at->equalTo(dbInstant('2026-10-14 11:00:00')))->toBeTrue()
         ->and($session->completed_by)->toBe($mentor->id)
         ->and($activities)->toHaveCount(2)
         ->and($transitionsByPreviousStatus['scheduled']->properties['after']['status'])->toBe('in_progress')
@@ -123,7 +123,7 @@ it('promotes a scheduled session then completes and audits both transitions at e
 });
 
 it('initializes exactly the registered participants at end without overwriting confirmations', function (): void {
-    $end = Carbon::parse('2026-10-14 11:00:00', 'UTC');
+    $end = dbInstant('2026-10-14 11:00:00');
     [$session, $mentor] = completeActionSession('2026-10-14 10:00:00');
     $activeAtEnd = User::factory()->create();
     $leftAfterEnd = User::factory()->create();
@@ -138,37 +138,37 @@ it('initializes exactly the registered participants at end without overwriting c
             'session_id' => $session->id,
             'user_id' => $participant->id,
             'created_at' => $participant->is($joinedAfterEnd)
-                ? Carbon::parse('2026-10-14 11:00:01', 'UTC')
-                : Carbon::parse('2026-10-14 09:00:00', 'UTC'),
+                ? dbInstant('2026-10-14 11:00:01')
+                : dbInstant('2026-10-14 09:00:00'),
             'left_at' => $participant->is($leftAfterEnd)
-                ? Carbon::parse('2026-10-14 11:30:00', 'UTC')
+                ? dbInstant('2026-10-14 11:30:00')
                 : null,
             'attendance_status' => $participant->is($confirmed) ? 'attended' : 'not_confirmed',
             'attended' => $participant->is($confirmed),
             'confirmed_by' => $participant->is($confirmed) ? $confirmed->id : null,
             'confirmed_at' => $participant->is($confirmed)
-                ? Carbon::parse('2026-10-14 11:30:00', 'UTC')
+                ? dbInstant('2026-10-14 11:30:00')
                 : null,
         ]);
     }
     $leftByEndAttendee = SessionAttendee::factory()->create([
         'session_id' => $session->id,
         'user_id' => $leftByEnd->id,
-        'created_at' => Carbon::parse('2026-10-14 09:00:00', 'UTC'),
+        'created_at' => dbInstant('2026-10-14 09:00:00'),
         'left_at' => $end,
     ]);
     SessionAttendanceEvent::factory()->confirmation()->create([
         'session_attendee_id' => $attendees[$confirmed->id]->id,
         'recorded_by' => $confirmed->id,
-        'occurred_at' => Carbon::parse('2026-10-14 11:30:00', 'UTC'),
+        'occurred_at' => dbInstant('2026-10-14 11:30:00'),
     ]);
     SessionParticipantExclusion::create([
         'session_id' => $session->id,
         'user_id' => $excluded->id,
-        'excluded_at' => Carbon::parse('2026-10-14 09:30:00', 'UTC'),
+        'excluded_at' => dbInstant('2026-10-14 09:30:00'),
     ]);
 
-    $now = Carbon::parse('2026-10-14 12:00:00', 'UTC');
+    $now = dbInstant('2026-10-14 12:00:00');
     app(CompleteSessionAction::class)->execute($session->id, $mentor, $now);
     expect(fn () => app(CompleteSessionAction::class)->execute($session->id, $mentor, $now))
         ->toThrow(ValidationException::class);
@@ -190,7 +190,7 @@ it('initializes exactly the registered participants at end without overwriting c
         )
         ->and($attendees[$confirmed->id]->fresh()->attendance_status->value)->toBe('attended')
         ->and($attendees[$confirmed->id]->fresh()->confirmed_by)->toBe($confirmed->id)
-        ->and($attendees[$confirmed->id]->fresh()->getRawOriginal('confirmed_at'))->toBe('2026-10-14 11:30:00');
+        ->and($attendees[$confirmed->id]->fresh()->confirmed_at->equalTo(dbInstant('2026-10-14 11:30:00')))->toBeTrue();
 
     foreach ($initializations as $initialization) {
         expect($initialization->attendance_status->value)->toBe('not_confirmed')

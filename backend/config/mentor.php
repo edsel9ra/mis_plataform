@@ -28,6 +28,8 @@ return [
         ],
     ],
 
+    'recommendation_candidate_limit' => (int) env('MENTOR_RECOMMENDATION_CANDIDATE_LIMIT', 200),
+
     'alerts' => [
         'stagnation_days' => 7,
         'disengagement_days' => 7,

@@ -41,11 +41,14 @@ use App\Policies\RelationshipPolicy;
 use App\Policies\SessionPolicy;
 use App\Policies\SystemicMapPolicy;
 use App\Services\Progress\ProgressCacheObserver;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\RateLimiter;
+use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Http\Request;
 
@@ -58,6 +61,25 @@ class AppServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $uuid = '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}';
+
+        Password::defaults(fn () => Password::min(8)->letters()->mixedCase()->numbers());
+
+        Route::patterns([
+            'id' => $uuid,
+            'sessionId' => $uuid,
+            'companyId' => $uuid,
+            'memberId' => $uuid,
+            'relationship' => $uuid,
+            'challenge' => $uuid,
+            'objective' => $uuid,
+            'user' => $uuid,
+            'mentor' => $uuid,
+            'media' => $uuid,
+            'window' => $uuid,
+            'exception' => $uuid,
+        ]);
+
         Event::listen(SessionRescheduled::class, SessionRescheduledListener::class);
         Event::listen(SessionCanceled::class, SessionCanceledListener::class);
 
@@ -75,6 +97,26 @@ class AppServiceProvider extends ServiceProvider
             $email = mb_strtolower(trim((string) $request->input('email')));
 
             return Limit::perMinute(5)->by($request->ip().'|'.$email);
+        });
+
+        RateLimiter::for('auth-reset-password', function (Request $request) {
+            $email = mb_strtolower(trim((string) $request->input('email')));
+
+            return Limit::perMinute(5)->by($request->ip().'|'.$email);
+        });
+
+        ResetPassword::createUrlUsing(function (User $user, string $token) {
+            $locale = $user->locale;
+            $prefix = $locale
+                && $locale !== config('app.fallback_locale')
+                && in_array($locale, config('app.available_locales'), true)
+                ? "/{$locale}"
+                : '';
+
+            return rtrim(config('app.frontend_url'), '/')
+                .$prefix
+                .'/reset-password?token='.$token
+                .'&email='.urlencode($user->getEmailForPasswordReset());
         });
 
         RateLimiter::for('personality-score', function (Request $request) {

@@ -25,7 +25,7 @@ class RelationshipController
         $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
 
         $relationships = MentorshipRelationship::forUser($user)
-            ->with(['mentor', 'sessions' => function ($q) {
+            ->with(['mentor', 'source', 'sessions' => function ($q) {
                 $q->latest()->limit(5);
             }])
             ->latest()

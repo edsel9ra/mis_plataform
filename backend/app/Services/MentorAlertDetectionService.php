@@ -7,6 +7,7 @@ use App\Models\ChallengeCheckIn;
 use App\Models\ChallengeSubmission;
 use App\Models\EmotionalCheckIn;
 use App\Models\MentorshipRelationship;
+use App\Events\NotificationPushed;
 use App\Models\NeurocognitiveAlert;
 use App\Models\Notification;
 use App\Models\User;
@@ -145,7 +146,7 @@ class MentorAlertDetectionService
             ],
         );
 
-        Notification::firstOrCreate(
+        $notification = Notification::firstOrCreate(
             ['dedupe_key' => "notification:{$dedupeKey}"],
             [
                 'user_id' => $relationship->mentor_id,
@@ -157,6 +158,10 @@ class MentorAlertDetectionService
                 ],
             ],
         );
+
+        if ($notification->wasRecentlyCreated) {
+            NotificationPushed::dispatch($notification);
+        }
 
         return $alert->wasRecentlyCreated ? 1 : 0;
     }

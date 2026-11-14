@@ -18,6 +18,8 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Support\RelationshipScope;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 
 class MentorWorkspaceController
@@ -27,7 +29,7 @@ class MentorWorkspaceController
         private PlanEntitlementService $entitlements,
     ) {}
 
-    public function profile(Request $request, User $user): JsonResponse
+    public function profile(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $relationshipId = $this->relationshipId($request);
         $authorized = $this->access->mentorPair($request->user(), $user, $relationshipId);
@@ -63,7 +65,7 @@ class MentorWorkspaceController
         ]);
     }
 
-    public function show(Request $request, User $user): JsonResponse
+    public function show(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $relationshipId = $this->relationshipId($request);
         $authorized = $this->access->mentorPair($request->user(), $user, $relationshipId);
@@ -165,8 +167,6 @@ class MentorWorkspaceController
 
     private function relationshipId(Request $request): string
     {
-        return $request->validate([
-            'relationship_id' => ['required', 'uuid'],
-        ])['relationship_id'];
+        return RelationshipScope::id($request);
     }
 }

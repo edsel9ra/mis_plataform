@@ -10,7 +10,10 @@ use App\Models\Session;
 use App\Models\SessionAttendanceEvent;
 use App\Models\SessionAttendee;
 use App\Models\User;
+use App\Services\Scheduling\Rules\BlockReason;
+use App\Services\Scheduling\Rules\LifecycleRules;
 use App\Services\Scheduling\Rules\ParticipantRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -35,35 +38,40 @@ class CompleteSessionAction
             }
 
             if ($relationship->mentor_id !== $actor->id) {
-                throw new AuthorizationException('Solo el mentor de la relación puede completar la sesión.');
-            }
-
-            if (SessionStatus::from($session->status)->isTerminal()) {
-                $this->reject('La sesión está en un estado terminal y no puede completarse.');
+                throw new AuthorizationException(__('sessions.complete_forbidden'));
             }
 
             $attributes = $session->getAttributes();
-            if ($attributes['scheduled_at'] === null || $attributes['end_at'] === null) {
-                $this->reject('La sesión no tiene un horario de finalización válido.');
-            }
-
-            $startAt = CarbonImmutable::parse($attributes['scheduled_at'], 'UTC');
-            $endAt = CarbonImmutable::parse($attributes['end_at'], 'UTC');
+            $startAt = $attributes['scheduled_at'] === null
+                ? null
+                : DbTime::fromRaw($attributes['scheduled_at']);
+            $endAt = $attributes['end_at'] === null
+                ? null
+                : DbTime::fromRaw($attributes['end_at']);
             $occurredAt = CarbonImmutable::instance($now)->setTimezone('UTC');
-            $deadline = $endAt->addHours((int) config('scheduling.not_completed_after_hours', 48));
 
-            if ($occurredAt < $endAt) {
-                $this->reject('La sesión solo puede completarse después de su hora de fin.');
-            }
+            $blocker = LifecycleRules::completeBlocker(
+                $session->status,
+                $startAt,
+                $endAt,
+                $occurredAt,
+                (int) config('scheduling.not_completed_after_hours', 48),
+            );
 
-            if ($occurredAt >= $deadline) {
-                $this->reject('La ventana para completar la sesión ya se cerró.');
+            if ($blocker !== null) {
+                $this->reject(match ($blocker) {
+                    BlockReason::TERMINAL_STATUS => __('sessions.complete_terminal'),
+                    BlockReason::INVALID_SCHEDULE => __('sessions.complete_invalid_schedule'),
+                    BlockReason::NOT_ENDED => __('sessions.complete_not_ended'),
+                    BlockReason::WINDOW_CLOSED => __('sessions.complete_window_closed'),
+                    default => __('sessions.complete_not_started'),
+                });
             }
 
             $transitions = [];
             if ($session->status === SessionStatus::Scheduled->value) {
                 if ($occurredAt < $startAt) {
-                    $this->reject('La sesión aún no ha comenzado y no puede completarse.');
+                    $this->reject(__('sessions.complete_not_started'));
                 }
 
                 $transitions[] = $this->transition($session, SessionStatus::InProgress, $actor, $occurredAt);
@@ -72,7 +80,7 @@ class CompleteSessionAction
             $previousStatus = $session->status;
             $session->forceFill([
                 'status' => SessionStatus::Completed->value,
-                'completed_at' => $occurredAt,
+                'completed_at' => DbTime::toRaw($occurredAt),
                 'completed_by' => $actor->id,
             ])->save();
             $this->recordTransition($session, $previousStatus, SessionStatus::Completed, $actor, $occurredAt);
@@ -167,10 +175,10 @@ class CompleteSessionAction
 
                 return [
                     'user_id' => (string) $attendee->user_id,
-                    'created_at' => CarbonImmutable::parse($attributes['created_at'], 'UTC'),
+                    'created_at' => DbTime::fromRaw($attributes['created_at']),
                     'left_at' => $attributes['left_at'] === null
                         ? null
-                        : CarbonImmutable::parse($attributes['left_at'], 'UTC'),
+                        : DbTime::fromRaw($attributes['left_at']),
                 ];
             })->all(),
             $endAt,
@@ -192,7 +200,7 @@ class CompleteSessionAction
                 'event_type' => SessionAttendanceEventType::Initialization,
                 'attendance_status' => AttendanceStatus::NotConfirmed,
                 'recorded_by' => null,
-                'occurred_at' => $endAt,
+                'occurred_at' => DbTime::toRaw($endAt),
             ]);
         }
     }

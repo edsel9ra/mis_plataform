@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\ClientType;
+use App\Support\LikePattern;
 use App\Enums\UserRole;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -247,9 +248,9 @@ class User extends Authenticatable
     public function scopeSearch($query, string $term)
     {
         return $query->where(function ($q) use ($term) {
-            $q->where('name', 'ilike', "%{$term}%")
-              ->orWhere('email', 'ilike', "%{$term}%")
-              ->orWhere('last_name', 'ilike', "%{$term}%");
+            $q->where('name', 'ilike', LikePattern::contains($term))
+              ->orWhere('email', 'ilike', LikePattern::contains($term))
+              ->orWhere('last_name', 'ilike', LikePattern::contains($term));
         });
     }
 

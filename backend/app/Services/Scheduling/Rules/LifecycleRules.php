@@ -47,4 +47,44 @@ final class LifecycleRules
 
         return null;
     }
+
+    public static function completeBlocker(
+        string|SessionStatus $sessionStatus,
+        ?DateTimeInterface $startAt,
+        ?DateTimeInterface $endAt,
+        DateTimeInterface $now,
+        int $closeAfterHours = self::AUTO_CLOSE_HOURS,
+    ): ?string {
+        $status = $sessionStatus instanceof SessionStatus
+            ? $sessionStatus
+            : SessionStatus::from($sessionStatus);
+
+        if ($status->isTerminal()) {
+            return BlockReason::TERMINAL_STATUS;
+        }
+
+        if ($startAt === null || $endAt === null) {
+            return BlockReason::INVALID_SCHEDULE;
+        }
+
+        $utc = new DateTimeZone('UTC');
+        $start = DateTimeImmutable::createFromInterface($startAt)->setTimezone($utc);
+        $end = DateTimeImmutable::createFromInterface($endAt)->setTimezone($utc);
+        $evaluatedAt = DateTimeImmutable::createFromInterface($now)->setTimezone($utc);
+        $deadline = $end->add(new DateInterval("PT{$closeAfterHours}H"));
+
+        if ($evaluatedAt < $end) {
+            return BlockReason::NOT_ENDED;
+        }
+
+        if ($evaluatedAt >= $deadline) {
+            return BlockReason::WINDOW_CLOSED;
+        }
+
+        if ($status === SessionStatus::Scheduled && $evaluatedAt < $start) {
+            return BlockReason::NOT_STARTED;
+        }
+
+        return null;
+    }
 }

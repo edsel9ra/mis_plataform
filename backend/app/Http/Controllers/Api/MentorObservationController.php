@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateNeurocognitiveObservationAction;
+use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\StoreObservationRequest;
 use App\Http\Resources\NeurocognitiveObservationResource;
 use App\Models\Challenge;
@@ -11,6 +12,7 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -21,7 +23,7 @@ class MentorObservationController
         private CreateNeurocognitiveObservationAction $createObservation,
     ) {}
 
-    public function index(Request $request, User $user): JsonResponse
+    public function index(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $authorized = $this->authorizePair($request, $user);
         $this->access->requireEntitlement($authorized, PlanEntitlementService::ATTENTION_TRACKING);
@@ -67,7 +69,7 @@ class MentorObservationController
         return $this->access->mentorPair(
             $request->user(),
             $user,
-            $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'],
+            RelationshipScope::id($request),
         );
     }
 }

@@ -12,7 +12,9 @@ use App\Models\MentorAvailabilityException;
 use App\Models\MentorAvailabilityWindow;
 use App\Models\Session;
 use App\Models\User;
+use App\Enums\AvailabilityMode;
 use App\Services\Scheduling\AvailabilitySlotsService;
+use App\Services\Scheduling\ExceptionConflictsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -89,20 +91,36 @@ class AvailabilityController
         return response()->json(new MentorAvailabilityExceptionResource($exception));
     }
 
-    public function storeException(SaveAvailabilityExceptionRequest $request): JsonResponse
-    {
+    public function storeException(
+        SaveAvailabilityExceptionRequest $request,
+        ExceptionConflictsService $exceptionConflicts,
+    ): JsonResponse {
         $exception = $request->user()->availabilityExceptions()->create($request->validated());
 
-        return response()->json(new MentorAvailabilityExceptionResource($exception), 201);
+        $resource = new MentorAvailabilityExceptionResource($exception);
+
+        if ($exception->mode === AvailabilityMode::Block) {
+            $resource->withConflictingSessions($exceptionConflicts->forException($exception, now()));
+        }
+
+        return response()->json($resource, 201);
     }
 
     public function updateException(
         SaveAvailabilityExceptionRequest $request,
         MentorAvailabilityException $exception,
+        ExceptionConflictsService $exceptionConflicts,
     ): JsonResponse {
         $exception->update($request->validated());
 
-        return response()->json(new MentorAvailabilityExceptionResource($exception->refresh()));
+        $exception = $exception->refresh();
+        $resource = new MentorAvailabilityExceptionResource($exception);
+
+        if ($exception->mode === AvailabilityMode::Block) {
+            $resource->withConflictingSessions($exceptionConflicts->forException($exception, now()));
+        }
+
+        return response()->json($resource);
     }
 
     public function destroyException(MentorAvailabilityException $exception): JsonResponse

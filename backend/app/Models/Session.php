@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Services\Scheduling\Rules\LifecycleRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -67,11 +68,11 @@ class Session extends Model
             }
 
             $endAt = LifecycleRules::sessionEnd(
-                CarbonImmutable::parse($scheduledAt, 'UTC'),
+                DbTime::fromRaw($scheduledAt),
                 (int) $session->duration_minutes,
             );
 
-            $session->end_at = $endAt->format($session->getDateFormat());
+            $session->end_at = DbTime::toRaw($endAt);
         });
     }
 

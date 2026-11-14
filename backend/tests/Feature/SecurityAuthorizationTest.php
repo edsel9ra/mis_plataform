@@ -198,3 +198,41 @@ it('prevents accessing another user certificate', function () {
 
     $this->withToken($token)->getJson("/api/v1/certificates/{$certificate->id}")->assertForbidden();
 });
+
+it('forbids non-matching roles from creating families or cohorts', function (string $role, string $clientType) {
+    $user = User::factory()->create([
+        'role' => $role,
+        'client_type' => $clientType,
+    ]);
+    $token = $user->createToken('test')->plainTextToken;
+
+    $this->withToken($token)
+        ->postJson('/api/v1/family-groups', ['family_name' => 'Forbidden Family'])
+        ->assertForbidden();
+
+    $this->withToken($token)
+        ->postJson('/api/v1/cohorts', ['name' => 'Forbidden Cohort'])
+        ->assertForbidden();
+
+    expect($user->refresh()->client_type)->toBe($clientType);
+})->with([
+    'company admin' => ['company_admin', 'empresa'],
+    'mentor' => ['mentor', 'personal'],
+    'personal mentee' => ['mentee', 'personal'],
+]);
+
+it('lets familiar and grupal mentees create their collectives', function (string $clientType, string $endpoint, array $payload) {
+    $user = User::factory()->create([
+        'role' => 'mentee',
+        'client_type' => $clientType,
+    ]);
+
+    $this->withToken($user->createToken('test')->plainTextToken)
+        ->postJson($endpoint, $payload)
+        ->assertCreated();
+
+    expect($user->refresh()->client_type)->toBe($clientType);
+})->with([
+    'family' => ['familiar', '/api/v1/family-groups', ['family_name' => 'Allowed Family']],
+    'cohort' => ['grupal', '/api/v1/cohorts', ['name' => 'Allowed Cohort']],
+]);

@@ -9,7 +9,6 @@ use App\Http\Resources\CohortMemberResource;
 use App\Http\Resources\CohortResource;
 use App\Models\Cohort;
 use App\Models\CohortMember;
-use App\Models\User;
 use App\Services\ContentAccessService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -27,8 +26,7 @@ class CohortController
         $validated = $request->validated();
 
         $cohort = DB::transaction(function () use ($request, $validated) {
-            $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
-            $user->update(['client_type' => 'grupal']);
+            $user = $request->user();
 
             $cohort = Cohort::create([
                 'created_by' => $user->id,

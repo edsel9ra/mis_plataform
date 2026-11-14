@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\ConfirmAttendanceAction;
 use App\Actions\CancelSessionAction;
 use App\Actions\CompleteSessionAction;
+use App\Actions\ListBookableRelationshipsAction;
 use App\Actions\CreateSessionAction;
 use App\Actions\RescheduleSessionAction;
 use App\Enums\AttendanceStatus;
@@ -15,6 +16,7 @@ use App\Http\Requests\Session\StoreSessionRequest;
 use App\Http\Requests\Session\UpdateSessionRequest;
 use App\Http\Requests\Session\UpdateSessionStatusRequest;
 use App\Http\Requests\Session\RescheduleSessionRequest;
+use App\Http\Resources\BookableRelationshipResource;
 use App\Http\Resources\SessionAttendeeResource;
 use App\Http\Resources\SessionResource;
 use App\Models\MentorshipRelationship;
@@ -22,6 +24,8 @@ use App\Models\Session;
 use App\Services\GoogleMeetService;
 use App\Services\Scheduling\Rules\MeetAutomationRules;
 use App\Services\Scheduling\SchedulingAuditLogger;
+use App\Services\Scheduling\SessionActionAvailability;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -32,6 +36,7 @@ class SessionController
 {
     public function __construct(
         private CreateSessionAction $createSession,
+        private ListBookableRelationshipsAction $listBookableRelationships,
         private ConfirmAttendanceAction $confirmAttendance,
         private CancelSessionAction $cancelSession,
         private RescheduleSessionAction $rescheduleSession,
@@ -69,8 +74,8 @@ class SessionController
         }
 
         if ($hasRange) {
-            $from = CarbonImmutable::parse($request->validated('from'))->utc()->format('Y-m-d H:i:s.u');
-            $to = CarbonImmutable::parse($request->validated('to'))->utc()->format('Y-m-d H:i:s.u');
+            $from = DbTime::toRaw(CarbonImmutable::parse($request->validated('from')));
+            $to = DbTime::toRaw(CarbonImmutable::parse($request->validated('to')));
 
             $query
                 ->where('scheduled_at', '>=', $from)
@@ -83,6 +88,13 @@ class SessionController
             ->paginate($perPage);
 
         return SessionResource::collection($sessions)->response();
+    }
+
+    public function bookableRelationships(Request $request): JsonResponse
+    {
+        $relationships = $this->listBookableRelationships->execute($request->user());
+
+        return BookableRelationshipResource::collection($relationships)->response();
     }
 
     public function store(StoreSessionRequest $request): JsonResponse
@@ -115,7 +127,12 @@ class SessionController
 
         Gate::authorize('view', $session);
 
-        return response()->json(new SessionResource($session));
+        $resource = new SessionResource($session);
+        $resource->withAvailableActions(
+            app(SessionActionAvailability::class)->for($session, $request->user(), now())
+        );
+
+        return response()->json($resource);
     }
 
     public function update(UpdateSessionRequest $request, string $id): JsonResponse

@@ -32,7 +32,7 @@ it('excludes the exact start boundary, past sessions, non-scheduled states, and 
     foreach ($cases as [$status, $scheduledAt, $link, $eventId]) {
         $session = Session::factory()->make([
             'status' => $status,
-            'scheduled_at' => $scheduledAt,
+            'scheduled_at' => dbInstant($scheduledAt),
             'meet_link' => $link,
             'meet_event_id' => $eventId,
         ]);

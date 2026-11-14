@@ -51,6 +51,8 @@ Route::prefix('v1')->group(function () {
     Route::post('/auth/login', [AuthController::class, 'login'])->middleware('throttle:auth-login');
     Route::post('/auth/forgot-password', [AuthController::class, 'forgotPassword'])
         ->middleware('throttle:auth-forgot-password');
+    Route::post('/auth/reset-password', [AuthController::class, 'resetPassword'])
+        ->middleware('throttle:auth-reset-password');
     Route::post('/auth/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
     Route::get('/auth/{provider}/redirect', [AuthController::class, 'redirectToProvider']);
     Route::get('/auth/{provider}/callback', [AuthController::class, 'handleProviderCallback']);
@@ -92,6 +94,7 @@ Route::prefix('v1')->group(function () {
         // Sessions
         Route::get('/sessions', [SessionController::class, 'index']);
         Route::post('/sessions', [SessionController::class, 'store']);
+        Route::get('/sessions/bookable-relationships', [SessionController::class, 'bookableRelationships']);
         Route::get('/sessions/{id}', [SessionController::class, 'show']);
         Route::put('/sessions/{id}', [SessionController::class, 'update']);
         Route::put('/sessions/{id}/reschedule', [SessionController::class, 'reschedule']);
@@ -237,6 +240,7 @@ Route::prefix('v1')->group(function () {
 
         // Notifications
         Route::get('/notifications', [NotificationController::class, 'index']);
+        Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount']);
         Route::put('/notifications/{id}/read', [NotificationController::class, 'markAsRead']);
         Route::put('/notifications/read-all', [NotificationController::class, 'markAllAsRead']);
 

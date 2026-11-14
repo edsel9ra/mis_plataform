@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\ResolveAlertRequest;
 use App\Http\Resources\NeurocognitiveAlertResource;
 use App\Models\NeurocognitiveAlert;
@@ -9,6 +10,7 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -18,7 +20,7 @@ class MentorAlertController
         private MentorWorkspaceAccessService $access,
     ) {}
 
-    public function index(Request $request, User $user): JsonResponse
+    public function index(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $authorized = $this->authorizePair($request, $user);
         if (!$this->access->allowsEntitlement($authorized, PlanEntitlementService::ATTENTION_TRACKING)) {
@@ -58,7 +60,7 @@ class MentorAlertController
         return $this->access->mentorPair(
             $request->user(),
             $user,
-            $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'],
+            RelationshipScope::id($request),
         );
     }
 }

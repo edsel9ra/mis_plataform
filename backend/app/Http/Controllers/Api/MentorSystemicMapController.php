@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\UpsertSystemicMapAction;
+use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\UpsertSystemicMapRequest;
 use App\Http\Resources\SystemicMapResource;
 use App\Models\SystemicMap;
@@ -10,6 +11,7 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 
@@ -20,7 +22,7 @@ class MentorSystemicMapController
         private UpsertSystemicMapAction $upsertMap,
     ) {}
 
-    public function show(Request $request, User $user): JsonResponse
+    public function show(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $authorized = $this->authorizePair($request, $user);
         $this->access->requireEntitlement($authorized, PlanEntitlementService::SYSTEMIC_MAPS);
@@ -69,7 +71,7 @@ class MentorSystemicMapController
         return $this->access->mentorPair(
             $request->user(),
             $user,
-            $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'],
+            RelationshipScope::id($request),
         );
     }
 }

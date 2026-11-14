@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api;
 
 use App\Actions\IssueCertificateAction;
 use App\Http\Requests\Certificate\IssueCertificateRequest;
+use App\Http\Resources\CertificateListResource;
 use App\Http\Resources\CertificateResource;
 use App\Models\Certificate;
 use App\Models\MentorshipRelationship;
@@ -26,7 +27,7 @@ class CertificateController
             ->latest()
             ->paginate($perPage);
 
-        return response()->json($certificates);
+        return response()->json($certificates->through(fn ($certificate) => (new CertificateListResource($certificate))->resolve($request)));
     }
 
     public function issue(IssueCertificateRequest $request): JsonResponse

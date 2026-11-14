@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\CreateChallengeAction;
 use App\Actions\CreateChallengeTemplateAction;
 use App\Actions\AssignChallengeAction;
+use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\StoreChallengeRequest;
 use App\Http\Requests\Mentor\UpdateChallengeRequest;
 use App\Http\Resources\ChallengeResource;
@@ -13,6 +14,7 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -53,7 +55,7 @@ class MentorChallengeController
         return response()->json(new ChallengeResource($challenge), 201);
     }
 
-    public function index(Request $request, User $user): JsonResponse
+    public function index(RelationshipScopedRequest $request, User $user): JsonResponse
     {
         $authorized = $this->authorizePair($request, $user);
         if (!$this->access->allowsEntitlement($authorized, PlanEntitlementService::CHALLENGES)) {
@@ -187,7 +189,7 @@ class MentorChallengeController
 
     private function relationshipId(Request $request): string
     {
-        return $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'];
+        return RelationshipScope::id($request);
     }
 
     private function isOwnedTemplate(User $mentor, Challenge $challenge): bool

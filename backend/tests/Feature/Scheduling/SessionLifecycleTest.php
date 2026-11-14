@@ -26,7 +26,7 @@ function lifecycleSession(string $start, int $duration = 60, string $status = 's
     ]);
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => Carbon::parse($start, 'UTC'),
+        'scheduled_at' => dbInstant($start),
         'duration_minutes' => $duration,
         'status' => $status,
     ]);
@@ -44,7 +44,7 @@ function lifecycleActivities(Session $session)
 }
 
 it('advances scheduled sessions at the exact start time', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-14 10:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-14 10:00:00'));
     Event::fake([SessionLifecycleTransitioned::class]);
     [$session] = lifecycleSession('2026-10-14 10:00:00');
 
@@ -60,7 +60,7 @@ it('advances scheduled sessions at the exact start time', function (): void {
 });
 
 it('closes at the exact end plus 48 hours and prioritizes closure after scheduler lag', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-16 11:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-16 11:00:00'));
     Event::fake([SessionLifecycleTransitioned::class]);
     [$session] = lifecycleSession('2026-10-14 10:00:00', 60);
 
@@ -73,7 +73,7 @@ it('closes at the exact end plus 48 hours and prioritizes closure after schedule
 });
 
 it('does not change any terminal session state', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-20 10:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-20 10:00:00'));
     Event::fake([SessionLifecycleTransitioned::class]);
     [$completed] = lifecycleSession('2026-10-14 10:00:00', status: 'completed');
     [$canceled] = lifecycleSession('2026-10-14 10:00:00', status: 'canceled');
@@ -91,7 +91,7 @@ it('does not change any terminal session state', function (): void {
 });
 
 it('is idempotent across runs and initializes only end-anchored non-excluded attendees once', function (): void {
-    Carbon::setTestNow(Carbon::parse('2026-10-16 11:00:00', 'UTC'));
+    Carbon::setTestNow(dbInstant('2026-10-16 11:00:00'));
     Event::fake([SessionLifecycleTransitioned::class]);
     [$session, $mentor, $mentee] = lifecycleSession('2026-10-14 10:00:00', 60);
     $eligible = User::factory()->create();
@@ -102,32 +102,32 @@ it('is idempotent across runs and initializes only end-anchored non-excluded att
     $eligibleAttendee = SessionAttendee::factory()->create([
         'session_id' => $session->id,
         'user_id' => $eligible->id,
-        'created_at' => Carbon::parse('2026-10-14 09:00:00', 'UTC'),
+        'created_at' => dbInstant('2026-10-14 09:00:00'),
     ]);
     SessionParticipantExclusion::create([
         'session_id' => $session->id,
         'user_id' => $excludedByCase41->id,
-        'excluded_at' => Carbon::parse('2026-10-14 09:00:00', 'UTC'),
+        'excluded_at' => dbInstant('2026-10-14 09:00:00'),
     ]);
     $leftAttendee = SessionAttendee::factory()->create([
         'session_id' => $session->id,
         'user_id' => $leftBeforeEnd->id,
-        'created_at' => Carbon::parse('2026-10-14 09:00:00', 'UTC'),
-        'left_at' => Carbon::parse('2026-10-14 10:30:00', 'UTC'),
+        'created_at' => dbInstant('2026-10-14 09:00:00'),
+        'left_at' => dbInstant('2026-10-14 10:30:00'),
     ]);
     $confirmedAttendee = SessionAttendee::factory()->create([
         'session_id' => $session->id,
         'user_id' => $alreadyConfirmed->id,
-        'created_at' => Carbon::parse('2026-10-14 09:00:00', 'UTC'),
+        'created_at' => dbInstant('2026-10-14 09:00:00'),
         'attendance_status' => 'attended',
         'attended' => true,
         'confirmed_by' => $alreadyConfirmed->id,
-        'confirmed_at' => Carbon::parse('2026-10-14 11:30:00', 'UTC'),
+        'confirmed_at' => dbInstant('2026-10-14 11:30:00'),
     ]);
     SessionAttendanceEvent::factory()->confirmation()->create([
         'session_attendee_id' => $confirmedAttendee->id,
         'recorded_by' => $alreadyConfirmed->id,
-        'occurred_at' => Carbon::parse('2026-10-14 11:30:00', 'UTC'),
+        'occurred_at' => dbInstant('2026-10-14 11:30:00'),
     ]);
 
     $this->artisan('app:advance-session-lifecycle')->assertSuccessful();

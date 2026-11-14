@@ -2,6 +2,7 @@
 
 namespace App\Console\Commands;
 
+use App\Events\NotificationPushed;
 use App\Events\SessionReminder;
 use App\Models\Notification;
 use App\Models\Session;
@@ -85,10 +86,10 @@ class SendSessionReminders extends Command
         $attendees = $session->attendees
             ->map(fn (SessionAttendee $attendee): array => [
                 'user_id' => (string) $attendee->user_id,
-                'created_at' => CarbonImmutable::parse($attendee->created_at, 'UTC'),
+                'created_at' => CarbonImmutable::instance($attendee->created_at),
                 'left_at' => $attendee->left_at === null
                     ? null
-                    : CarbonImmutable::parse($attendee->left_at, 'UTC'),
+                    : CarbonImmutable::instance($attendee->left_at),
             ])
             ->all();
 
@@ -101,7 +102,7 @@ class SendSessionReminders extends Command
                     ->all(),
             ],
             $attendees,
-            CarbonImmutable::parse($session->end_at, 'UTC'),
+            CarbonImmutable::instance($session->end_at),
             $now,
         );
 
@@ -171,6 +172,10 @@ class SendSessionReminders extends Command
                 'horizon_hours' => $hoursUntil,
                 'exception' => $exception::class,
             ]);
+        }
+
+        if ($inserted === 1) {
+            NotificationPushed::dispatch($notification);
         }
     }
 
@@ -257,7 +262,7 @@ class SendSessionReminders extends Command
         $locale = in_array($user->locale, config('app.available_locales', []), true)
             ? $user->locale
             : config('app.fallback_locale', 'es');
-        $scheduledAt = CarbonImmutable::parse($session->scheduled_at, 'UTC')->utc();
+        $scheduledAt = CarbonImmutable::instance($session->scheduled_at)->utc();
         $localizedScheduledAt = $scheduledAt
             ->setTimezone($session->timezone)
             ->locale($locale)

@@ -366,7 +366,8 @@ it('marks a reminder delivered only after its queued broadcast job succeeds and 
         ->sole();
     $queued = Queue::pushed(
         BroadcastEvent::class,
-        fn (BroadcastEvent $job): bool => (string) $job->event->notification->user_id === (string) $user->id,
+        fn (BroadcastEvent $job): bool => $job->event instanceof SessionReminder
+            && (string) $job->event->notification->user_id === (string) $user->id,
     )->first();
     expect($queued)->not->toBeNull();
     expect($notification->status)->toBe('pending')
@@ -392,7 +393,8 @@ it('marks a reminder delivered only after its queued broadcast job succeeds and 
     $this->artisan('app:send-session-reminders')->assertExitCode(0);
     $retry = Queue::pushed(
         BroadcastEvent::class,
-        fn (BroadcastEvent $job): bool => (string) $job->event->notification->user_id === (string) $user->id,
+        fn (BroadcastEvent $job): bool => $job->event instanceof SessionReminder
+            && (string) $job->event->notification->user_id === (string) $user->id,
     )->last();
     expect($retry->event->notification->id)->toBe($notification->id)
         ->and($notification->fresh()->status)->toBe('pending');
@@ -407,7 +409,10 @@ it('marks a reminder delivered only after its queued broadcast job succeeds and 
         ->and($notification->fresh()->sent_at)->not->toBeNull();
 
     $this->artisan('app:send-session-reminders')->assertExitCode(0);
-    Queue::assertPushedTimes(BroadcastEvent::class, 2);
+    expect(Queue::pushed(
+        BroadcastEvent::class,
+        fn (BroadcastEvent $job): bool => $job->event instanceof SessionReminder,
+    ))->toHaveCount(2);
 });
 
 it('retries a failed change-notice broadcast from its durable notification snapshot', function (): void {

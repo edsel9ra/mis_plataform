@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Models\Session;
 use App\Services\Scheduling\MeetAutomationService;
 use App\Services\Scheduling\Rules\MeetAutomationRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 
@@ -24,7 +25,7 @@ final class GenerateMeetLinks extends Command
         $now = CarbonImmutable::now('UTC');
         $sessionIds = Session::query()
             ->where('status', 'scheduled')
-            ->where('scheduled_at', '>', $now)
+            ->where('scheduled_at', '>', DbTime::toRaw($now))
             ->pluck('id');
 
         foreach ($sessionIds as $sessionId) {

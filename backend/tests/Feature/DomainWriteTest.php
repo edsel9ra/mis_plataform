@@ -26,6 +26,8 @@ it('creates a company and links its administrator', function () {
 });
 
 it('creates a family with its head member', function () {
+    $this->user->update(['client_type' => 'familiar']);
+
     $response = $this->withToken($this->token)->postJson('/api/v1/family-groups', [
         'family_name' => 'Atomic Family',
     ])->assertCreated()->assertJsonPath('family_name', 'Atomic Family');
@@ -38,6 +40,8 @@ it('creates a family with its head member', function () {
 });
 
 it('creates a cohort with its creator as an active member', function () {
+    $this->user->update(['client_type' => 'grupal']);
+
     $response = $this->withToken($this->token)->postJson('/api/v1/cohorts', [
         'name' => 'Atomic Cohort',
         'max_members' => 10,

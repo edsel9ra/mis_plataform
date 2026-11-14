@@ -14,8 +14,13 @@ class DatabaseSeeder extends Seeder
             PlanSeeder::class,
             SkillTagSeeder::class,
             EvaluationCatalogSeeder::class,
-            DemoLearningPathSeeder::class,
-            DemoMentorshipSeeder::class,
         ]);
+
+        if (! app()->isProduction()) {
+            $this->call([
+                DemoLearningPathSeeder::class,
+                DemoMentorshipSeeder::class,
+            ]);
+        }
     }
 }

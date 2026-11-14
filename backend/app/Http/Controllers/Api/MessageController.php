@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Events\MessageSent;
+use App\Http\Requests\Message\IndexMessagesRequest;
 use App\Http\Requests\Message\StoreMessageRequest;
 use App\Http\Resources\MessageResource;
 use App\Models\Message;
@@ -12,20 +13,26 @@ use Illuminate\Http\Request;
 
 class MessageController
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexMessagesRequest $request): JsonResponse
     {
         $user = $request->user();
 
         $perPage = min(max((int) $request->input('per_page', 50), 1), 100);
 
-        $messages = Message::whereHas('relationship', function ($query) use ($user) {
+        $query = Message::whereHas('relationship', function ($query) use ($user) {
             $query->forUser($user);
         })
         ->with('sender')
-        ->latest()
-        ->paginate($perPage);
+        ->latest();
 
-        return MessageResource::collection($messages)->response();
+        if ($request->filled('relationship_id')) {
+            $relationship = MentorshipRelationship::findOrFail($request->input('relationship_id'));
+            abort_unless($relationship->involvesUser($user), 403);
+
+            $query->where('relationship_id', $relationship->id);
+        }
+
+        return MessageResource::collection($query->paginate($perPage))->response();
     }
 
     public function store(StoreMessageRequest $request): JsonResponse

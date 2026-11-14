@@ -8,6 +8,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class SessionResource extends JsonResource
 {
+    private ?array $availableActions = null;
+
+    public function withAvailableActions(array $actions): static
+    {
+        $this->availableActions = $actions;
+
+        return $this;
+    }
+
     public function toArray(Request $request): array
     {
         $relationship = $this->relationLoaded('relationship') ? $this->relationship : null;
@@ -63,6 +72,8 @@ class SessionResource extends JsonResource
                 return SessionAttendeeResource::collection($attendees);
             }),
             'reviews' => ReviewResource::collection($this->whenLoaded('reviews')),
+            'available_actions' => $this->when($this->availableActions !== null, fn () => $this->availableActions),
+            'timezone' => $this->when($this->availableActions !== null, $this->timezone),
         ];
     }
 }

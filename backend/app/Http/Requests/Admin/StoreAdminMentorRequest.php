@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Http\Requests\Concerns\NormalizesEmail;
+use Illuminate\Validation\Rules\Password;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreAdminMentorRequest extends FormRequest
@@ -25,7 +26,7 @@ class StoreAdminMentorRequest extends FormRequest
             'name' => ['required', 'string', 'max:255'],
             'last_name' => ['nullable', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8'],
+            'password' => ['required', 'string', Password::defaults()],
             'sex' => ['nullable', 'string', 'in:M,F,N'],
             'birth_date' => ['nullable', 'date'],
             'client_type' => ['required', 'string', 'in:personal,familiar,grupal,empresa'],

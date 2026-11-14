@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Log;
 uses()->group('scheduling', 'meet');
 
 beforeEach(function (): void {
-    CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-10-13 09:00:00', 'UTC'));
+    CarbonImmutable::setTestNow(dbInstant('2026-10-13 09:00:00'));
     $this->credentialsPath = storage_path('app/google-service-account.json');
     $this->previousCredentials = file_exists($this->credentialsPath)
         ? file_get_contents($this->credentialsPath)
@@ -89,7 +89,7 @@ it('creates Meet for future scheduled sessions in the session timezone without g
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'title' => 'Session in Lisbon',
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 13:00:00'),
         'timezone' => 'Europe/Lisbon',
         'duration_minutes' => 45,
         'status' => 'scheduled',
@@ -119,7 +119,7 @@ it('returns an existing Meet link on repeated sweeps without creating a second e
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 13:00:00'),
         'status' => 'scheduled',
         'meet_link' => null,
         'meet_event_id' => null,
@@ -141,7 +141,7 @@ it('returns the persisted event and link from ensure without calling Google agai
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 13:00:00'),
         'status' => 'scheduled',
         'meet_link' => 'https://meet.google.com/already-created',
         'meet_event_id' => 'already-created-event',
@@ -149,7 +149,7 @@ it('returns the persisted event and link from ensure without calling Google agai
 
     $result = app(MeetAutomationService::class)->ensure(
         $session,
-        CarbonImmutable::parse('2026-10-13 09:00:00', 'UTC'),
+        dbInstant('2026-10-13 09:00:00'),
     );
 
     expect($result)->toBe([
@@ -162,7 +162,7 @@ it('returns the persisted event and link from ensure without calling Google agai
 it('skips canceled, started, past, and already-associated sessions', function (): void {
     fakeGoogleMeetEvent();
     $relationship = meetAutomationRelationship();
-    $start = CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC');
+    $start = dbInstant('2026-10-13 13:00:00');
     $canceled = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'scheduled_at' => $start->addHour(),
@@ -175,7 +175,7 @@ it('skips canceled, started, past, and already-associated sessions', function ()
     ]);
     $past = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 08:59:59', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 08:59:59'),
         'status' => 'scheduled',
     ]);
     $hasEvent = Session::factory()->create([
@@ -210,7 +210,7 @@ it('records sanitized failure and retries without rolling back the scheduled ses
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 13:00:00'),
         'status' => 'scheduled',
         'meet_link' => null,
         'meet_event_id' => null,
@@ -220,7 +220,7 @@ it('records sanitized failure and retries without rolling back the scheduled ses
 
     expect($session->fresh()->status)->toBe('scheduled')
         ->and($session->fresh()->meet_attempts)->toBe(1)
-        ->and($session->fresh()->getRawOriginal('meet_last_attempt_at'))->toBe('2026-10-13 09:00:00')
+        ->and($session->fresh()->meet_last_attempt_at->equalTo(dbInstant('2026-10-13 09:00:00')))->toBeTrue()
         ->and($session->fresh()->meet_last_error)->not->toBeEmpty()
         ->and($session->fresh()->meet_last_error)->not->toContain('temporary-test-token');
 
@@ -281,7 +281,7 @@ it('recovers an event created remotely before the insert response is lost instea
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-13 13:00:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-13 13:00:00'),
         'timezone' => 'Europe/Lisbon',
         'status' => 'scheduled',
         'meet_link' => null,
@@ -336,7 +336,7 @@ it('updates the existing event after rescheduling with the session timezone and 
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'title' => 'Reprogrammed session',
-        'scheduled_at' => CarbonImmutable::parse('2026-10-14 16:30:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-14 16:30:00'),
         'timezone' => 'America/Mexico_City',
         'duration_minutes' => 75,
         'status' => 'scheduled',
@@ -411,7 +411,7 @@ it('retries a failed reschedule update on the scheduled sweep using the latest s
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-14 16:30:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-14 16:30:00'),
         'timezone' => 'America/Mexico_City',
         'duration_minutes' => 75,
         'status' => 'scheduled',
@@ -421,7 +421,7 @@ it('retries a failed reschedule update on the scheduled sweep using the latest s
 
     app(MeetAutomationService::class)->synchronizeRescheduled(
         $session->id,
-        CarbonImmutable::parse('2026-10-13 09:00:00', 'UTC'),
+        dbInstant('2026-10-13 09:00:00'),
     );
 
     expect($session->fresh()->meet_attempts)->toBe(1)
@@ -464,7 +464,7 @@ it('recreates a missing remote event without retaining an active duplicate', fun
     $relationship = meetAutomationRelationship();
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => CarbonImmutable::parse('2026-10-14 16:30:00', 'UTC'),
+        'scheduled_at' => dbInstant('2026-10-14 16:30:00'),
         'timezone' => 'America/Mexico_City',
         'status' => 'scheduled',
         'meet_link' => 'https://meet.google.com/old-link',

@@ -7,6 +7,15 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class MentorAvailabilityExceptionResource extends JsonResource
 {
+    private ?array $conflictingSessions = null;
+
+    public function withConflictingSessions(array $conflictingSessions): static
+    {
+        $this->conflictingSessions = $conflictingSessions;
+
+        return $this;
+    }
+
     public function toArray(Request $request): array
     {
         return [
@@ -18,6 +27,7 @@ class MentorAvailabilityExceptionResource extends JsonResource
             'end_time' => $this->end_time?->format('H:i'),
             'timezone' => $this->timezone,
             'reason' => $this->reason,
+            'conflicting_sessions' => $this->when($this->conflictingSessions !== null, $this->conflictingSessions),
         ];
     }
 }

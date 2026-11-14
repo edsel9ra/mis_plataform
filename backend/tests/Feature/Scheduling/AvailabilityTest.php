@@ -279,19 +279,19 @@ it('returns only free slots in the requester timezone without exposing exception
 
     Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => '2026-10-12 16:30:00 UTC',
+        'scheduled_at' => dbInstant('2026-10-12 16:30:00 UTC'),
         'duration_minutes' => 30,
         'status' => 'scheduled',
     ]);
     Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => '2026-10-12 16:00:00 UTC',
+        'scheduled_at' => dbInstant('2026-10-12 16:00:00 UTC'),
         'duration_minutes' => 30,
         'status' => 'canceled',
     ]);
     Session::factory()->create([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => '2026-10-12 17:30:00 UTC',
+        'scheduled_at' => dbInstant('2026-10-12 17:30:00 UTC'),
         'duration_minutes' => 30,
         'status' => 'not_completed',
     ]);

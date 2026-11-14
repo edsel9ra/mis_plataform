@@ -6,15 +6,13 @@ use App\Enums\AttendanceDecision;
 use App\Enums\AttendanceRelation;
 use App\Enums\AttendanceStatus;
 use App\Enums\SessionAttendanceEventType;
-use App\Models\Employee;
-use App\Models\FamilyMember;
-use App\Models\MentorshipRelationship;
 use App\Models\Session;
 use App\Models\SessionAttendanceEvent;
 use App\Models\SessionAttendee;
 use App\Models\User;
+use App\Services\Scheduling\AttendanceEligibility;
+use App\Support\DbTime;
 use App\Services\Scheduling\Rules\AttendanceRules;
-use App\Services\Scheduling\Rules\ParticipantRules;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -24,6 +22,10 @@ use Illuminate\Validation\ValidationException;
 
 class ConfirmAttendanceAction
 {
+    public function __construct(
+        private AttendanceEligibility $eligibility = new AttendanceEligibility(),
+    ) {}
+
     public function execute(
         string $sessionId,
         User $actor,
@@ -58,7 +60,7 @@ class ConfirmAttendanceAction
                 throw new AuthorizationException(__('sessions.attendee_not_registered'));
             }
 
-            $actorRelation = $this->actorRelation($actor, $targetUserId, $relationship);
+            $actorRelation = $this->eligibility->actorRelation($actor, $targetUserId, $relationship);
             $chargeableTargetIds = [];
 
             if ($targetUserId !== (string) $actor->id) {
@@ -66,7 +68,7 @@ class ConfirmAttendanceAction
                     throw new AuthorizationException(__('sessions.attendance_confirmation_denied'));
                 }
 
-                $chargeableTargetIds = $this->chargeableTargetIds($relationship, $session);
+                $chargeableTargetIds = $this->eligibility->chargeableTargetIds($relationship, $session);
 
                 if (! in_array($targetUserId, $chargeableTargetIds, true)) {
                     throw new AuthorizationException(__('sessions.attendance_target_not_chargeable'));
@@ -83,13 +85,15 @@ class ConfirmAttendanceAction
             $decision = AttendanceRules::evaluate(
                 [
                     'status' => (string) $sessionAttributes['status'],
-                    'end_at' => $sessionAttributes['end_at'],
+                    'end_at' => DbTime::fromRaw($sessionAttributes['end_at']),
                     'excluded_user_ids' => $excludedUserIds,
                 ],
                 [
                     'user_id' => (string) $attendeeAttributes['user_id'],
-                    'created_at' => $attendeeAttributes['created_at'],
-                    'left_at' => $attendeeAttributes['left_at'],
+                    'created_at' => DbTime::fromRaw($attendeeAttributes['created_at']),
+                    'left_at' => $attendeeAttributes['left_at'] === null
+                        ? null
+                        : DbTime::fromRaw($attendeeAttributes['left_at']),
                     'confirmed_by' => $attendeeAttributes['confirmed_by'],
                 ],
                 (string) $actor->id,
@@ -111,7 +115,7 @@ class ConfirmAttendanceAction
                 'event_type' => SessionAttendanceEventType::Confirmation,
                 'attendance_status' => $status,
                 'recorded_by' => $actor->id,
-                'occurred_at' => $occurredAt,
+                'occurred_at' => DbTime::toRaw($occurredAt),
             ]);
 
             if ($decision === AttendanceDecision::Update) {
@@ -119,7 +123,7 @@ class ConfirmAttendanceAction
                     'attendance_status' => $status,
                     'attended' => $status === AttendanceStatus::Attended,
                     'confirmed_by' => $actor->id,
-                    'confirmed_at' => $occurredAt,
+                    'confirmed_at' => DbTime::toRaw($occurredAt),
                 ])->save();
             }
 
@@ -139,81 +143,5 @@ class ConfirmAttendanceAction
 
             return $attendee->fresh();
         });
-    }
-
-    private function actorRelation(User $actor, string $targetUserId, MentorshipRelationship $relationship): AttendanceRelation
-    {
-        if ((string) $actor->id === $targetUserId) {
-            return AttendanceRelation::Participant;
-        }
-
-        if ($actor->isAdmin()) {
-            return AttendanceRelation::Other;
-        }
-
-        if ($relationship->mentor_id === $actor->id) {
-            return AttendanceRelation::Mentor;
-        }
-
-        $sourceType = MentorshipRelationship::canonicalSourceType($relationship->source_type);
-
-        if (in_array($sourceType, ['family_group', 'cohort', 'company'], true)
-            && MentorshipRelationship::userCanManageSource($actor, $sourceType, $relationship->source_id)) {
-            return AttendanceRelation::Responsible;
-        }
-
-        return AttendanceRelation::Other;
-    }
-
-    /** @return list<string> */
-    private function chargeableTargetIds(MentorshipRelationship $relationship, Session $session): array
-    {
-        $sourceType = MentorshipRelationship::canonicalSourceType($relationship->source_type);
-        $attendeeIds = $session->attendees()
-            ->pluck('user_id')
-            ->map(static fn ($id): string => (string) $id)
-            ->all();
-
-        if ($sourceType === 'company') {
-            $employeeIds = Employee::query()
-                ->where('company_id', $relationship->source_id)
-                ->whereIn('user_id', $attendeeIds)
-                ->pluck('user_id')
-                ->map(static fn ($id): string => (string) $id)
-                ->all();
-
-            return ParticipantRules::chargeableMembers($sourceType, $employeeIds, []);
-        }
-
-        $members = match ($sourceType) {
-            'family_group' => FamilyMember::query()
-                ->where('family_group_id', $relationship->source_id)
-                ->whereIn('user_id', $attendeeIds)
-                ->orderBy('id')
-                ->get(['user_id', 'age']),
-            'cohort' => FamilyMember::query()
-                ->whereIn('user_id', $attendeeIds)
-                ->orderBy('id')
-                ->get(['user_id', 'age']),
-            default => collect(),
-        };
-        $agesByUserId = [];
-
-        foreach ($members as $member) {
-            $agesByUserId[(string) $member->user_id][] = $member->age;
-        }
-
-        $ageByUserId = [];
-        foreach ($agesByUserId as $userId => $ages) {
-            $knownAges = array_values(array_unique(array_filter(
-                $ages,
-                static fn ($age): bool => is_int($age)
-                    ? $age >= 0
-                    : is_string($age) && ctype_digit($age),
-            )));
-            $ageByUserId[$userId] = count($knownAges) === 1 ? $knownAges[0] : null;
-        }
-
-        return ParticipantRules::chargeableMembers($sourceType, $attendeeIds, $ageByUserId);
     }
 }

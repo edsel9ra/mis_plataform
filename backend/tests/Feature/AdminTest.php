@@ -37,7 +37,7 @@ it('creates platform admins without client type', function () {
         ->postJson('/api/v1/admin/users', [
             'name' => 'Platform',
             'email' => 'platform@example.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
             'role' => 'admin',
             'locale' => 'es',
         ]);
@@ -56,7 +56,7 @@ it('requires client type for non platform users', function () {
         ->postJson('/api/v1/admin/users', [
             'name' => 'Client',
             'email' => 'client@example.com',
-            'password' => 'password123',
+            'password' => 'Password123!',
             'role' => 'mentee',
             'locale' => 'es',
         ]);
@@ -133,4 +133,18 @@ it('denies non-admin users', function () {
     $this->withToken($token)
         ->getJson('/api/v1/admin/users')
         ->assertForbidden();
+});
+
+it('rejects weak passwords when creating users', function () {
+    $response = $this->withToken($this->token)
+        ->postJson('/api/v1/admin/users', [
+            'name' => 'Weak',
+            'email' => 'weak@example.com',
+            'password' => 'password1',
+            'role' => 'admin',
+            'locale' => 'es',
+        ]);
+
+    $response->assertUnprocessable()
+        ->assertJsonValidationErrors(['password']);
 });

@@ -9,15 +9,14 @@ use App\Models\MentorshipRelationship;
 use App\Models\Plan;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Relationship\IndexRelationshipContextRequest;
 use Illuminate\Http\Request;
 
 class RelationshipContextController
 {
-    public function index(Request $request): JsonResponse
+    public function index(IndexRelationshipContextRequest $request): JsonResponse
     {
-        $validated = $request->validate([
-            'mentor_id' => ['nullable', 'uuid'],
-        ]);
+        $validated = $request->validated();
         $user = $request->user();
         $mentor = isset($validated['mentor_id'])
             ? User::active()->where('role', 'mentor')->findOrFail($validated['mentor_id'])

@@ -34,7 +34,7 @@ class CancelSessionAction
 
             Gate::forUser($actor)->authorize('manage', $session);
 
-            if (! in_array($session->status, [SessionStatus::Scheduled->value, SessionStatus::InProgress->value], true)) {
+            if (ChangeRules::cancelBlocker($session->status) !== null) {
                 throw ValidationException::withMessages([
                     'status' => [__('sessions.cancellation_not_eligible')],
                 ]);

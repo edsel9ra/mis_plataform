@@ -3,6 +3,7 @@
 namespace App\Http\Requests\Admin;
 
 use App\Enums\ClientType;
+use Illuminate\Validation\Rules\Password;
 use App\Enums\UserRole;
 use App\Http\Requests\Concerns\NormalizesEmail;
 use App\Models\User;
@@ -46,7 +47,7 @@ class UpdateAdminUserRequest extends FormRequest
             'name' => ['sometimes', 'string', 'max:255'],
             'last_name' => ['sometimes', 'nullable', 'string', 'max:255'],
             'email' => ['sometimes', 'email', Rule::unique('users', 'email')->ignore($this->route('id'))],
-            'password' => ['sometimes', 'string', 'min:8'],
+            'password' => ['sometimes', 'string', Password::defaults()],
             'sex' => ['sometimes', 'string', 'in:M,F,N'],
             'birth_date' => ['sometimes', 'nullable', 'date'],
             'client_type' => [

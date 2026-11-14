@@ -31,7 +31,7 @@ function calendarSessionFor(User $participant, string $scheduledAt, array $attri
 
     return Session::factory()->create(array_merge([
         'relationship_id' => $relationship->id,
-        'scheduled_at' => $scheduledAt,
+        'scheduled_at' => dbInstant($scheduledAt),
     ], $attributes));
 }
 
@@ -76,7 +76,7 @@ it('allows collective participants and explicitly requested authorized managers'
     $session = Session::factory()->create([
         'relationship_id' => $relationship->id,
         'session_type' => 'group',
-        'scheduled_at' => '2026-05-01T12:00:00Z',
+        'scheduled_at' => dbInstant('2026-05-01T12:00:00Z'),
     ]);
     $range = '?from=2026-05-01T00:00:00Z&to=2026-05-02T00:00:00Z';
 

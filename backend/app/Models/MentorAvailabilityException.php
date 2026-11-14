@@ -43,4 +43,21 @@ class MentorAvailabilityException extends Model
     {
         return $this->belongsTo(User::class, 'user_id');
     }
+
+    /**
+     * @return array{mode: AvailabilityMode, start_date: string, end_date: ?string, start_time: ?string, end_time: ?string, timezone: string}
+     */
+    public function toRuleArray(): array
+    {
+        return [
+            'mode' => $this->mode instanceof AvailabilityMode
+                ? $this->mode
+                : AvailabilityMode::from((string) $this->mode),
+            'start_date' => $this->start_date->toDateString(),
+            'end_date' => $this->end_date?->toDateString(),
+            'start_time' => $this->start_time?->format('H:i:s'),
+            'end_time' => $this->end_time?->format('H:i:s'),
+            'timezone' => $this->timezone,
+        ];
+    }
 }

@@ -3,7 +3,10 @@
 use App\Enums\ClientType;
 use App\Models\Plan;
 use App\Models\User;
+use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Facades\Password;
 
 uses()->group('auth');
 
@@ -162,11 +165,100 @@ describe('login', function () {
 
 describe('password reset', function () {
     it('exposes the forgot password endpoint without revealing account existence', function () {
-        $response = $this->postJson('/api/v1/auth/forgot-password', [
+        $existing = User::factory()->create();
+
+        $unknown = $this->postJson('/api/v1/auth/forgot-password', [
             'email' => 'UNKNOWN@EXAMPLE.COM',
         ]);
 
+        $known = $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => $existing->email,
+        ]);
+
+        $unknown->assertOk()->assertJsonStructure(['status']);
+        $known->assertOk();
+
+        expect($unknown->json())
+            ->toEqual($known->json())
+            ->and($unknown->json('status'))->not->toStartWith('passwords.');
+    });
+
+    it('sends a reset notification with a frontend reset URL', function () {
+        Notification::fake();
+
+        $user = User::factory()->create(['locale' => 'es']);
+
+        $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => $user->email,
+        ])->assertOk();
+
+        Notification::assertSentTo($user, ResetPassword::class);
+
+        $notification = new ResetPassword(Password::createToken($user));
+        $actionUrl = $notification->toMail($user)->actionUrl;
+
+        expect($actionUrl)->toStartWith(
+            rtrim(config('app.frontend_url'), '/').'/reset-password?token='
+        )->toContain('&email='.urlencode($user->email));
+    });
+
+    it('prefixes the reset URL with a non-default locale', function () {
+        Notification::fake();
+
+        $user = User::factory()->create(['locale' => 'en']);
+
+        $this->postJson('/api/v1/auth/forgot-password', [
+            'email' => $user->email,
+        ])->assertOk();
+
+        Notification::assertSentTo($user, ResetPassword::class);
+
+        $notification = new ResetPassword(Password::createToken($user));
+
+        expect($notification->toMail($user)->actionUrl)->toStartWith(
+            rtrim(config('app.frontend_url'), '/').'/en/reset-password?token='
+        );
+    });
+
+    it('resets the password with a valid token and revokes sessions', function () {
+        $user = User::factory()->create();
+        $user->createToken('test');
+        $token = Password::createToken($user);
+
+        $response = $this->postJson('/api/v1/auth/reset-password', [
+            'token' => $token,
+            'email' => $user->email,
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ]);
+
         $response->assertOk()->assertJsonStructure(['status']);
+
+        $user->refresh();
+        expect(Hash::check('NewPassword123!', $user->password))->toBeTrue();
+        $this->assertDatabaseMissing('personal_access_tokens', ['tokenable_id' => $user->id]);
+    });
+
+    it('rejects an invalid reset token', function () {
+        $user = User::factory()->create();
+
+        $this->postJson('/api/v1/auth/reset-password', [
+            'token' => 'invalid-token',
+            'email' => $user->email,
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'NewPassword123!',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['email']);
+    });
+
+    it('rejects a mismatched password confirmation', function () {
+        $user = User::factory()->create();
+
+        $this->postJson('/api/v1/auth/reset-password', [
+            'token' => Password::createToken($user),
+            'email' => $user->email,
+            'password' => 'NewPassword123!',
+            'password_confirmation' => 'Different123!',
+        ])->assertUnprocessable()->assertJsonValidationErrors(['password']);
     });
 });
 

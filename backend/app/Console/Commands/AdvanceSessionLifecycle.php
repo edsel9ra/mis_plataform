@@ -11,6 +11,7 @@ use App\Models\SessionAttendanceEvent;
 use App\Models\SessionAttendee;
 use App\Services\Scheduling\Rules\LifecycleRules;
 use App\Services\Scheduling\Rules\ParticipantRules;
+use App\Support\DbTime;
 use Carbon\CarbonImmutable;
 use DateTimeImmutable;
 use Illuminate\Console\Command;
@@ -27,15 +28,16 @@ class AdvanceSessionLifecycle extends Command
     {
         // Persisted session timestamps are UTC instants stored in timestamp columns.
         $now = CarbonImmutable::now('UTC');
+        $nowRaw = DbTime::toRaw($now);
         $autoCloseHours = (int) config('scheduling.not_completed_after_hours', 48);
-        $autoCloseCutoff = $now->subHours($autoCloseHours);
+        $autoCloseCutoff = DbTime::toRaw($now->subHours($autoCloseHours));
 
         $sessionIds = Session::query()
             ->whereIn('status', [SessionStatus::Scheduled->value, SessionStatus::InProgress->value])
-            ->where(function ($query) use ($now, $autoCloseCutoff): void {
-                $query->where(function ($dueToStart) use ($now): void {
+            ->where(function ($query) use ($nowRaw, $autoCloseCutoff): void {
+                $query->where(function ($dueToStart) use ($nowRaw): void {
                     $dueToStart->where('status', SessionStatus::Scheduled->value)
-                        ->where('scheduled_at', '<=', $now);
+                        ->where('scheduled_at', '<=', $nowRaw);
                 })->orWhere('end_at', '<=', $autoCloseCutoff);
             })
             ->pluck('id');
@@ -58,8 +60,8 @@ class AdvanceSessionLifecycle extends Command
 
                 $target = LifecycleRules::next(
                     SessionStatus::from($session->status),
-                    CarbonImmutable::parse($attributes['scheduled_at'], 'UTC'),
-                    CarbonImmutable::parse($attributes['end_at'], 'UTC'),
+                    DbTime::fromRaw($attributes['scheduled_at']),
+                    DbTime::fromRaw($attributes['end_at']),
                     $now,
                 );
 
@@ -117,7 +119,7 @@ class AdvanceSessionLifecycle extends Command
     private function ensureAttendanceInitializations(Session $session, DateTimeImmutable $now): void
     {
         $attributes = $session->getAttributes();
-        $endAt = CarbonImmutable::parse($attributes['end_at'], 'UTC');
+        $endAt = DbTime::fromRaw($attributes['end_at']);
         $attendees = $session->attendees()->get();
         $exclusions = $session->participantExclusions()->pluck('user_id')->map(
             static fn ($id): string => (string) $id,
@@ -132,10 +134,10 @@ class AdvanceSessionLifecycle extends Command
 
                 return [
                     'user_id' => (string) $attendee->user_id,
-                    'created_at' => CarbonImmutable::parse($raw['created_at'], 'UTC'),
+                    'created_at' => DbTime::fromRaw($raw['created_at']),
                     'left_at' => $raw['left_at'] === null
                         ? null
-                        : CarbonImmutable::parse($raw['left_at'], 'UTC'),
+                        : DbTime::fromRaw($raw['left_at']),
                 ];
             })->all(),
             $endAt,
@@ -157,7 +159,7 @@ class AdvanceSessionLifecycle extends Command
                 'event_type' => SessionAttendanceEventType::Initialization,
                 'attendance_status' => AttendanceStatus::NotConfirmed,
                 'recorded_by' => null,
-                'occurred_at' => $endAt,
+                'occurred_at' => DbTime::toRaw($endAt),
             ]);
         }
     }

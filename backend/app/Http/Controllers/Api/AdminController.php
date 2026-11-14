@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Actions\CreateSessionAction;
+use App\Support\LikePattern;
 use App\Actions\CancelSessionAction;
 use App\Actions\RescheduleSessionAction;
 use App\Enums\UserRole;
@@ -18,6 +19,13 @@ use App\Http\Requests\Admin\UpdateAdminSessionStatusRequest;
 use App\Http\Requests\Admin\RescheduleAdminSessionRequest;
 use App\Http\Requests\Session\CancelSessionRequest;
 use App\Http\Requests\Admin\UpdateAdminUserRequest;
+use App\Http\Requests\Admin\StoreEvaluationCatalogRequest;
+use App\Http\Requests\Admin\UpdateEvaluationCatalogRequest;
+use App\Http\Resources\AdminAssessmentResource;
+use App\Http\Resources\AdminCatalogAssessmentResource;
+use App\Http\Resources\AdminPlanResource;
+use App\Http\Resources\AdminSessionResource;
+use App\Http\Resources\AdminUserListResource;
 use App\Http\Resources\AssessmentResource;
 use App\Http\Resources\AssessmentResultResource;
 use App\Http\Resources\AdminMentorResource;
@@ -73,7 +81,7 @@ class AdminController
             ->latest()
             ->paginate($perPage);
 
-        return response()->json($users);
+        return response()->json($users->through(fn ($user) => (new AdminUserListResource($user))->resolve($request)));
     }
 
     public function userShow(string $id): JsonResponse
@@ -153,7 +161,7 @@ class AdminController
             }])
             ->paginate($perPage);
 
-        return response()->json(AdminMentorResource::collection($mentors));
+        return AdminMentorResource::collection($mentors)->response();
     }
 
     public function mentorShow(string $id): JsonResponse
@@ -221,8 +229,8 @@ class AdminController
 
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('title', 'like', "%{$request->search}%")
-                  ->orWhere('description', 'like', "%{$request->search}%");
+                $q->where('title', 'like', LikePattern::contains($request->search))
+                  ->orWhere('description', 'like', LikePattern::contains($request->search));
             });
         }
 
@@ -233,10 +241,10 @@ class AdminController
             }
         });
 
-        return response()->json($sessions);
+        return response()->json($sessions->through(fn ($session) => (new AdminSessionResource($session))->resolve($request)));
     }
 
-    public function sessionShow(string $id): JsonResponse
+    public function sessionShow(Request $request, string $id): JsonResponse
     {
         $session = Session::with(['relationship.mentor', 'relationship.source', 'attendees.user'])
             ->findOrFail($id);
@@ -245,7 +253,7 @@ class AdminController
             $session->setAttribute('meet_link', null);
         }
 
-        return response()->json($session);
+        return response()->json((new AdminSessionResource($session))->resolve($request));
     }
 
     public function sessionStore(StoreAdminSessionRequest $request, CreateSessionAction $createSession): JsonResponse
@@ -404,14 +412,14 @@ class AdminController
 
         $assessments = $query->latest()->paginate($perPage);
 
-        return response()->json($assessments);
+        return response()->json($assessments->through(fn ($assessment) => (new AdminAssessmentResource($assessment))->resolve($request)));
     }
 
-    public function assessmentShow(string $id): JsonResponse
+    public function assessmentShow(Request $request, string $id): JsonResponse
     {
         $assessment = PersonalityAssessment::with('user')->findOrFail($id);
 
-        return response()->json($assessment);
+        return response()->json((new AdminAssessmentResource($assessment))->resolve($request));
     }
 
     public function assessmentStore(StoreAdminAssessmentRequest $request): JsonResponse
@@ -420,7 +428,7 @@ class AdminController
 
         $assessment = PersonalityAssessment::create($validated);
 
-        return response()->json($assessment, 201);
+        return response()->json((new AdminAssessmentResource($assessment))->resolve($request), 201);
     }
 
     public function assessmentUpdate(UpdateAdminAssessmentRequest $request, string $id): JsonResponse
@@ -431,7 +439,7 @@ class AdminController
 
         $assessment->update($validated);
 
-        return response()->json($assessment);
+        return response()->json((new AdminAssessmentResource($assessment))->resolve($request));
     }
 
     public function assessmentDestroy(string $id): JsonResponse
@@ -454,10 +462,10 @@ class AdminController
         if ($request->filled('search')) {
             $term = $request->string('search')->toString();
             $query->where(function ($q) use ($term) {
-                $q->where('slug', 'ilike', "%{$term}%")
-                    ->orWhere('category', 'ilike', "%{$term}%")
-                    ->orWhere('title->es', 'ilike', "%{$term}%")
-                    ->orWhere('title->en', 'ilike', "%{$term}%");
+                $q->where('slug', 'ilike', LikePattern::contains($term))
+                    ->orWhere('category', 'ilike', LikePattern::contains($term))
+                    ->orWhere('title->es', 'ilike', LikePattern::contains($term))
+                    ->orWhere('title->en', 'ilike', LikePattern::contains($term));
             });
         }
 
@@ -469,27 +477,29 @@ class AdminController
             $query->where('is_active', $request->boolean('active'));
         }
 
-        return response()->json($query->paginate($perPage));
+        return response()->json($query->paginate($perPage)->through(fn ($assessment) => (new AdminCatalogAssessmentResource($assessment))->resolve($request)));
     }
 
-    public function evaluationCatalogStore(Request $request): JsonResponse
+    public function evaluationCatalogStore(StoreEvaluationCatalogRequest $request): JsonResponse
     {
-        $assessment = LearningAssessment::create($this->validatedEvaluationCatalogPayload($request));
+        $assessment = LearningAssessment::create($request->validated());
 
-        return response()->json($assessment, 201);
+        return response()->json((new AdminCatalogAssessmentResource($assessment))->resolve($request), 201);
     }
 
-    public function evaluationCatalogShow(string $id): JsonResponse
+    public function evaluationCatalogShow(Request $request, string $id): JsonResponse
     {
-        return response()->json(LearningAssessment::withCount('results')->findOrFail($id));
+        $assessment = LearningAssessment::withCount('results')->findOrFail($id);
+
+        return response()->json((new AdminCatalogAssessmentResource($assessment))->resolve($request));
     }
 
-    public function evaluationCatalogUpdate(Request $request, string $id): JsonResponse
+    public function evaluationCatalogUpdate(UpdateEvaluationCatalogRequest $request, string $id): JsonResponse
     {
         $assessment = LearningAssessment::findOrFail($id);
-        $assessment->update($this->validatedEvaluationCatalogPayload($request, $assessment->id));
+        $assessment->update($request->validated());
 
-        return response()->json($assessment);
+        return response()->json((new AdminCatalogAssessmentResource($assessment))->resolve($request));
     }
 
     public function evaluationCatalogDestroy(string $id): JsonResponse
@@ -517,13 +527,13 @@ class AdminController
             $term = $request->string('search')->toString();
             $query->where(function ($q) use ($term) {
                 $q->whereHas('user', function ($userQuery) use ($term) {
-                    $userQuery->where('name', 'ilike', "%{$term}%")
-                        ->orWhere('last_name', 'ilike', "%{$term}%")
-                        ->orWhere('email', 'ilike', "%{$term}%");
+                    $userQuery->where('name', 'ilike', LikePattern::contains($term))
+                        ->orWhere('last_name', 'ilike', LikePattern::contains($term))
+                        ->orWhere('email', 'ilike', LikePattern::contains($term));
                 })->orWhereHas('assessment', function ($assessmentQuery) use ($term) {
-                    $assessmentQuery->where('slug', 'ilike', "%{$term}%")
-                        ->orWhere('title->es', 'ilike', "%{$term}%")
-                        ->orWhere('title->en', 'ilike', "%{$term}%");
+                    $assessmentQuery->where('slug', 'ilike', LikePattern::contains($term))
+                        ->orWhere('title->es', 'ilike', LikePattern::contains($term))
+                        ->orWhere('title->en', 'ilike', LikePattern::contains($term));
                 });
             });
         }
@@ -549,7 +559,7 @@ class AdminController
             $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
             $plans = Plan::withCount('subscriptions')->paginate($perPage);
 
-            return response()->json($plans);
+            return response()->json($plans->through(fn ($plan) => (new AdminPlanResource($plan))->resolve($request)));
         }
 
         if ($request->isMethod('post')) {
@@ -608,33 +618,6 @@ class AdminController
         return $validated;
     }
 
-    private function validatedEvaluationCatalogPayload(Request $request, ?string $assessmentId = null): array
-    {
-        return $request->validate([
-            'module_id' => ['nullable', 'exists:path_modules,id'],
-            'slug' => ['required', 'string', 'max:120', 'unique:assessments,slug' . ($assessmentId ? ',' . $assessmentId : '')],
-            'title' => ['required', 'array'],
-            'title.es' => ['required', 'string', 'max:200'],
-            'title.en' => ['nullable', 'string', 'max:200'],
-            'title.pt' => ['nullable', 'string', 'max:200'],
-            'short_name' => ['nullable', 'array'],
-            'description' => ['nullable', 'array'],
-            'category' => ['nullable', 'string', 'max:80'],
-            'client_types' => ['nullable', 'array'],
-            'client_types.*' => ['string', 'in:personal,familiar,grupal,empresa'],
-            'questions' => ['required', 'array', 'min:1'],
-            'questions.*.id' => ['nullable'],
-            'questions.*.text' => ['required', 'string'],
-            'questions.*.options' => ['required', 'array', 'min:2', 'max:6'],
-            'questions.*.options.*' => ['required', 'string'],
-            'questions.*.dimension' => ['nullable', 'string', 'max:120'],
-            'questions.*.reverse_score' => ['nullable', 'boolean'],
-            'passing_score' => ['required', 'integer', 'min:0', 'max:100'],
-            'time_limit_minutes' => ['nullable', 'integer', 'min:1', 'max:240'],
-            'is_active' => ['boolean'],
-            'metadata' => ['nullable', 'array'],
-        ]);
-    }
 
     // ──────────────────────────────────────────────
     // Personality-based Recommendations
@@ -669,6 +652,8 @@ class AdminController
             ->withCount(['mentorRelationships as active_mentees_count' => function ($q) {
                 $q->where('status', 'active');
             }])
+            ->orderBy('active_mentees_count')
+            ->limit((int) config('mentor.recommendation_candidate_limit', 200))
             ->get()
             ->map(function ($mentor) use ($ocean) {
                 $mentorOcean = $mentor->personalityAssessment?->getOceanScores() ?? [];

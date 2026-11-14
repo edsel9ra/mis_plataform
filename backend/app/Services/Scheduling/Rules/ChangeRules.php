@@ -40,22 +40,46 @@ final class ChangeRules
         DateTimeInterface $now,
         int $minimumNoticeMinutes = self::DEFAULT_MINIMUM_NOTICE_MINUTES,
     ): bool {
+        return self::rescheduleBlocker($sessionStatus, $scheduledAt, $now, $minimumNoticeMinutes) === null;
+    }
+
+    public static function rescheduleBlocker(
+        string|SessionStatus $sessionStatus,
+        DateTimeInterface $scheduledAt,
+        DateTimeInterface $now,
+        int $minimumNoticeMinutes = self::DEFAULT_MINIMUM_NOTICE_MINUTES,
+    ): ?string {
         $status = $sessionStatus instanceof SessionStatus
             ? $sessionStatus->value
             : $sessionStatus;
 
-        if ($status !== SessionStatus::Scheduled->value) {
-            return false;
+        if (! in_array($status, [SessionStatus::Scheduled->value, SessionStatus::InProgress->value], true)) {
+            return BlockReason::TERMINAL_STATUS;
         }
 
         $utc = new DateTimeZone('UTC');
         $startAt = DateTimeImmutable::createFromInterface($scheduledAt)->setTimezone($utc);
         $evaluatedAt = DateTimeImmutable::createFromInterface($now)->setTimezone($utc);
 
-        if ($startAt <= $evaluatedAt) {
-            return false;
+        if ($status === SessionStatus::InProgress->value || $startAt <= $evaluatedAt) {
+            return BlockReason::ALREADY_STARTED;
         }
 
-        return $startAt >= $evaluatedAt->add(new DateInterval("PT{$minimumNoticeMinutes}M"));
+        if ($startAt < $evaluatedAt->add(new DateInterval("PT{$minimumNoticeMinutes}M"))) {
+            return BlockReason::INSUFFICIENT_NOTICE;
+        }
+
+        return null;
+    }
+
+    public static function cancelBlocker(string|SessionStatus $sessionStatus): ?string
+    {
+        $status = $sessionStatus instanceof SessionStatus
+            ? $sessionStatus->value
+            : $sessionStatus;
+
+        return in_array($status, [SessionStatus::Scheduled->value, SessionStatus::InProgress->value], true)
+            ? null
+            : BlockReason::TERMINAL_STATUS;
     }
 }

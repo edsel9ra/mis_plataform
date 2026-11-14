@@ -27,8 +27,7 @@ class FamilyController
         $validated = $request->validated();
 
         $group = DB::transaction(function () use ($request, $validated) {
-            $user = User::query()->lockForUpdate()->findOrFail($request->user()->id);
-            $user->update(['client_type' => 'familiar']);
+            $user = $request->user();
 
             $group = FamilyGroup::create([
                 'head_user_id' => $user->id,
@@ -82,7 +81,7 @@ class FamilyController
 
         $userId = null;
         if (!empty($validated['email'])) {
-            $user = \App\Models\User::where('email', $validated['email'])->first();
+            $user = User::where('email', $validated['email'])->first();
             if ($user) {
                 $userId = $user->id;
             }

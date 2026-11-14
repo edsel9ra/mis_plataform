@@ -82,3 +82,21 @@ it('expires stale auth cookie on unauthorized profile request', function () {
         ->assertUnauthorized()
         ->assertCookieExpired($cookieName);
 });
+
+it('rejects an invalid timezone', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('test')->plainTextToken;
+
+    $this->withToken($token)->putJson('/api/v1/profile', [
+        'timezone' => 'Mars/Phobos',
+    ])->assertUnprocessable()->assertJsonValidationErrors(['timezone']);
+});
+
+it('accepts a valid timezone', function () {
+    $user = User::factory()->create();
+    $token = $user->createToken('test')->plainTextToken;
+
+    $this->withToken($token)->putJson('/api/v1/profile', [
+        'timezone' => 'America/Mexico_City',
+    ])->assertOk();
+});

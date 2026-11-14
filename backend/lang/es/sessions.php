@@ -24,4 +24,10 @@ return [
     'attendance_confirmation_denied' => 'No tienes autorización para confirmar por esta persona.',
     'attendance_target_not_chargeable' => 'La persona no está a tu cargo para confirmar su asistencia.',
     'attendance_confirmation_unavailable' => 'La asistencia no se puede confirmar fuera de la ventana o para esta sesión.',
+    'complete_forbidden' => 'Solo el mentor de la relación puede completar la sesión.',
+    'complete_terminal' => 'La sesión está en un estado terminal y no puede completarse.',
+    'complete_invalid_schedule' => 'La sesión no tiene un horario de finalización válido.',
+    'complete_not_ended' => 'La sesión solo puede completarse después de su hora de fin.',
+    'complete_window_closed' => 'La ventana para completar la sesión ya se cerró.',
+    'complete_not_started' => 'La sesión aún no ha comenzado y no puede completarse.',
 ];

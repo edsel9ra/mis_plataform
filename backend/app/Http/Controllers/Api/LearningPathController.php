@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Requests\LearningPath\IndexLearningPathsRequest;
 use App\Http\Requests\LearningPath\UpdateLearningProgressRequest;
+use App\Http\Resources\LearningPathResource;
+use App\Http\Resources\UserLearningProgressResource;
 use App\Models\UserLearningProgress;
 use App\Services\ContentAccessService;
 use Illuminate\Http\JsonResponse;
@@ -12,16 +15,14 @@ class LearningPathController
 {
     public function __construct(private ContentAccessService $contentAccess) {}
 
-    public function index(Request $request): JsonResponse
+    public function index(IndexLearningPathsRequest $request): JsonResponse
     {
         $user = $request->user();
         $hasEntitledContent = $this->contentAccess->hasEntitledContent($user);
         $query = $this->contentAccess->learningPaths($user);
 
         if ($request->has('client_type')) {
-            $clientType = $request->validate([
-                'client_type' => ['nullable', 'string', 'in:personal,familiar,grupal,empresa'],
-            ])['client_type'] ?? null;
+            $clientType = $request->validated()['client_type'] ?? null;
 
             if ($clientType !== null) {
                 $query->where('client_type', $clientType);
@@ -29,9 +30,7 @@ class LearningPathController
         }
 
         if ($request->has('personality_type')) {
-            $type = $request->validate([
-                'personality_type' => ['nullable', 'string', 'max:50'],
-            ])['personality_type'] ?? null;
+            $type = $request->validated()['personality_type'] ?? null;
 
             if ($type !== null) {
                 $query->whereJsonContains('personality_tags', $type);
@@ -50,7 +49,7 @@ class LearningPathController
             }]);
         }
 
-        return response()->json($paths);
+        return response()->json(LearningPathResource::collection($paths)->resolve($request));
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -68,7 +67,7 @@ class LearningPathController
             ])
             ->findOrFail($id);
 
-        return response()->json($path);
+        return response()->json((new LearningPathResource($path))->resolve($request));
     }
 
     public function updateProgress(UpdateLearningProgressRequest $request, string $id): JsonResponse
@@ -90,6 +89,6 @@ class LearningPathController
         $progress->started_at ??= now();
         $progress->save();
 
-        return response()->json($progress);
+        return response()->json((new UserLearningProgressResource($progress))->resolve($request));
     }
 }

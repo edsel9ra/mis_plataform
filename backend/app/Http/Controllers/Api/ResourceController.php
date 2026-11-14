@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Http\Resources\LearningResourceResource;
 use App\Models\LearningResource;
 use App\Services\ContentAccessService;
 use Illuminate\Http\JsonResponse;
@@ -27,7 +28,7 @@ class ResourceController
         $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
         $resources = $query->orderBy('order')->paginate($perPage);
 
-        return response()->json($resources);
+        return response()->json($resources->through(fn ($resource) => (new LearningResourceResource($resource))->resolve($request)));
     }
 
     public function show(Request $request, string $id): JsonResponse
@@ -36,6 +37,6 @@ class ResourceController
             ->with('module.learningPath')
             ->findOrFail($id);
 
-        return response()->json($resource);
+        return response()->json((new LearningResourceResource($resource))->resolve($request));
     }
 }

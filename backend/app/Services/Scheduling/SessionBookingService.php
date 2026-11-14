@@ -2,7 +2,6 @@
 
 namespace App\Services\Scheduling;
 
-use App\Enums\AvailabilityMode;
 use App\Models\Cohort;
 use App\Models\CohortMember;
 use App\Models\Company;
@@ -17,6 +16,7 @@ use App\Models\SessionAttendee;
 use App\Models\User;
 use App\Services\ContentAccessService;
 use App\Services\Scheduling\Rules\AvailabilityRules;
+use App\Services\Scheduling\Rules\SessionTypeRules;
 use App\Services\Scheduling\Rules\DuplicateDetector;
 use App\Services\Scheduling\Rules\OverlapDetector;
 use App\Services\Scheduling\Rules\TimezoneRules;
@@ -233,7 +233,7 @@ class SessionBookingService
     private function scheduledAt(mixed $value): Carbon
     {
         try {
-            return Carbon::parse($value);
+            return Carbon::parse($value)->setTimezone((string) config('app.timezone'));
         } catch (\Throwable) {
             $this->reject('scheduled_at', __('sessions.date_not_future'));
         }
@@ -294,13 +294,7 @@ class SessionBookingService
 
     private function expectedSessionType(string $relationshipType): ?string
     {
-        return match ($relationshipType) {
-            'personal' => 'individual',
-            'familiar' => 'family',
-            'grupal' => 'group',
-            'empresa' => 'corporate',
-            default => null,
-        };
+        return SessionTypeRules::forRelationshipType($relationshipType);
     }
 
     private function lockSource(MentorshipRelationship $relationship): mixed
@@ -450,8 +444,8 @@ class SessionBookingService
             ->get()
             ->map(fn (MentorAvailabilityWindow $window): array => [
                 'day_of_week' => (int) $window->day_of_week,
-                'start_time' => (string) $window->start_time,
-                'end_time' => (string) $window->end_time,
+                'start_time' => $window->start_time->format('H:i:s'),
+                'end_time' => $window->end_time->format('H:i:s'),
                 'timezone' => $window->timezone,
             ])
             ->all();
@@ -460,16 +454,7 @@ class SessionBookingService
             ->orderBy('id')
             ->lockForUpdate()
             ->get()
-            ->map(fn (MentorAvailabilityException $exception): array => [
-                'mode' => $exception->mode instanceof AvailabilityMode
-                    ? $exception->mode
-                    : AvailabilityMode::from((string) $exception->mode),
-                'start_date' => $exception->start_date->toDateString(),
-                'end_date' => $exception->end_date?->toDateString(),
-                'start_time' => $exception->start_time?->format('H:i:s'),
-                'end_time' => $exception->end_time?->format('H:i:s'),
-                'timezone' => $exception->timezone,
-            ])
+            ->map(fn (MentorAvailabilityException $exception): array => $exception->toRuleArray())
             ->all();
 
         $decision = AvailabilityRules::check(

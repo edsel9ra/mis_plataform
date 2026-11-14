@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Services\MentorWorkspaceAccessService;
 use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
+use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
 
 class MentorEmotionalCheckInController
@@ -16,9 +17,9 @@ class MentorEmotionalCheckInController
         private MentorWorkspaceAccessService $access,
     ) {}
 
-    public function index(Request $request, User $user): JsonResponse
+    public function index(RelationshipScopedRequest $request, User $user): JsonResponse
     {
-        $relationshipId = $request->validate(['relationship_id' => ['required', 'uuid']])['relationship_id'];
+        $relationshipId = $request->validated()['relationship_id'];
         $authorized = $this->access->mentorPair($request->user(), $user, $relationshipId);
         $this->access->requireEntitlement($authorized, PlanEntitlementService::EMOTIONAL_CHECK_INS);
         $checkIns = EmotionalCheckIn::query()

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Resources\MentorResource;
+use App\Support\LikePattern;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -20,8 +21,8 @@ class MentorController
         if ($request->has('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'ilike', "%{$search}%")
-                  ->orWhere('last_name', 'ilike', "%{$search}%");
+                $q->where('name', 'ilike', LikePattern::contains($search))
+                  ->orWhere('last_name', 'ilike', LikePattern::contains($search));
             });
         }
 
@@ -48,7 +49,7 @@ class MentorController
             }])
             ->paginate($perPage);
 
-        return response()->json(MentorResource::collection($mentors));
+        return MentorResource::collection($mentors)->response();
     }
 
     public function show(string $id): JsonResponse

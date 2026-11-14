@@ -24,4 +24,10 @@ return [
     'attendance_confirmation_denied' => 'You are not authorized to confirm attendance for this person.',
     'attendance_target_not_chargeable' => 'This person is not eligible for your attendance confirmation.',
     'attendance_confirmation_unavailable' => 'Attendance cannot be confirmed outside the window or for this session.',
+    'complete_forbidden' => 'Only the relationship mentor can complete the session.',
+    'complete_terminal' => 'The session is in a terminal state and cannot be completed.',
+    'complete_invalid_schedule' => 'The session does not have a valid end time.',
+    'complete_not_ended' => 'The session can only be completed after its end time.',
+    'complete_window_closed' => 'The window to complete the session has closed.',
+    'complete_not_started' => 'The session has not started yet and cannot be completed.',
 ];
