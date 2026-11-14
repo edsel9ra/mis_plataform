@@ -34,6 +34,7 @@ class ChallengeResource extends JsonResource
             'frequency' => $this->frequency,
             'progress' => $this->progress,
             'status' => $this->status,
+            'path_module_id' => $this->path_module_id,
             'due_at' => $this->due_at,
             'assigned_at' => $this->created_at,
             'completed_at' => $this->completed_at,

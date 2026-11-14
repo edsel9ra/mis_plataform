@@ -15,6 +15,8 @@ use App\Models\Employee;
 use App\Models\FeedbackThread;
 use App\Models\FamilyGroup;
 use App\Models\FamilyMember;
+use App\Models\LearningPath;
+use App\Models\PathModule;
 use App\Models\MediaAsset;
 use App\Models\MentorshipRelationship;
 use App\Models\NeurocognitiveAlert;
@@ -26,9 +28,12 @@ use App\Models\SystemicMap;
 use App\Models\User;
 use App\Models\UserLearningProgress;
 use App\Models\UserSkill;
+use App\Observers\ChallengeObserver;
 use App\Observers\CohortMemberObserver;
 use App\Observers\EmployeeObserver;
 use App\Observers\FamilyMemberObserver;
+use App\Observers\LearningPathObserver;
+use App\Observers\PathModuleObserver;
 use App\Policies\ChallengePolicy;
 use App\Policies\ChallengeSubmissionPolicy;
 use App\Policies\CohortPolicy;
@@ -154,6 +159,10 @@ class AppServiceProvider extends ServiceProvider
         UserLearningProgress::observe(ProgressCacheObserver::class);
         PersonalityAssessment::observe(ProgressCacheObserver::class);
         UserSkill::observe(ProgressCacheObserver::class);
+
+        Challenge::observe(ChallengeObserver::class);
+        PathModule::observe(PathModuleObserver::class);
+        LearningPath::observe(LearningPathObserver::class);
 
         FamilyMember::observe(FamilyMemberObserver::class);
         CohortMember::observe(CohortMemberObserver::class);

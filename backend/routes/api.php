@@ -41,6 +41,8 @@ use App\Http\Controllers\Api\MenteeCheckInController;
 use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
 use App\Http\Controllers\Api\ObjectiveController;
 use App\Http\Controllers\Api\ProgressPanelController;
+use App\Http\Controllers\Api\LearningPathProgressController;
+use App\Http\Controllers\Api\ChallengePathModuleController;
 use App\Http\Controllers\Api\CollectiveProgressController;
 use App\Http\Controllers\Api\MentorProgressController;
 use App\Http\Controllers\Api\AdminProgressController;
@@ -176,6 +178,7 @@ Route::prefix('v1')->group(function () {
         // Progress panel and collective aggregate (RF-3..RF-12)
         Route::get('/progress/panel', [ProgressPanelController::class, 'show']);
         Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
+        Route::get('/progress/learning-paths', [LearningPathProgressController::class, 'index']);
 
         // Mentee workspace activity. Every route resolves the relationship to
         // the authenticated personal user before reading or writing data.
@@ -185,6 +188,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/relationships/{relationship}/emotional-check-ins', [MenteeEmotionalCheckInController::class, 'store']);
         Route::get('/relationships/{relationship}/challenges', [MenteeChallengeController::class, 'index']);
         Route::get('/challenges/{challenge}', [MenteeChallengeController::class, 'show']);
+        Route::put('/challenges/{challenge}/path-module', [ChallengePathModuleController::class, 'update']);
         Route::get('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeIndex']);
         Route::post('/challenges/{challenge}/check-ins', [MenteeCheckInController::class, 'challengeStore']);
         Route::get('/challenges/{challenge}/submissions', [MenteeChallengeController::class, 'submissions']);
@@ -198,6 +202,7 @@ Route::prefix('v1')->group(function () {
             // Progress portfolio and mentee panel (RF-9).
             Route::get('/progress/overview', [MentorProgressController::class, 'index']);
             Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
+            Route::get('/users/{user}/progress/learning-paths', [LearningPathProgressController::class, 'show']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
             Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);

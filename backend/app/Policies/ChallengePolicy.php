@@ -32,6 +32,19 @@ class ChallengePolicy
             && $this->personalRelationship($challenge->relationship);
     }
 
+    public function linkModule(User $user, Challenge $challenge): bool
+    {
+        if ($challenge->status === 'template') {
+            return false;
+        }
+
+        if ($challenge->mentee_id === $user->id) {
+            return $this->personalRelationship($challenge->relationship);
+        }
+
+        return $this->manage($user, $challenge);
+    }
+
     public function create(User $user, MentorshipRelationship $relationship): bool
     {
         return $user->isMentor()

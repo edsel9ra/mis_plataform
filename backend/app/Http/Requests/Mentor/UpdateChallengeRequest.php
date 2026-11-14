@@ -11,6 +11,16 @@ class UpdateChallengeRequest extends FormRequest
         return (bool) $this->user()?->isMentor();
     }
 
+    /**
+     * Validate the body only: `relationship_id` travels as a query scope
+     * parameter read by RelationshipScope and must stay mass-assignment
+     * prohibited without making scoped updates unprocessable.
+     */
+    public function validationData(): array
+    {
+        return $this->post();
+    }
+
     public function rules(): array
     {
         return [
@@ -22,7 +32,7 @@ class UpdateChallengeRequest extends FormRequest
             'presentation_format' => ['nullable', 'string', 'max:80'],
             'frequency' => ['nullable', 'string', 'max:80'],
             'progress' => ['nullable', 'integer', 'between:0,100'],
-            'status' => ['sometimes', 'string', 'in:template,assigned,in_progress,completed,canceled'],
+            'status' => ['sometimes', 'string', 'in:template,assigned,in_progress,completed,canceled,abandoned'],
             'due_at' => ['nullable', 'date'],
             'recording_url' => ['prohibited'],
             'media_url' => ['prohibited'],

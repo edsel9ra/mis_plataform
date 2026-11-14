@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\CreateChallengeAction;
 use App\Actions\CreateChallengeTemplateAction;
 use App\Actions\AssignChallengeAction;
+use App\Actions\TransitionChallengeStatusAction;
 use App\Support\RelationshipScope;
 use App\Http\Requests\Mentor\StoreChallengeRequest;
 use App\Http\Requests\Mentor\UpdateChallengeRequest;
@@ -16,6 +17,7 @@ use App\Services\PlanEntitlementService;
 use Illuminate\Http\JsonResponse;
 use App\Http\Requests\Mentor\RelationshipScopedRequest;
 use Illuminate\Http\Request;
+use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
@@ -26,6 +28,7 @@ class MentorChallengeController
         private CreateChallengeAction $createChallenge,
         private CreateChallengeTemplateAction $createTemplate,
         private AssignChallengeAction $assignChallenge,
+        private TransitionChallengeStatusAction $transitionStatus,
     ) {}
 
     public function catalog(Request $request): JsonResponse
@@ -161,8 +164,8 @@ class MentorChallengeController
         if ($this->isOwnedTemplate($request->user(), $challenge)) {
             Gate::authorize('manage', $challenge);
             $validated = $request->validated();
-            $this->assertValidStatus($challenge, $validated);
-            $challenge->update($validated);
+            $challenge = $this->applyStatusTransition($request->user(), $challenge, $validated);
+            $challenge->update(Arr::except($validated, ['status', 'completed_at']));
 
             return response()->json(new ChallengeResource($challenge->fresh(['mentor', 'mediaAssets'])));
         }
@@ -171,13 +174,8 @@ class MentorChallengeController
         $this->access->requireEntitlement($authorized, PlanEntitlementService::CHALLENGES);
         Gate::authorize('manage', $challenge);
         $validated = $request->validated();
-        $this->assertValidStatus($challenge, $validated);
-
-        if (($validated['status'] ?? null) === 'completed') {
-            $validated['completed_at'] = now();
-        }
-
-        $challenge->update($validated);
+        $challenge = $this->applyStatusTransition($request->user(), $challenge, $validated);
+        $challenge->update(Arr::except($validated, ['status', 'completed_at']));
 
         return response()->json(new ChallengeResource($challenge->fresh(['mentor', 'mentee', 'mediaAssets'])));
     }
@@ -199,15 +197,13 @@ class MentorChallengeController
     }
 
     /** @param array<string, mixed> $validated */
-    private function assertValidStatus(Challenge $challenge, array $validated): void
+    private function applyStatusTransition(User $actor, Challenge $challenge, array $validated): Challenge
     {
-        if (!array_key_exists('status', $validated) || $challenge->canTransitionTo($validated['status'])) {
-            return;
+        if (!array_key_exists('status', $validated)) {
+            return $challenge;
         }
 
-        throw ValidationException::withMessages([
-            'status' => ["A challenge cannot transition from {$challenge->status} to {$validated['status']}."],
-        ]);
+        return $this->transitionStatus->execute($challenge, $actor, $validated['status'], now());
     }
 
     /** @return array<int, \Illuminate\Http\UploadedFile> */

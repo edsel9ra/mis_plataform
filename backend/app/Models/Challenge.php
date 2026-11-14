@@ -20,14 +20,16 @@ class Challenge extends Model
         'in_progress',
         'completed',
         'canceled',
+        'abandoned',
     ];
 
     private const VALID_TRANSITIONS = [
         'template' => ['template'],
-        'assigned' => ['assigned', 'in_progress', 'canceled', 'completed'],
-        'in_progress' => ['in_progress', 'completed', 'canceled'],
+        'assigned' => ['assigned', 'in_progress', 'canceled', 'completed', 'abandoned'],
+        'in_progress' => ['in_progress', 'completed', 'canceled', 'abandoned'],
         'completed' => ['completed'],
         'canceled' => ['canceled'],
+        'abandoned' => ['abandoned', 'assigned', 'in_progress'],
     ];
 
     protected $fillable = [
@@ -85,6 +87,11 @@ class Challenge extends Model
     public function mentor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'mentor_id');
+    }
+
+    public function pathModule(): BelongsTo
+    {
+        return $this->belongsTo(PathModule::class, 'path_module_id');
     }
 
     public function mentee(): BelongsTo

@@ -28,4 +28,14 @@ class PathModule extends Model
     {
         return $this->hasMany(LearningResource::class, 'module_id');
     }
+
+    public function challenges(): HasMany
+    {
+        return $this->hasMany(Challenge::class, 'path_module_id');
+    }
+
+    public function completions(): HasMany
+    {
+        return $this->hasMany(UserModuleCompletion::class, 'path_module_id');
+    }
 }
