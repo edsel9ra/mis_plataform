@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { useSaveMentorNeurocognitive } from '@/hooks/use-mentor-workspace';
-import { mentorObservationSchema, type MentorObservationFormValues } from '@/lib/schemas/mentor-workspace';
+import { mentorObservationSchema, type MentorObservationFormInput, MentorObservationFormValues } from '@/lib/schemas/mentor-workspace';
 import type { AttentionObservation } from '@/types/mentor-workspace';
 
 export function MentorObservationForm({
@@ -23,7 +23,7 @@ export function MentorObservationForm({
 }) {
   const t = useTranslations();
   const mutation = useSaveMentorNeurocognitive(userId, relationshipId);
-  const form = useForm<MentorObservationFormValues>({
+  const form = useForm<MentorObservationFormInput, unknown, MentorObservationFormValues>({
     resolver: zodResolver(mentorObservationSchema),
     defaultValues: observationValues(observation),
   });

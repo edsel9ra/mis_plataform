@@ -3,13 +3,15 @@
 import { useEffect, useState } from 'react';
 import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
-import { api } from '@/lib/api';
+import { api, ApiError } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { fieldErrorPresentation, formErrorAnnouncement, type FieldErrors } from '@/lib/scheduling';
 import { apiIsoToDatetimeLocal, datetimeLocalToApiIso } from '@/lib/datetime';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
 import { useDebouncedValue } from '@/hooks/use-debounced-value';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -17,6 +19,7 @@ import { PageSpinner } from '@/components/ui/spinner';
 import { Alert } from '@/components/ui/alert';
 import { PaginationControls } from '@/components/ui/pagination';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { FormErrorSummary } from '@/components/ui/form-error-summary';
 import { CalendarClock, CheckCircle2, Clock } from 'lucide-react';
 
 interface Session {
@@ -45,6 +48,29 @@ const STATUS_BADGE: Record<string, 'primary' | 'success' | 'warning' | 'danger' 
   scheduled: 'primary', in_progress: 'warning', completed: 'success', canceled: 'danger',
 };
 
+/** Laravel field name → stable DOM id (RF-010.3: errors anchored per field). */
+const SESSION_FIELD_IDS: Record<string, string> = {
+  title: 'admin-session-title',
+  description: 'admin-session-description',
+  session_type: 'admin-session-type',
+  status: 'admin-session-status',
+  scheduled_at: 'admin-session-scheduled-at',
+  duration_minutes: 'admin-session-duration',
+  relationship_id: 'admin-session-relationship',
+};
+
+const SESSION_FIELD_ORDER = [
+  'admin-session-title',
+  'admin-session-description',
+  'admin-session-type',
+  'admin-session-status',
+  'admin-session-scheduled-at',
+  'admin-session-duration',
+  'admin-session-relationship',
+];
+
+const CANCEL_REASON_FIELD_ID = 'admin-cancel-reason';
+
 const emptyForm = {
   title: '', description: '', session_type: 'individual',
   scheduled_at: '', duration_minutes: 60, status: 'scheduled' as string,
@@ -60,14 +86,22 @@ export default function AdminSessions() {
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [mutationError, setMutationError] = useState<unknown>(null);
+  const [modalError, setModalError] = useState<unknown>(null);
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<Session | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<Session | null>(null);
+  const [cancelReason, setCancelReason] = useState('');
+  const [cancelFieldErrors, setCancelFieldErrors] = useState<FieldErrors>(null);
+  const [cancelError, setCancelError] = useState<unknown>(null);
+  const [statusAnnouncement, setStatusAnnouncement] = useState('');
   const [form, setForm] = useState(emptyForm);
   const debouncedSearch = useDebouncedValue(search.trim());
 
   useEffect(() => setPage(1), [debouncedSearch, statusFilter]);
 
-  const { data, isLoading, isFetching, error } = useQuery<PaginatedResponse<Session>>({
+  const { data, isLoading, isFetching, error, refetch } = useQuery<PaginatedResponse<Session>>({
     queryKey: ['admin-sessions', statusFilter, debouncedSearch, page],
     queryFn: async ({ signal }) => {
       const response = await api.get<RawPaginatedResponse<Session>>('/admin/sessions', {
@@ -100,21 +134,42 @@ export default function AdminSessions() {
 
   const createMutation = useMutation({
     mutationFn: (data: typeof emptyForm) => api.post('/admin/sessions', data),
-    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }); closeModal(); },
-    onError: (error) => setMutationError(error),
+    onSuccess: () => { clearModalErrors(); queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }); closeModal(); },
+    onError: handleModalError,
   });
 
   const updateMutation = useMutation({
     mutationFn: ({ id, data }: { id: string; data: Partial<typeof emptyForm> }) => api.put(`/admin/sessions/${id}`, data),
-    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }); closeModal(); },
-    onError: (error) => setMutationError(error),
+    onSuccess: () => { clearModalErrors(); queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }); closeModal(); },
+    onError: handleModalError,
   });
 
-  const updateStatus = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      api.put(`/admin/sessions/${id}/status`, { status }),
-    onSuccess: () => { setMutationError(null); queryClient.invalidateQueries({ queryKey: ['admin-sessions'] }); },
-    onError: (error) => setMutationError(error),
+  const cancelSession = useMutation({
+    mutationFn: ({ id, reason }: { id: string; reason: string }) =>
+      api.put(`/admin/sessions/${id}/status`, { status: 'canceled', reason }),
+    onSuccess: (_data, { id }) => {
+      setMutationError(null);
+      setStatusAnnouncement(t('admin.session_canceled'));
+      setCancelTarget(null);
+      queryClient.invalidateQueries({ queryKey: ['admin-sessions'] });
+      requestAnimationFrame(() => document.getElementById(`session-status-${id}`)?.focus());
+    },
+    onError: (error) => {
+      if (error instanceof ApiError && error.status === 422 && error.errors) {
+        const mapped: Record<string, string[]> = {};
+        const general: string[] = [];
+        for (const [field, messages] of Object.entries(error.errors)) {
+          if (field === 'reason') mapped[CANCEL_REASON_FIELD_ID] = messages;
+          else general.push(...messages);
+        }
+        setCancelFieldErrors(mapped);
+        setCancelError(general.length > 0 ? general.join(' ') : null);
+        const [first] = formErrorAnnouncement(mapped, [CANCEL_REASON_FIELD_ID]);
+        if (first) document.getElementById(first.fieldId)?.focus();
+        return;
+      }
+      setCancelError(error);
+    },
   });
 
   const deleteMutation = useMutation({
@@ -123,10 +178,67 @@ export default function AdminSessions() {
     onError: (error) => setMutationError(error),
   });
 
-  function openCreate() { setMutationError(null); setEditingId(null); setForm(emptyForm); setShowModal(true); }
+  function clearModalErrors() {
+    setModalError(null);
+    setFieldErrors(null);
+  }
+
+  function clearFieldError(fieldId: string) {
+    setFieldErrors((current) => {
+      if (!current?.[fieldId]) return current;
+      const next = { ...current };
+      delete next[fieldId];
+      return Object.keys(next).length > 0 ? next : null;
+    });
+  }
+
+  function handleModalError(error: unknown) {
+    if (error instanceof ApiError && error.status === 422 && error.errors) {
+      // Server field names → stable DOM ids so each message lands next to
+      // its field and in the announced summary (RF-010.3).
+      const mapped: Record<string, string[]> = {};
+      for (const [field, messages] of Object.entries(error.errors)) {
+        mapped[SESSION_FIELD_IDS[field] ?? field] = messages;
+      }
+      setModalError(null);
+      setFieldErrors(mapped);
+      const [first] = formErrorAnnouncement(mapped, SESSION_FIELD_ORDER);
+      if (first) document.getElementById(first.fieldId)?.focus();
+      return;
+    }
+    setModalError(error);
+  }
+
+  function openCancel(session: Session) {
+    setCancelTarget(session);
+    setCancelReason('');
+    setCancelFieldErrors(null);
+    setCancelError(null);
+  }
+
+  function closeCancel() {
+    setCancelTarget(null);
+    setCancelReason('');
+    setCancelFieldErrors(null);
+    setCancelError(null);
+  }
+
+  function handleCancelSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!cancelTarget) return;
+    if (!cancelReason.trim()) {
+      setCancelFieldErrors({ [CANCEL_REASON_FIELD_ID]: [t('admin.cancel_reason_required')] });
+      document.getElementById(CANCEL_REASON_FIELD_ID)?.focus();
+      return;
+    }
+    cancelSession.mutate({ id: cancelTarget.id, reason: cancelReason.trim() });
+  }
+
+  function openCreate() { setMutationError(null); clearModalErrors(); setEditingId(null); setForm(emptyForm); setShowModal(true); }
 
   function openEdit(session: Session) {
     setMutationError(null);
+    clearModalErrors();
     setEditingId(session.id);
     setForm({
       title: session.title, description: session.description || '', session_type: session.session_type,
@@ -136,7 +248,7 @@ export default function AdminSessions() {
     setShowModal(true);
   }
 
-  function closeModal() { setShowModal(false); setEditingId(null); setForm(emptyForm); }
+  function closeModal() { setShowModal(false); setEditingId(null); setForm(emptyForm); clearModalErrors(); }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -149,7 +261,14 @@ export default function AdminSessions() {
   }
 
   if (isLoading) return <PageSpinner />;
-  if (error) return <Alert variant="error">{apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}</Alert>;
+  if (error) return (
+    <Alert variant="error">
+      {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
+      <Button type="button" variant="outline" size="sm" className="ml-3" onClick={() => refetch()}>
+        {t('common.retry')}
+      </Button>
+    </Alert>
+  );
 
   const sessionStats = [
     { label: t('session_statuses.scheduled'), value: data?.data?.filter((item) => item.status === 'scheduled').length ?? 0, icon: CalendarClock, color: 'bg-blue-50 text-blue-700' },
@@ -162,10 +281,10 @@ export default function AdminSessions() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.sessions')}</h1>
-          <p className="mt-1 text-sm text-gray-500">{t('admin.sessions_description')}</p>
+          <p className="mt-1 text-sm text-gray-600">{t('admin.sessions_description')}</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{data?.meta.total ?? 0} {t('common.total')}</span>
+          <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
@@ -194,7 +313,7 @@ export default function AdminSessions() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </div>
             <div className="w-44">
-                <Select options={statusOptions} value={statusFilter}
+                <Select aria-label={t('common.status')} options={statusOptions} value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1); }} />
             </div>
           </div>
@@ -225,7 +344,7 @@ export default function AdminSessions() {
                   <td className="px-4 py-3 text-gray-600">
                     {mentorName(session.relationship?.mentor, t)}
                   </td>
-                  <td className="px-4 py-3">
+                  <td className="px-4 py-3" id={`session-status-${session.id}`} tabIndex={-1}>
                     <Badge variant={STATUS_BADGE[session.status] || 'default'}>{sessionStatusLabel(session.status, t)}</Badge>
                   </td>
                   <td className="px-4 py-3 text-gray-600">
@@ -234,15 +353,18 @@ export default function AdminSessions() {
                    <td className="px-4 py-3 text-gray-600">{session.duration_minutes} {t('common.minutes_short')}</td>
                   <td className="px-4 py-3">
                     <div className="flex gap-2">
-                      <Button variant="outline" size="sm" onClick={() => openEdit(session)}>{t('common.edit')}</Button>
+                      <Button variant="outline" size="sm" aria-label={`${t('common.edit')} ${session.title}`}
+                        onClick={() => openEdit(session)}>
+                        {t('common.edit')}
+                      </Button>
                       {session.status === 'scheduled' && (
-                        <Button variant="outline" size="sm"
-                          onClick={() => updateStatus.mutate({ id: session.id, status: 'completed' })}>
-                           {t('admin.complete_session')}
+                        <Button variant="danger" size="sm" aria-label={`${t('admin.cancel_session')} ${session.title}`}
+                          onClick={() => openCancel(session)}>
+                           {t('admin.cancel_session')}
                         </Button>
                       )}
-                      <Button variant="danger" size="sm"
-                        onClick={() => { if (confirm(t('common.confirm_delete'))) deleteMutation.mutate(session.id); }}>
+                      <Button variant="danger" size="sm" aria-label={`${t('common.delete')} ${session.title}`}
+                        onClick={() => setDeleteTarget(session)}>
                         {t('common.delete')}
                       </Button>
                     </div>
@@ -268,35 +390,130 @@ export default function AdminSessions() {
         )}
       </Card>
 
+      <div role="status" aria-live="polite" className="sr-only">{statusAnnouncement}</div>
+
+      <Dialog open={deleteTarget !== null} onOpenChange={(open) => { if (!open) setDeleteTarget(null); }}>
+        <DialogContent aria-labelledby="admin-session-delete-title" aria-describedby="admin-session-delete-desc">
+          <DialogHeader>
+            <DialogTitle id="admin-session-delete-title">{t('admin.delete_session')}</DialogTitle>
+          </DialogHeader>
+          <p id="admin-session-delete-desc" className="text-sm text-gray-600">
+            {t('admin.delete_session_confirm', { title: deleteTarget?.title ?? '' })}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" type="button" data-autofocus onClick={() => setDeleteTarget(null)}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="danger" type="button" loading={deleteMutation.isPending}
+              onClick={() => { if (deleteTarget) deleteMutation.mutate(deleteTarget.id); setDeleteTarget(null); }}>
+              {t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={cancelTarget !== null} onOpenChange={(open) => { if (!open) closeCancel(); }}>
+        <DialogContent aria-labelledby="admin-session-cancel-title" aria-describedby="admin-session-cancel-desc">
+          <DialogHeader>
+            <DialogTitle id="admin-session-cancel-title">{t('admin.cancel_session')}</DialogTitle>
+          </DialogHeader>
+          <p id="admin-session-cancel-desc" className="text-sm text-gray-600">
+            {t('admin.cancel_session_desc', { title: cancelTarget?.title ?? '' })}
+          </p>
+          <form onSubmit={handleCancelSubmit} className="mt-4 space-y-4" noValidate>
+            <FormErrorSummary
+              title={t('common.validation_error')}
+              errors={formErrorAnnouncement(cancelFieldErrors, [CANCEL_REASON_FIELD_ID])}
+            />
+            {Boolean(cancelError) && (
+              <Alert variant="error">
+                {typeof cancelError === 'string'
+                  ? cancelError
+                  : apiErrorMessage(cancelError, (key) => t(key)) || t('common.error')}
+              </Alert>
+            )}
+            <Textarea
+              id={CANCEL_REASON_FIELD_ID}
+              label={t('admin.cancel_reason')}
+              value={cancelReason}
+              onChange={(e) => {
+                setCancelReason(e.target.value);
+                setCancelFieldErrors((current) => {
+                  if (!current?.[CANCEL_REASON_FIELD_ID]) return current;
+                  const next = { ...current };
+                  delete next[CANCEL_REASON_FIELD_ID];
+                  return Object.keys(next).length > 0 ? next : null;
+                });
+              }}
+              error={fieldErrorPresentation(cancelFieldErrors, CANCEL_REASON_FIELD_ID).messages.join(' ') || undefined}
+              announceError={false}
+              required
+              rows={3}
+              data-autofocus
+            />
+            <DialogFooter>
+              <Button variant="outline" type="button" onClick={closeCancel}>{t('common.back')}</Button>
+              <Button variant="danger" type="submit" loading={cancelSession.isPending}>
+                {t('admin.confirm_cancel_session')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={showModal} onOpenChange={(open) => { if (!open) closeModal(); else setShowModal(true); }}>
         <DialogContent aria-labelledby="admin-session-dialog-title">
           <DialogHeader>
             <DialogTitle id="admin-session-dialog-title">{editingId ? t('admin.edit_session') : t('admin.create_session')}</DialogTitle>
           </DialogHeader>
-            <form onSubmit={handleSubmit} className="mt-4 space-y-4">
-              <Input label={t('admin.session_title')} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} required />
-              <Input label={t('admin.session_description')} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} />
-              <div className="grid grid-cols-2 gap-4">
-                <Select label={t('admin.session_type')} options={[
+            <form onSubmit={handleSubmit} className="mt-4 space-y-4" noValidate>
+              <FormErrorSummary
+                title={t('common.validation_error')}
+                errors={formErrorAnnouncement(fieldErrors, SESSION_FIELD_ORDER)}
+              />
+              {Boolean(modalError) && (
+                <Alert variant="error">{apiErrorMessage(modalError, (key) => t(key)) || t('common.error')}</Alert>
+              )}
+              <Input id={SESSION_FIELD_IDS.title} label={t('admin.session_title')} value={form.title}
+                onChange={e => { setForm({ ...form, title: e.target.value }); clearFieldError(SESSION_FIELD_IDS.title); }}
+                error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.title).messages.join(' ') || undefined}
+                announceError={false} required />
+              <Input id={SESSION_FIELD_IDS.description} label={t('admin.session_description')} value={form.description}
+                onChange={e => { setForm({ ...form, description: e.target.value }); clearFieldError(SESSION_FIELD_IDS.description); }}
+                error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.description).messages.join(' ') || undefined}
+                announceError={false} />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Select id={SESSION_FIELD_IDS.session_type} label={t('admin.session_type')} options={[
                   { value: 'individual', label: t('session_types.individual') },
                   { value: 'family', label: t('session_types.family') },
                   { value: 'group', label: t('session_types.group') },
                   { value: 'corporate', label: t('session_types.corporate') },
-                ]} value={form.session_type} onChange={e => setForm({ ...form, session_type: e.target.value })} />
-                <Select label={t('admin.session_status')} options={statusOptions.slice(1)} value={form.status}
-                  onChange={e => setForm({ ...form, status: e.target.value })} />
+                ]} value={form.session_type}
+                  onChange={e => { setForm({ ...form, session_type: e.target.value }); clearFieldError(SESSION_FIELD_IDS.session_type); }}
+                  error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.session_type).messages.join(' ') || undefined}
+                  announceError={false} />
+                <Select id={SESSION_FIELD_IDS.status} label={t('admin.session_status')} options={statusOptions.slice(1)} value={form.status}
+                  onChange={e => { setForm({ ...form, status: e.target.value }); clearFieldError(SESSION_FIELD_IDS.status); }}
+                  error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.status).messages.join(' ') || undefined}
+                  announceError={false} />
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <Input label={t('admin.scheduled_at')} type="datetime-local" value={form.scheduled_at}
-                  onChange={e => setForm({ ...form, scheduled_at: e.target.value })} required />
-                <Input label={t('admin.duration_minutes')} type="number" value={form.duration_minutes}
-                  onChange={e => setForm({ ...form, duration_minutes: Number(e.target.value) })} required />
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <Input id={SESSION_FIELD_IDS.scheduled_at} label={t('admin.scheduled_at')} type="datetime-local" value={form.scheduled_at}
+                  onChange={e => { setForm({ ...form, scheduled_at: e.target.value }); clearFieldError(SESSION_FIELD_IDS.scheduled_at); }}
+                  error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.scheduled_at).messages.join(' ') || undefined}
+                  announceError={false} required />
+                <Input id={SESSION_FIELD_IDS.duration_minutes} label={t('admin.duration_minutes')} type="number" value={form.duration_minutes}
+                  onChange={e => { setForm({ ...form, duration_minutes: Number(e.target.value) }); clearFieldError(SESSION_FIELD_IDS.duration_minutes); }}
+                  error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.duration_minutes).messages.join(' ') || undefined}
+                  announceError={false} required />
               </div>
               <div className="space-y-2">
-                <Select label={t('admin.relationship')} options={relationshipOptions.map((r) => ({
+                <Select id={SESSION_FIELD_IDS.relationship_id} label={t('admin.relationship')} options={relationshipOptions.map((r) => ({
                   value: r.id, label: relationshipLabel(r, t),
                 }))} value={form.relationship_id}
-                  onChange={e => setForm({ ...form, relationship_id: e.target.value })} required />
+                  onChange={e => { setForm({ ...form, relationship_id: e.target.value }); clearFieldError(SESSION_FIELD_IDS.relationship_id); }}
+                  error={fieldErrorPresentation(fieldErrors, SESSION_FIELD_IDS.relationship_id).messages.join(' ') || undefined}
+                  announceError={false} required />
                 {relationshipsQuery.error && (
                   <Alert variant="error">{apiErrorMessage(relationshipsQuery.error, (key) => t(key)) || t('common.load_error')}</Alert>
                 )}

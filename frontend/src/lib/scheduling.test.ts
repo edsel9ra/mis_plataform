@@ -12,6 +12,9 @@ import {
   type CalendarPeriod,
   type CalendarSessionInput,
   calendarViewState,
+  instantToWallTime,
+  isExistingWallTime,
+  wallTimeToInstant,
 } from './scheduling';
 
 const HOUR_MS = 60 * 60 * 1000;
@@ -601,5 +604,257 @@ describe('calendarViewState (spec 009, RF-009.3)', () => {
   });
   it('ready when items', () => {
     expect(calendarViewState({ isLoading: false, isError: false, itemCount: 3 })).toBe('ready');
+  });
+});
+
+// RF-010.3 (spec 010, T010-02): validation errors must be presented next to
+// the affected field AND announced via an assistive-technology live region.
+import { fieldErrorPresentation, formErrorAnnouncement } from './scheduling';
+
+describe('fieldErrorPresentation', () => {
+  it('normalizes a string error into a single-message presentation', () => {
+    expect(fieldErrorPresentation({ 'admin-session-title': 'required' }, 'admin-session-title')).toEqual({
+      errorId: 'admin-session-title-error',
+      invalid: true,
+      describedBy: 'admin-session-title-error',
+      messages: ['required'],
+    });
+  });
+
+  it('keeps every message of an array error', () => {
+    expect(
+      fieldErrorPresentation({ 'admin-session-duration': ['too small', 'not numeric'] }, 'admin-session-duration'),
+    ).toEqual({
+      errorId: 'admin-session-duration-error',
+      invalid: true,
+      describedBy: 'admin-session-duration-error',
+      messages: ['too small', 'not numeric'],
+    });
+  });
+
+  it('ignores empty strings and empty arrays', () => {
+    const presentation = fieldErrorPresentation(
+      { 'admin-session-title': ['', '  '], other: '' },
+      'admin-session-title',
+    );
+
+    expect(presentation.invalid).toBe(false);
+    expect(presentation.messages).toEqual([]);
+    expect(presentation.describedBy).toBeUndefined();
+    expect(presentation.errorId).toBe('admin-session-title-error');
+  });
+
+  it('marks an unknown field as not invalid but keeps the conventional error id', () => {
+    const presentation = fieldErrorPresentation({ title: 'required' }, 'admin-session-duration');
+
+    expect(presentation).toEqual({
+      errorId: 'admin-session-duration-error',
+      invalid: false,
+      describedBy: undefined,
+      messages: [],
+    });
+  });
+
+  it('handles nullish error bags', () => {
+    expect(fieldErrorPresentation(null, 'admin-session-title').invalid).toBe(false);
+    expect(fieldErrorPresentation(undefined, 'admin-session-title').invalid).toBe(false);
+    expect(fieldErrorPresentation(null, 'admin-session-title').describedBy).toBeUndefined();
+  });
+});
+
+describe('formErrorAnnouncement', () => {
+  it('returns the first message of each invalid field in the given field order', () => {
+    const announcement = formErrorAnnouncement(
+      {
+        'admin-session-duration': ['must be at least 15'],
+        'admin-session-title': 'required',
+      },
+      ['admin-session-title', 'admin-session-duration'],
+    );
+
+    expect(announcement).toEqual([
+      { fieldId: 'admin-session-title', message: 'required' },
+      { fieldId: 'admin-session-duration', message: 'must be at least 15' },
+    ]);
+  });
+
+  it('appends invalid fields missing from fieldOrder in stable key order', () => {
+    const announcement = formErrorAnnouncement(
+      {
+        relationship_id: 'required',
+        title: 'required',
+        description: '',
+      },
+      ['title'],
+    );
+
+    expect(announcement).toEqual([
+      { fieldId: 'title', message: 'required' },
+      { fieldId: 'relationship_id', message: 'required' },
+    ]);
+  });
+
+  it('uses only the first message of each field', () => {
+    const announcement = formErrorAnnouncement(
+      { title: ['first', 'second'] },
+      ['title'],
+    );
+
+    expect(announcement).toEqual([{ fieldId: 'title', message: 'first' }]);
+  });
+
+  it('returns an empty list when there is nothing to announce', () => {
+    expect(formErrorAnnouncement(null, ['title'])).toEqual([]);
+    expect(formErrorAnnouncement({ title: '' }, ['title'])).toEqual([]);
+    expect(formErrorAnnouncement({}, ['title'])).toEqual([]);
+  });
+});
+
+// RF-010.2 (spec 010, T010-03): hidden month chips and day labels must be
+// reachable/legible without a pointer and without color-only meaning.
+import { formatWallDate, monthCellChips } from './scheduling';
+
+describe('monthCellChips', () => {
+  const items = ['a', 'b', 'c', 'd', 'e'];
+
+  it('shows everything and hides nothing when under the limit', () => {
+    expect(monthCellChips(items.slice(0, 3), 3, false)).toEqual({
+      visible: ['a', 'b', 'c'],
+      hiddenCount: 0,
+    });
+  });
+
+  it('truncates at the limit while collapsed and reports the hidden count', () => {
+    expect(monthCellChips(items, 3, false)).toEqual({
+      visible: ['a', 'b', 'c'],
+      hiddenCount: 2,
+    });
+  });
+
+  it('shows every item with zero hidden once expanded', () => {
+    expect(monthCellChips(items, 3, true)).toEqual({
+      visible: items,
+      hiddenCount: 0,
+    });
+  });
+
+  it('handles a zero limit by hiding all items until expanded', () => {
+    expect(monthCellChips(items, 0, false)).toEqual({ visible: [], hiddenCount: 5 });
+    expect(monthCellChips(items, 0, true)).toEqual({ visible: items, hiddenCount: 0 });
+  });
+});
+
+describe('formatWallDate', () => {
+  it('formats a wall date in es with full weekday/month names', () => {
+    expect(formatWallDate('2026-11-13', 'es')).toBe(
+      new Intl.DateTimeFormat('es', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })
+        .format(new Date(Date.UTC(2026, 10, 13))),
+    );
+  });
+
+  it('formats a wall date in en and pt without shifting the day', () => {
+    expect(formatWallDate('2026-11-13', 'en', { weekday: 'short' })).toContain('Fri');
+    expect(formatWallDate('2026-11-01', 'pt', { weekday: 'long' })).toMatch(/domingo/i);
+  });
+
+  it('never shifts the wall day regardless of the process timezone', () => {
+    // Nov 1 2026 is a Sunday; a naive `new Date("2026-11-01")` + local format
+    // could render Oct 31 in negative offsets. The helper must stay UTC-fixed.
+    expect(formatWallDate('2026-11-01', 'en', { day: 'numeric', month: 'numeric', year: 'numeric', timeZone: 'UTC' }))
+      .toContain('1');
+    expect(formatWallDate('2026-11-01', 'en', { weekday: 'long' })).toBe('Sunday');
+  });
+
+  it('rejects malformed wall dates', () => {
+    expect(() => formatWallDate('13-11-2026', 'es')).toThrow(TypeError);
+    expect(() => formatWallDate('not-a-date', 'es')).toThrow(TypeError);
+  });
+});
+
+
+describe('wallTimeToInstant (T016-06)', () => {
+  it('converts a wall time in a fixed-offset zone to ISO UTC', () => {
+    // America/Mexico_City has no DST (UTC-06 all year).
+    expect(wallTimeToInstant('2026-11-16', '14:30', 'America/Mexico_City'))
+      .toBe('2026-11-16T20:30:00Z');
+  });
+
+  it('handles a positive offset zone', () => {
+    // Asia/Kolkata is UTC+05:30.
+    expect(wallTimeToInstant('2026-11-16', '09:15', 'Asia/Kolkata'))
+      .toBe('2026-11-16T03:45:00Z');
+  });
+
+  it('honors a DST-observing zone (Europe/Madrid winter vs summer)', () => {
+    expect(wallTimeToInstant('2026-01-15', '12:00', 'Europe/Madrid'))
+      .toBe('2026-01-15T11:00:00Z');
+    expect(wallTimeToInstant('2026-07-15', '12:00', 'Europe/Madrid'))
+      .toBe('2026-07-15T10:00:00Z');
+  });
+
+  it('resolves a spring-forward gap via the post-transition offset (earlier instant)', () => {
+    // 2026-03-08 02:30 does not exist in America/New_York (gap 02:00–03:00).
+    // Chosen resolution (same as zonedTimeToInstant): the last valid instant
+    // before the gap — 06:30Z ≡ 01:30 EST.
+    expect(wallTimeToInstant('2026-03-08', '02:30', 'America/New_York'))
+      .toBe('2026-03-08T06:30:00Z');
+  });
+
+  it('resolves a fall-back ambiguous wall time to the first occurrence', () => {
+    // 2026-11-01 01:30 exists twice in America/New_York (EDT then EST);
+    // the helper keeps the earlier instant (EDT, UTC-04).
+    expect(wallTimeToInstant('2026-11-01', '01:30', 'America/New_York'))
+      .toBe('2026-11-01T05:30:00Z');
+  });
+
+  it('rejects malformed input', () => {
+    expect(() => wallTimeToInstant('16-11-2026', '10:00', 'America/Mexico_City')).toThrow(TypeError);
+    expect(() => wallTimeToInstant('2026-11-16', '25:00', 'America/Mexico_City')).toThrow(TypeError);
+    expect(() => wallTimeToInstant('2026-11-16', '10:60', 'America/Mexico_City')).toThrow(TypeError);
+    expect(() => wallTimeToInstant('2026-11-16', '10:00', 'Not/AZone')).toThrow(TypeError);
+  });
+});
+
+describe('instantToWallTime (T016-06)', () => {
+  it('returns the wall date and time of an instant in the zone', () => {
+    expect(instantToWallTime('2026-11-16T20:30:00Z', 'America/Mexico_City'))
+      .toEqual({ date: '2026-11-16', time: '14:30' });
+  });
+
+  it('rolls the date across midnight when the zone demands it', () => {
+    expect(instantToWallTime('2026-11-16T02:00:00Z', 'Asia/Kolkata'))
+      .toEqual({ date: '2026-11-16', time: '07:30' });
+  });
+
+  it('round-trips non-gap wall times', () => {
+    for (const timezone of ['America/Mexico_City', 'Europe/Madrid', 'Asia/Kolkata', 'America/New_York']) {
+      for (const [date, time] of [['2026-01-15', '09:45'], ['2026-07-20', '16:05'], ['2026-11-16', '14:30']]) {
+        expect(instantToWallTime(wallTimeToInstant(date, time, timezone), timezone))
+          .toEqual({ date, time });
+      }
+    }
+  });
+});
+
+describe('isExistingWallTime (T016-06 rework)', () => {
+  it('returns true for times that exist in the zone', () => {
+    expect(isExistingWallTime('2026-03-08', '01:30', 'America/New_York')).toBe(true);
+    expect(isExistingWallTime('2026-03-08', '03:30', 'America/New_York')).toBe(true);
+    expect(isExistingWallTime('2026-11-16', '14:30', 'America/Mexico_City')).toBe(true);
+  });
+
+  it('returns false inside a spring-forward gap', () => {
+    expect(isExistingWallTime('2026-03-08', '02:30', 'America/New_York')).toBe(false);
+    expect(isExistingWallTime('2026-03-08', '02:00', 'America/New_York')).toBe(false);
+  });
+
+  it('returns true for ambiguous fall-back times (first occurrence counts)', () => {
+    expect(isExistingWallTime('2026-11-01', '01:30', 'America/New_York')).toBe(true);
+  });
+
+  it('returns false on malformed input instead of throwing', () => {
+    expect(isExistingWallTime('bad', '10:00', 'America/New_York')).toBe(false);
+    expect(isExistingWallTime('2026-11-16', '99:00', 'America/New_York')).toBe(false);
+    expect(isExistingWallTime('2026-11-16', '10:00', 'Not/AZone')).toBe(false);
   });
 });

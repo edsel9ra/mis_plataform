@@ -2,6 +2,18 @@ export const queryKeys = {
   profile: ['profile'] as const,
   recommendations: ['recommendations'] as const,
   sessionsRoot: ['sessions'] as const,
+  // Spec 017: bookable relationships live under their own root so that
+  // `sessionsRoot` invalidations (mutations) don't needlessly refetch them.
+  bookableRelationships: ['bookable-relationships'] as const,
+  availabilityRoot: ['availability'] as const,
+  availabilityWindows: ['availability', 'windows'] as const,
+  availabilityExceptions: ['availability', 'exceptions'] as const,
+  availabilitySlots: (mentorId: string, from: string, to: string, durationMinutes: number) => [
+    'availability',
+    'slots',
+    { mentorId, from, to, duration_minutes: durationMinutes },
+  ] as const,
+  session: (id: string) => ['sessions', id] as const,
   sessions: (page: number, perPage: number) => ['sessions', { page, per_page: perPage }] as const,
   relationshipsRoot: ['relationships'] as const,
   relationships: (page: number, perPage: number) => ['relationships', { page, per_page: perPage }] as const,
@@ -94,6 +106,13 @@ export const queryKeys = {
   mentorProgressOverview: ['mentor', 'progress', 'overview'] as const,
   mentorProgressPanel: (userId: string) => ['mentor', 'progress', 'users', userId] as const,
   adminProgressPanel: (userId: string) => ['admin', 'progress', 'panel', userId] as const,
+
+  // Realtime messaging & notifications (phase 4)
+  notificationsRoot: ['notifications'] as const,
+  notifications: (page: number, perPage: number) => ['notifications', { page, per_page: perPage }] as const,
+  unreadNotificationCount: ['notifications', 'unread-count'] as const,
+  messagesRoot: ['messages'] as const,
+  messages: (relationshipId: string) => ['messages', relationshipId] as const,
 
   // Scheduling calendar (spec 009): ranged reads share the `sessions` root.
   sessionsRange: (from: string, to: string, includeCollectives = false) =>

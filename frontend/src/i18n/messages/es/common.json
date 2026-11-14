@@ -30,7 +30,8 @@
     "assigned_users": "Usuarios asignados",
     "mentor_challenges": "Retos del mentor",
     "mentor_feedback": "Feedback del mentor",
-    "progress": "Progreso"
+    "progress": "Progreso",
+    "availability": "Disponibilidad"
   },
   "auth": {
     "email": "Correo electrónico",
@@ -88,7 +89,22 @@
     "birth_date_invalid": "Formato de fecha inválido (YYYY-MM-DD)",
     "session_verification_error": "No se pudo verificar tu sesión.",
     "logout_error": "No se pudo cerrar la sesión. Inténtalo de nuevo.",
-    "go_to_login": "Ir a iniciar sesión"
+    "go_to_login": "Ir a iniciar sesión",
+    "forgot_password_title": "Recupera tu contraseña",
+    "forgot_password_subtitle": "Introduce tu correo y te enviaremos un enlace para restablecer tu contraseña.",
+    "forgot_password_button": "Enviar enlace",
+    "forgot_password_sent": "Si el correo existe en nuestra plataforma, recibirás un enlace para restablecer tu contraseña.",
+    "reset_password_title": "Restablece tu contraseña",
+    "reset_password_subtitle": "Elige una nueva contraseña para tu cuenta.",
+    "new_password": "Nueva contraseña",
+    "confirm_password": "Confirmar contraseña",
+    "reset_password_button": "Restablecer contraseña",
+    "reset_password_success": "Tu contraseña se ha restablecido correctamente. Ya puedes iniciar sesión.",
+    "reset_password_invalid_link": "El enlace de restablecimiento no es válido o está incompleto.",
+    "password_confirmation_required": "Confirma tu contraseña",
+    "password_mismatch": "Las contraseñas no coinciden",
+    "token_required": "El token es requerido",
+    "back_to_login": "Volver a iniciar sesión"
   },
   "client_types": {
     "personal": "Personal",
@@ -259,7 +275,8 @@
     "cancel": "Cancelar Sesión",
     "duration": "Duración",
     "minutes": "minutos",
-    "date": "Fecha"
+    "date": "Fecha",
+    "manage_availability": "Gestionar disponibilidad"
   },
   "certificates": {
     "subtitle": "Certificados emitidos desde tus relaciones completadas.",
@@ -321,7 +338,19 @@
   "messages": {
     "subtitle": "Conversaciones vinculadas a tus mentorías.",
     "empty_title": "Sin mensajes todavía",
-    "empty_desc": "Las conversaciones aparecerán cuando tengas relaciones de mentoría activas."
+    "empty_desc": "Las conversaciones aparecerán cuando tengas relaciones de mentoría activas.",
+    "conversations": "Conversaciones",
+    "select_conversation": "Selecciona una conversación",
+    "back_to_list": "Volver a conversaciones",
+    "load_older": "Cargar mensajes anteriores",
+    "composer_placeholder": "Escribe un mensaje…",
+    "composer_send": "Enviar mensaje",
+    "composer_sending": "Enviando…",
+    "empty_conversation": "Aún no hay mensajes. ¡Escribe el primero!",
+    "you": "Tú",
+    "new_message_announcement": "Nuevo mensaje recibido",
+    "send_error": "No se pudo enviar el mensaje. Inténtalo de nuevo.",
+    "unknown_participant": "Participante"
   },
   "profile": {
     "subtitle": "Información básica de tu cuenta y tipo de cliente.",
@@ -585,7 +614,6 @@
     "navigation": "Navegación administrativa",
     "sessions_description": "Programa, completa y audita sesiones creadas desde relaciones activas.",
     "search_sessions": "Buscar sesión",
-    "complete_session": "Completar",
     "create_session": "Crear sesión",
     "edit_session": "Editar sesión",
     "session_title": "Título",
@@ -667,7 +695,15 @@
       "sex_invalid": "Selecciona un sexo válido",
       "language_invalid": "Selecciona un idioma válido",
       "password_required": "La contraseña es requerida"
-    }
+    },
+    "delete_session": "Eliminar sesión",
+    "delete_session_confirm": "¿Seguro que quieres eliminar «{title}»? Esta acción no se puede deshacer.",
+    "cancel_session": "Cancelar sesión",
+    "cancel_session_desc": "Vas a cancelar «{title}». Los participantes serán notificados.",
+    "cancel_reason": "Motivo de la cancelación",
+    "cancel_reason_required": "Indica el motivo de la cancelación.",
+    "confirm_cancel_session": "Confirmar cancelación",
+    "session_canceled": "Sesión cancelada."
   },
   "common": {
     "save": "Guardar",
@@ -691,6 +727,7 @@
     "page": "Página",
     "of": "de",
     "previous": "Anterior",
+    "back": "Volver",
     "next": "Siguiente",
     "load_more": "Cargar más",
     "pagination": "Paginación",
@@ -715,7 +752,8 @@
     "skip_to_content": "Saltar al contenido",
     "not_applicable": "No aplica",
     "minutes_short": "min",
-    "seconds_short": "s"
+    "seconds_short": "s",
+    "dismiss": "Descartar"
   },
   "landing": {
     "metric_ocean": "Perfil OCEAN",
@@ -954,6 +992,235 @@
     "meet_pending": "Enlace de Meet pendiente",
     "meet_available": "Enlace de Meet disponible",
     "meet_hidden": "Enlace de Meet oculto",
-    "more_sessions": "más"
+    "more_sessions": "más",
+    "show_more_sessions": "{count, plural, one {Mostrar # sesión más} other {Mostrar # sesiones más}}",
+    "show_fewer_sessions": "Mostrar menos sesiones",
+    "day_sessions_count": "{count, plural, =0 {sin sesiones} one {# sesión} other {# sesiones}}",
+    "region_label": "Calendario de sesiones",
+    "previous_period": "Periodo anterior",
+    "next_period": "Periodo siguiente"
+  },
+  "notifications": {
+    "title": "Notificaciones",
+    "aria_button": "{badge} · Notificaciones, {count} sin leer",
+    "aria_button_none": "Notificaciones, sin leer",
+    "empty": "No tienes notificaciones.",
+    "mark_read": "Marcar como leída",
+    "mark_all_read": "Marcar todas como leídas",
+    "types": {
+      "mentor_alert": "Alerta de mentoría",
+      "session_reminder": "Recordatorio de sesión",
+      "session_change": "Cambio de sesión",
+      "generic": "Notificación"
+    },
+    "just_now": "ahora",
+    "minutes_ago": "hace {count} min",
+    "hours_ago": "hace {count} h",
+    "days_ago": "hace {count} d"
+  },
+  "reminders": {
+    "region_label": "Recordatorios de sesiones",
+    "view_session": "Ver sesión",
+    "default_title": "Recordatorio de sesión"
+  },
+  "session_actions": {
+    "reasons": {
+      "terminal_status": "La sesión ya está cerrada (cancelada, completada o no completada).",
+      "already_started": "La sesión ya ha comenzado.",
+      "insufficient_notice": "Se necesitan al menos 2 horas de antelación.",
+      "invalid_schedule": "La sesión no tiene un horario válido.",
+      "not_ended": "La sesión todavía no ha terminado.",
+      "window_closed": "El plazo para esta acción ya se cerró.",
+      "not_started": "La sesión todavía no ha comenzado.",
+      "not_registered": "Esta persona no está registrada en la sesión.",
+      "excluded": "Esta persona fue excluida de la sesión.",
+      "forbidden": "No tienes permiso para esta acción.",
+      "not_chargeable": "Esta persona no está a tu cargo.",
+      "already_confirmed_by_member": "La persona ya confirmó su propia asistencia.",
+      "unknown": "Esta acción no está disponible ahora."
+    },
+    "attendance_status": {
+      "not_confirmed": "Sin confirmar",
+      "attended": "Asistió",
+      "absent": "No asistió"
+    },
+    "validation": {
+      "date_required": "Indica la fecha.",
+      "date_invalid": "Indica una fecha válida.",
+      "time_required": "Indica la hora.",
+      "time_invalid": "Indica una hora válida.",
+      "duration_invalid": "La duración debe estar entre 15 y 480 minutos.",
+      "timezone_required": "Indica la zona horaria.",
+      "timezone_invalid": "La zona horaria no es válida.",
+      "reason_required": "Indica el motivo.",
+      "status_invalid": "Indica un estado de asistencia válido.",
+      "time_nonexistent": "Esa hora no existe en esta zona por el cambio de horario."
+    },
+    "cancel": {
+      "button": "Cancelar sesión",
+      "title": "Cancelar sesión",
+      "description": "Se avisará a los participantes. Esta acción no se puede deshacer.",
+      "reason_label": "Motivo de la cancelación",
+      "late_warning": "Es una cancelación tardía: faltan menos de {hours} horas para el inicio.",
+      "confirm": "Confirmar cancelación",
+      "success": "Sesión cancelada."
+    },
+    "complete": {
+      "button": "Completar sesión",
+      "title": "Completar sesión",
+      "description": "La sesión quedará marcada como completada. Esta acción no se puede deshacer.",
+      "confirm": "Completar",
+      "success": "Sesión completada."
+    },
+    "common": {
+      "dismiss": "Volver",
+      "stale_notice": "La sesión cambió mientras tanto. Hemos actualizado su estado y sus acciones.",
+      "forbidden": "Ya no tienes permiso para esta acción.",
+      "not_found": "La sesión ya no está disponible."
+    },
+    "reschedule": {
+      "button": "Reprogramar sesión",
+      "title": "Reprogramar sesión",
+      "description": "Elige la nueva fecha y hora. Se avisará a los participantes.",
+      "date": "Fecha",
+      "time": "Hora",
+      "duration": "Duración (minutos)",
+      "timezone": "Zona horaria",
+      "reason": "Motivo (opcional)",
+      "confirm": "Reprogramar",
+      "success": "Sesión reprogramada para {when}."
+    },
+    "attendance": {
+      "title": "Asistencia",
+      "self": "Tú",
+      "attended": "Asistió",
+      "absent": "No asistió",
+      "mark_self_attended": "Marcar que asistí",
+      "mark_self_absent": "Marcar que no asistí",
+      "mark_attended": "Marcar a {name} como asistió",
+      "mark_absent": "Marcar a {name} como no asistió",
+      "current": "Estado actual: {status}",
+      "success": "Asistencia registrada: {name} — {status}.",
+      "unknown_person": "Participante"
+    },
+    "actions": {
+      "title": "Acciones",
+      "blocked_item": "{action}: {reason}",
+      "names": {
+        "reschedule": "Reprogramar",
+        "cancel": "Cancelar",
+        "complete": "Completar"
+      }
+    }
+  },
+  "availability": {
+    "validation": {
+      "day_of_week_required": "Indica el día de la semana.",
+      "day_of_week_invalid": "Indica un día de la semana válido.",
+      "end_time_order": "La hora de fin debe ser posterior a la de inicio.",
+      "end_date_order": "La fecha de fin no puede ser anterior a la de inicio.",
+      "times_paired": "Indica hora de inicio y de fin, o deja ambas vacías para todo el día.",
+      "mode_invalid": "Indica un modo de excepción válido."
+    },
+    "title": "Disponibilidad",
+    "mentor_only": "La disponibilidad solo está disponible para mentores.",
+    "go_to_agenda": "Ir a la agenda",
+    "weekly": {
+      "title": "Horario semanal",
+      "zone_note": "Las horas se muestran en la zona de cada franja.",
+      "add": "Añadir franja",
+      "empty_day": "Sin franjas",
+      "empty": "Aún no has definido tu horario. Mientras no haya franjas, se te podrá reservar a cualquier hora libre.",
+      "edit": "Editar",
+      "delete": "Eliminar",
+      "edit_label": "Editar franja del {day} {range}",
+      "delete_label": "Eliminar franja del {day} {range}"
+    },
+    "window": {
+      "create_title": "Nueva franja",
+      "edit_title": "Editar franja",
+      "day": "Día",
+      "start": "Inicio",
+      "end": "Fin",
+      "timezone": "Zona horaria",
+      "save": "Guardar",
+      "saved": "Franja guardada: {day} {range}.",
+      "delete_title": "Eliminar franja",
+      "delete_description": "Se eliminará la franja del {day} {range}. Las sesiones ya reservadas no cambian.",
+      "delete_confirm": "Eliminar",
+      "deleted": "Franja eliminada."
+    },
+    "exceptions": {
+      "title": "Excepciones",
+      "note": "Bloquea días u horas concretos, o abre horas fuera de tu horario habitual. El motivo solo lo ves tú.",
+      "add": "Añadir excepción",
+      "empty": "No tienes excepciones próximas.",
+      "mode_block": "Bloqueo",
+      "mode_open": "Apertura",
+      "all_day": "Todo el día",
+      "reason_private": "Motivo (privado): {reason}",
+      "edit_label": "Editar excepción {period}",
+      "delete_label": "Eliminar excepción {period}",
+      "create_title": "Nueva excepción",
+      "edit_title": "Editar excepción",
+      "mode_legend": "Tipo",
+      "mode_block_help": "No se podrá reservar en ese periodo.",
+      "mode_open_help": "Se podrá reservar aunque esté fuera de tu horario.",
+      "start_date": "Desde",
+      "end_date": "Hasta (opcional)",
+      "end_date_hint": "Déjalo vacío para un solo día.",
+      "reason": "Motivo (opcional)",
+      "reason_hint": "Solo lo verás tú; quien reserva no ve el motivo.",
+      "saved": "Excepción guardada.",
+      "delete_title": "Eliminar excepción",
+      "delete_description": "Se eliminará la excepción {period}. Las sesiones ya reservadas no cambian.",
+      "deleted": "Excepción eliminada.",
+      "conflicts": {
+        "title": "Tienes {count, plural, one {# sesión} other {# sesiones}} en el periodo bloqueado",
+        "body": "Se mantienen. Si no puedes atenderlas, reprográmalas o cancélalas desde su detalle.",
+        "dismiss": "Cerrar aviso"
+      }
+    }
+  },
+  "booking": {
+    "validation": {
+      "relationship_required": "Indica la relación.",
+      "title_required": "Indica un título.",
+      "title_too_long": "El título no puede superar 200 caracteres."
+    },
+    "book": "Reservar sesión",
+    "back": "Volver a la agenda",
+    "no_relationships": "No tienes relaciones activas en las que puedas reservar.",
+    "step1": "1. Relación y duración",
+    "relationship": "Relación",
+    "relationship_placeholder": "Elige una relación",
+    "duration": "Duración (minutos)",
+    "step2": "2. Elige un hueco",
+    "week": "Semana del {start} al {end}",
+    "prev_week": "Semana anterior",
+    "next_week": "Semana siguiente",
+    "zone_note": "Horas en tu zona: {tz}",
+    "day_option": "{day}: {count, plural, one {# hueco} other {# huecos}}",
+    "day_none": "{day}: sin huecos",
+    "slot_label": "{range}, {date} ({tz})",
+    "slot_selected": "Hueco seleccionado: {date}, {range} ({tz}).",
+    "loading_slots": "Cargando huecos…",
+    "empty_week": "No hay huecos libres esta semana. Prueba otra semana o cambia la duración.",
+    "searching": "Buscando la primera semana con huecos…",
+    "no_slots_horizon": "No hay huecos libres en las próximas {weeks} semanas. Prueba otra duración o vuelve más tarde.",
+    "step3": "3. Detalles y confirmación",
+    "title": "Título",
+    "description": "Descripción (opcional)",
+    "summary_relationship": "Relación",
+    "summary_when": "Fecha y hora",
+    "summary_duration": "Duración",
+    "duration_value": "{minutes} min",
+    "collective_note": "Se reservará para todo el colectivo {source}. Si alguien del colectivo tiene otra sesión a esa hora, no se podrá reservar.",
+    "confirm": "Confirmar reserva",
+    "slot_taken": "Ese hueco ya no está libre. Elige otro.",
+    "success_created": "Sesión reservada: {title}, {when}.",
+    "success_existing": "Esta sesión ya estaba reservada: {title}, {when}.",
+    "view_session": "Ver la sesión",
+    "book_another": "Reservar otra"
   }
 }

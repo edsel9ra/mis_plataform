@@ -1,13 +1,16 @@
 import { useId, type InputHTMLAttributes, type Ref } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   error?: string;
+  /** When false the field error keeps no live role (the form summary announces). */
+  announceError?: boolean;
   ref?: Ref<HTMLInputElement>;
 }
 
-export function Input({ className, label, error, id, ref, ...props }: InputProps) {
+export function Input({ className, label, error, announceError = true, id, ref, 'aria-describedby': describedBy, 'aria-invalid': ariaInvalid, ...props }: InputProps) {
   const generatedId = useId();
   const inputId = id ?? label?.toLowerCase().replace(/\s+/g, '-') ?? generatedId;
   const errorId = `${inputId}-error`;
@@ -31,12 +34,13 @@ export function Input({ className, label, error, id, ref, ...props }: InputProps
             : 'border-gray-300',
           className,
         )}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
+        aria-invalid={error ? (ariaInvalid ?? true) : ariaInvalid}
+        aria-describedby={error ? cn(errorId, describedBy) : describedBy}
         {...props}
       />
       {error && (
-        <p id={errorId} className="text-sm text-red-600" role="alert">
+        <p id={errorId} className="flex items-center gap-1 text-sm text-red-600" role={announceError ? 'alert' : undefined}>
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}

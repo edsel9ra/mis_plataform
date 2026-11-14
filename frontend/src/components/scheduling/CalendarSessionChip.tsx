@@ -39,13 +39,7 @@ export function CalendarSessionChip({
       )}
     >
       <div className="flex items-start justify-between gap-2">
-        <Link
-          href={detailHref}
-          // Stretched target without breaking the nested Meet anchor below.
-          className="rounded-lg p-1 -m-1 font-semibold text-gray-950 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 after:absolute after:inset-0"
-        >
-          {item.startTimeLabel}
-        </Link>
+        <p className="font-semibold text-gray-950">{item.startTimeLabel}</p>
         <Badge variant={sessionStatusVariant(item.status)}>
           {sessionStatusLabel(item.status, t)}
         </Badge>
@@ -53,8 +47,13 @@ export function CalendarSessionChip({
 
       <Link
         href={detailHref}
-        className="mt-1 block rounded-lg p-1 -m-1 text-sm font-semibold text-gray-950 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+        // One tab stop per session: stretched link whose name carries time,
+        // title and status; the Meet anchor stays reachable via z-10.
+        className="mt-1 block rounded-lg p-1 -m-1 text-sm font-semibold text-gray-950 underline-offset-2 hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 after:absolute after:inset-0"
       >
+        <span className="sr-only">
+          {item.startTimeLabel} — {sessionStatusLabel(item.status, t)} —{' '}
+        </span>
         {item.title}
       </Link>
 

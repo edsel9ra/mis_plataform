@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { cookies } from 'next/headers';
 import { Fraunces, Instrument_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
-import { getMessages, getLocale, getTranslations } from 'next-intl/server';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { RealtimeProvider } from '@/components/realtime/RealtimeProvider';
 import { QueryProvider } from '@/lib/query-provider';
 import { getSiteUrl } from '@/lib/site-url';
+import type { RealtimeConfig } from '@/lib/realtime';
 import './globals.css';
 
 const siteUrl = getSiteUrl();
@@ -74,9 +76,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const locale = await getLocale();
-  const messages = await getMessages();
   const t = await getTranslations();
   const initialHasAuthCookie = (await cookies()).has(authCookieName);
+
+  const reverbConfig: RealtimeConfig | null = process.env.REVERB_APP_KEY
+    ? {
+        key: process.env.REVERB_APP_KEY,
+        host: process.env.REVERB_PUBLIC_HOST || 'localhost',
+        port: Number(process.env.REVERB_PUBLIC_PORT || 8080),
+        scheme: process.env.REVERB_PUBLIC_SCHEME || 'http',
+      }
+    : null;
 
   const jsonLd = {
     '@context': 'https://schema.org',
@@ -100,10 +110,12 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-paper font-sans text-ink antialiased">
-        <NextIntlClientProvider messages={messages}>
+        <NextIntlClientProvider>
           <QueryProvider>
             <AuthProvider initialHasAuthCookie={initialHasAuthCookie}>
-              {children}
+              <RealtimeProvider config={reverbConfig}>
+                {children}
+              </RealtimeProvider>
             </AuthProvider>
           </QueryProvider>
         </NextIntlClientProvider>

@@ -17,14 +17,14 @@ export function CalendarDayView({ rangeFrom, items }: CalendarDayViewProps) {
 
   return (
     <section aria-label={t('calendar.period_day')} className="space-y-3">
-      <h3 className="text-sm font-semibold text-gray-950">
+      <h2 className="text-sm font-semibold text-gray-950">
         {new Intl.DateTimeFormat(locale, {
           weekday: 'long',
           day: 'numeric',
           month: 'long',
           year: 'numeric',
         }).format(new Date(rangeFrom))}
-      </h3>
+      </h2>
       {items.length === 0 ? (
         <p className="rounded-2xl border border-dashed border-gray-300 bg-white p-6 text-sm text-gray-500">
           {t('calendar.no_sessions_in_day')}

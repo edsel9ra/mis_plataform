@@ -48,7 +48,7 @@ export function ObjectiveForm({
   const mutation = isEdit ? update : create;
 
   const form = useForm<ObjectiveFormShape>({
-    resolver: zodResolver(isEdit ? objectiveUpdateSchema : objectiveSchema) as Resolver<ObjectiveFormShape>,
+    resolver: zodResolver(isEdit ? objectiveUpdateSchema : objectiveSchema) as unknown as Resolver<ObjectiveFormShape>,
     defaultValues: {
       scope: (objective?.scope as ObjectiveScope) ?? 'individual',
       owner_id: objective?.owner_id ?? ownerId,

@@ -64,7 +64,7 @@ export function CalendarPeriodSelector({
         <button
           type="button"
           onClick={onPrevious}
-          aria-label={t('common.previous')}
+          aria-label={t('calendar.previous_period')}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         >
           <ChevronLeft className="h-4 w-4" aria-hidden="true" />
@@ -79,7 +79,7 @@ export function CalendarPeriodSelector({
         <button
           type="button"
           onClick={onNext}
-          aria-label={t('common.next')}
+          aria-label={t('calendar.next_period')}
           className="inline-flex h-9 w-9 items-center justify-center rounded-xl border border-gray-200 bg-white text-gray-600 shadow-sm transition-colors hover:bg-gray-50 hover:text-gray-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
         >
           <ChevronRight className="h-4 w-4" aria-hidden="true" />

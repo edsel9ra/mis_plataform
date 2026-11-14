@@ -131,6 +131,12 @@ export default function LoginPage() {
                 {...register('password')}
               />
 
+              <div className="text-right text-sm">
+                <Link href={localePath('/forgot-password', locale)} className="font-semibold text-primary-600 hover:text-primary-500">
+                  {t('auth.forgot_password')}
+                </Link>
+              </div>
+
               <Button type="submit" loading={isSubmitting} className="w-full py-3">
                 {t('auth.login_button')}
               </Button>

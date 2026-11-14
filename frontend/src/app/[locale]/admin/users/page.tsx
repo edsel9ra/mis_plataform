@@ -50,17 +50,16 @@ const adminUserSchema = z.object({
   email: z.string().email('admin.validation.email_invalid'),
   password: z.string().max(255, 'admin.validation.max_255').optional(),
   sex: z.enum(sexOptions, {
-    required_error: 'admin.validation.sex_required',
-    invalid_type_error: 'admin.validation.sex_invalid',
+    error: (iss) => iss.input === undefined ? 'admin.validation.sex_required' : 'admin.validation.sex_invalid',
   }),
   birth_date: z.string().optional(),
-  client_type: z.enum(CLIENT_TYPES, { invalid_type_error: 'admin.validation.type_invalid' }).nullable().optional(),
-  role: z.enum(USER_ROLES, { invalid_type_error: 'admin.validation.role_invalid' }),
-  locale: z.enum(['es', 'en', 'pt'], { invalid_type_error: 'admin.validation.language_invalid' }),
+  client_type: z.enum(CLIENT_TYPES, { error: 'admin.validation.type_invalid' }).nullable().optional(),
+  role: z.enum(USER_ROLES, { error: 'admin.validation.role_invalid' }),
+  locale: z.enum(['es', 'en', 'pt'], { error: 'admin.validation.language_invalid' }),
 }).superRefine((data, ctx) => {
   if (!isPlatformAdminRole(data.role) && !data.client_type) {
     ctx.addIssue({
-      code: z.ZodIssueCode.custom,
+      code: 'custom',
        message: 'admin.validation.type_required',
       path: ['client_type'],
     });

@@ -1,9 +1,12 @@
 import { useId, type Ref, type SelectHTMLAttributes } from 'react';
+import { AlertCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   label?: string;
   error?: string;
+  /** When false the field error keeps no live role (the form summary announces). */
+  announceError?: boolean;
   options: { value: string; label: string }[];
   placeholder?: string;
   ref?: Ref<HTMLSelectElement>;
@@ -13,10 +16,13 @@ export function Select({
   className,
   label,
   error,
+  announceError = true,
   id,
   options,
   placeholder,
   ref,
+  'aria-describedby': describedBy,
+  'aria-invalid': ariaInvalid,
   ...props
 }: SelectProps) {
   const generatedId = useId();
@@ -42,8 +48,8 @@ export function Select({
             : 'border-gray-300',
           className,
         )}
-        aria-invalid={error ? true : undefined}
-        aria-describedby={error ? errorId : undefined}
+        aria-invalid={error ? (ariaInvalid ?? true) : ariaInvalid}
+        aria-describedby={error ? cn(errorId, describedBy) : describedBy}
         {...props}
       >
         {placeholder && <option value="">{placeholder}</option>}
@@ -54,7 +60,8 @@ export function Select({
         ))}
       </select>
       {error && (
-        <p id={errorId} className="text-sm text-red-600" role="alert">
+        <p id={errorId} className="flex items-center gap-1 text-sm text-red-600" role={announceError ? 'alert' : undefined}>
+          <AlertCircle className="h-4 w-4 shrink-0" aria-hidden="true" />
           {error}
         </p>
       )}

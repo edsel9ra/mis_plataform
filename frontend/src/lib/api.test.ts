@@ -134,3 +134,28 @@ describe('ApiClient error normalization', () => {
     expect((init?.headers as Headers).get('Content-Type')).toBeNull();
   });
 });
+
+describe('ApiClient.postWithStatus (T017-03)', () => {
+  it('returns the parsed body with the HTTP status', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 's1' }), { status: 200 }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    const result = await api.postWithStatus<{ id: string }>('/sessions', { title: 'x' });
+
+    expect(result).toEqual({ data: { id: 's1' }, status: 200 });
+    expect(fetchMock.mock.calls[0]?.[1]?.method).toBe('POST');
+  });
+
+  it('exposes 201 for a newly created resource', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 's2' }), { status: 201 }),
+    ));
+
+    const result = await api.postWithStatus<{ id: string }>('/sessions', { title: 'x' });
+
+    expect(result.status).toBe(201);
+    expect(result.data?.id).toBe('s2');
+  });
+});

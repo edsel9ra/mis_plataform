@@ -6,6 +6,7 @@ import { CalendarSessionChip } from './CalendarSessionChip';
 import {
   calendarLocalDate,
   dayWallDates,
+  formatWallDate,
   groupCalendarItemsByDate,
   type CalendarItem,
 } from '@/lib/scheduling';
@@ -44,13 +45,19 @@ export function CalendarWeekView({ rangeFrom, timezone, items }: CalendarWeekVie
       <div className="grid gap-3 md:grid-cols-3 xl:grid-cols-7">
         {wallDates.map((date) => (
           <div key={date} className="min-w-0 space-y-2 rounded-2xl border border-gray-200 bg-gray-50/60 p-2">
-            <h3 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-              {new Intl.DateTimeFormat(locale, WEEKDAYS_FORMAT).format(new Date(`${date}T12:00:00Z`))}
-            </h3>
+            <h2 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+              <span className="sr-only">{formatWallDate(date, locale)}</span>
+              <span aria-hidden="true">
+                {formatWallDate(date, locale, WEEKDAYS_FORMAT)}
+              </span>
+            </h2>
             <div className="space-y-2">
               {(itemsByDate.get(date) ?? []).map((item) => (
                 <CalendarSessionChip key={item.id} item={item} className="bg-white" />
               ))}
+              {(itemsByDate.get(date) ?? []).length === 0 && (
+                <p className="text-xs text-gray-500">{t('calendar.no_sessions_in_day')}</p>
+              )}
             </div>
           </div>
         ))}

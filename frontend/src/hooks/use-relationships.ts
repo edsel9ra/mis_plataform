@@ -10,6 +10,7 @@ export interface Relationship {
   source_type?: string;
   source_id?: string;
   mentor: { id: string; full_name: string; avatar: string | null };
+  source?: { id: string; type: string; name: string | null } | null;
   created_at: string;
 }
 

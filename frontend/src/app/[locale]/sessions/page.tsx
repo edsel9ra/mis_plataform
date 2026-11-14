@@ -6,6 +6,7 @@ import { useLocale, useTranslations } from 'next-intl';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { useSessionsRange } from '@/hooks/use-scheduling';
+import { useBookableRelationships } from '@/hooks/use-booking';
 import {
   CalendarNavigator,
   CalendarRange,
@@ -38,6 +39,7 @@ export default function SessionsPage() {
   const { data, isLoading, error, refetch } = useSessionsRange(range.from, range.to, {
     includeCollectives: true,
   });
+  const { data: bookableRelationships } = useBookableRelationships();
 
   const items = (data?.data ?? []).map((session) =>
     CalendarSessionMapper.toCalendarItem(session, timezone, now),
@@ -66,7 +68,28 @@ export default function SessionsPage() {
           onToday={() => setAnchor(new Date().toISOString())}
         />
 
-        <div role="region" aria-live="polite" aria-label={t('calendar.period_selector')}>
+        {(user?.role === 'mentor' || (bookableRelationships?.length ?? 0) > 0) && (
+          <div className="flex flex-wrap items-center gap-2">
+            {(bookableRelationships?.length ?? 0) > 0 && (
+              <Link
+                href={localePath('/sessions/new', locale)}
+                className={buttonVariants({ variant: 'primary' })}
+              >
+                {t('booking.book')}
+              </Link>
+            )}
+            {user?.role === 'mentor' && (
+              <Link
+                href={localePath('/availability', locale)}
+                className={buttonVariants({ variant: 'outline' })}
+              >
+                {t('sessions.manage_availability')}
+              </Link>
+            )}
+          </div>
+        )}
+
+        <div role="region" aria-label={t('calendar.region_label')}>
           {calendarViewState({ isLoading, isError: Boolean(error), itemCount: items.length }) === 'loading' ? (
             <PageSpinner />
           ) : error ? (
@@ -75,7 +98,7 @@ export default function SessionsPage() {
               <button
                 type="button"
                 onClick={() => refetch()}
-                className="ml-2 font-semibold text-primary-600 hover:text-primary-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2"
+                className="ml-2 rounded font-semibold text-primary-600 hover:text-primary-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
               >
                 {t('common.retry')}
               </button>
@@ -105,7 +128,7 @@ export default function SessionsPage() {
           ) : period === 'week' ? (
             <CalendarWeekView rangeFrom={range.from} timezone={timezone} items={items} />
           ) : (
-            <CalendarMonthView reference={range.from} timezone={timezone} items={items} />
+            <CalendarMonthView reference={range.from} timezone={timezone} items={items} now={now} />
           )}
         </div>
       </div>

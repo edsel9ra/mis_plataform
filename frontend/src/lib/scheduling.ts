@@ -415,6 +415,40 @@ export function calendarViewState(input: {
   return 'ready';
 }
 
+/**
+ * Resuelve un mensaje de agenda en el locale activo con fallback a español.
+ *
+ * Nunca devuelve la clave cruda: si falta en el locale activo, usa `es`; si
+ * también falta en `es`, devuelve cadena vacía (error de catálogo). Función
+ * pura, sin IO ni reloj (RF-010.1; CA-12.2).
+ */
+export type AgendaCatalogs = Record<string, unknown>;
+
+function lookupAgendaMessage(messages: unknown, key: string): string | undefined {
+  if (!messages || typeof messages !== 'object') return undefined;
+  const value = key.split('.').reduce<unknown>((acc, part) => {
+    if (acc && typeof acc === 'object' && part in (acc as Record<string, unknown>)) {
+      return (acc as Record<string, unknown>)[part];
+    }
+    return undefined;
+  }, messages);
+  return typeof value === 'string' ? value : undefined;
+}
+
+export function resolveAgendaMessage(
+  key: string,
+  locale: string,
+  catalogs: Record<string, unknown> | undefined,
+): string {
+  const safeLocale = ['es', 'en', 'pt'].includes(locale) ? locale : 'es';
+  const active = catalogs ? catalogs[safeLocale] : undefined;
+  const activeValue = lookupAgendaMessage(active, key);
+  if (activeValue !== undefined) return activeValue;
+  const esValue = lookupAgendaMessage(catalogs ? catalogs.es : undefined, key);
+  if (esValue !== undefined) return esValue;
+  return '';
+}
+
 /** Groups calendar items into viewer-local days, sorted day then by start. */
 export function groupCalendarItemsByDate(items: CalendarItem[]): Array<{ date: string; items: CalendarItem[] }> {
   const byDate = new Map<string, CalendarItem[]>();
@@ -472,3 +506,166 @@ export const CalendarRange = {
     };
   },
 };
+
+/**
+ * Asociación de errores de validación a campos y región anunciable
+ * (spec 010, RF-010.3; CA-12.4; T010-02).
+ *
+ * `fieldErrorPresentation` deriva los atributos semánticos de un campo
+ * (`aria-invalid`, `aria-describedby` → `${fieldId}-error`) a partir del
+ * `errors` de un 422 de Laravel (`Record<string, string[]>`).
+ *
+ * `formErrorAnnouncement` devuelve el primer mensaje de cada campo inválido
+ * en el orden visual del formulario para alimentar la región live del
+ * resumen de errores. Desviación del plan: el campo `liveRegion` de la
+ * firma original se materializa como esta función separada en vez de un
+ * flag dentro de `fieldErrorPresentation`.
+ */
+export type FieldErrors = Record<string, string | string[] | undefined> | null | undefined;
+
+export interface FieldErrorPresentation {
+  errorId: string;
+  invalid: boolean;
+  describedBy: string | undefined;
+  messages: string[];
+}
+
+function normalizeFieldErrorMessages(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  const raw = Array.isArray(value) ? value : [value];
+
+  return raw.filter((message): message is string => typeof message === 'string' && message.trim().length > 0);
+}
+
+export function fieldErrorPresentation(fieldErrors: FieldErrors, fieldId: string): FieldErrorPresentation {
+  const errorId = `${fieldId}-error`;
+  const messages = normalizeFieldErrorMessages(fieldErrors?.[fieldId]);
+  const invalid = messages.length > 0;
+
+  return {
+    errorId,
+    invalid,
+    describedBy: invalid ? errorId : undefined,
+    messages,
+  };
+}
+
+export function formErrorAnnouncement(
+  fieldErrors: FieldErrors,
+  fieldOrder: string[],
+): Array<{ fieldId: string; message: string }> {
+  if (!fieldErrors) return [];
+
+  const announced: Array<{ fieldId: string; message: string }> = [];
+  const seen = new Set<string>();
+
+  for (const fieldId of fieldOrder) {
+    const [first] = normalizeFieldErrorMessages(fieldErrors[fieldId]);
+    if (first !== undefined) {
+      announced.push({ fieldId, message: first });
+      seen.add(fieldId);
+    }
+  }
+
+  for (const fieldId of Object.keys(fieldErrors)) {
+    if (seen.has(fieldId)) continue;
+    const [first] = normalizeFieldErrorMessages(fieldErrors[fieldId]);
+    if (first !== undefined) announced.push({ fieldId, message: first });
+  }
+
+  return announced;
+}
+
+/**
+ * Accesibilidad de teclado del calendario (spec 010, RF-010.2; CA-12.3; T010-03).
+ *
+ * `monthCellChips` decide qué chips de una celda son visibles según el estado
+ * colapsado/expandido, sin alterar el orden cronológico del backend.
+ *
+ * `formatWallDate` formatea una fecha de pared `YYYY-MM-DD` tratándola como
+ * mediodía UTC (construida por `Date.UTC`), de modo que nunca desplace el día
+ * por la zona del proceso o del espectador.
+ */
+export function monthCellChips<T>(items: T[], limit: number, expanded: boolean): { visible: T[]; hiddenCount: number } {
+  if (expanded) {
+    return { visible: items, hiddenCount: 0 };
+  }
+  const visible = items.slice(0, Math.max(0, limit));
+
+  return { visible, hiddenCount: items.length - visible.length };
+}
+
+const WALL_DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
+
+export function formatWallDate(
+  wallDate: string,
+  locale: string,
+  options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' },
+): string {
+  if (!WALL_DATE_PATTERN.test(wallDate)) {
+    throw new TypeError(`Invalid wall date: ${wallDate}`);
+  }
+  const [year, month, day] = wallDate.split('-').map(Number);
+
+  return new Intl.DateTimeFormat(locale, { timeZone: 'UTC', ...options })
+    .format(new Date(Date.UTC(year, month - 1, day, 12)));
+}
+
+const WALL_HOUR_PATTERN = /^(\d{2}):(\d{2})$/;
+
+function requireTimezone(timezone: string): void {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: timezone });
+  } catch {
+    throw new TypeError(`Invalid timezone: ${timezone}`);
+  }
+}
+
+/**
+ * Converts a wall-clock `date` (`YYYY-MM-DD`) + `time` (`HH:mm`) in `timezone`
+ * to the instant the server expects for `scheduled_at`: ISO UTC with `Z`.
+ * DST semantics follow `zonedTimeToInstant`: spring-forward gaps resolve to the
+ * last valid instant before the gap; ambiguous fall-back times resolve to the
+ * first (earlier) occurrence.
+ */
+export function wallTimeToInstant(date: string, time: string, timezone: string): string {
+  if (!WALL_DATE_PATTERN.test(date)) {
+    throw new TypeError(`Invalid wall date: ${date}`);
+  }
+  const match = WALL_HOUR_PATTERN.exec(time);
+  const hour = match ? Number(match[1]) : Number.NaN;
+  const minute = match ? Number(match[2]) : Number.NaN;
+  if (!match || hour > 23 || minute > 59) {
+    throw new TypeError(`Invalid wall time: ${time}`);
+  }
+  requireTimezone(timezone);
+
+  const [year, month, day] = date.split('-').map(Number);
+  const instant = zonedTimeToInstant(timezone, { year, month, day, hour, minute });
+
+  return new Date(instant).toISOString().slice(0, 19) + 'Z';
+}
+
+/** Wall `date`/`time` of an ISO instant in `timezone` (e.g. to prefill a form). */
+export function instantToWallTime(iso: string, timezone: string): { date: string; time: string } {
+  const instantMs = requireInstant(iso, 'instant');
+  requireTimezone(timezone);
+  const wall = new Date(instantMs + zoneOffsetMs(timezone, instantMs)).toISOString();
+
+  return { date: wall.slice(0, 10), time: wall.slice(11, 16) };
+}
+
+/**
+ * Whether `date`/`time` actually exists as wall time in `timezone`. False on
+ * malformed input and inside spring-forward gaps; ambiguous fall-back times
+ * count as existing (they resolve to their first occurrence).
+ */
+export function isExistingWallTime(date: string, time: string, timezone: string): boolean {
+  try {
+    const wall = instantToWallTime(wallTimeToInstant(date, time, timezone), timezone);
+
+    return wall.date === date && wall.time === time;
+  } catch {
+    return false;
+  }
+}

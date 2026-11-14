@@ -30,7 +30,8 @@
     "assigned_users": "Assigned users",
     "mentor_challenges": "Mentor challenges",
     "mentor_feedback": "Mentor feedback",
-    "progress": "Progress"
+    "progress": "Progress",
+    "availability": "Availability"
   },
   "auth": {
     "email": "Email",
@@ -88,7 +89,22 @@
     "birth_date_invalid": "Invalid date format (YYYY-MM-DD)",
     "session_verification_error": "Your session could not be verified.",
     "logout_error": "You could not be signed out. Try again.",
-    "go_to_login": "Go to sign in"
+    "go_to_login": "Go to sign in",
+    "forgot_password_title": "Recover your password",
+    "forgot_password_subtitle": "Enter your email and we will send you a link to reset your password.",
+    "forgot_password_button": "Send link",
+    "forgot_password_sent": "If the email exists on our platform, you will receive a link to reset your password.",
+    "reset_password_title": "Reset your password",
+    "reset_password_subtitle": "Choose a new password for your account.",
+    "new_password": "New password",
+    "confirm_password": "Confirm password",
+    "reset_password_button": "Reset password",
+    "reset_password_success": "Your password has been reset successfully. You can now sign in.",
+    "reset_password_invalid_link": "The reset link is invalid or incomplete.",
+    "password_confirmation_required": "Please confirm your password",
+    "password_mismatch": "Passwords do not match",
+    "token_required": "Token is required",
+    "back_to_login": "Back to sign in"
   },
   "client_types": {
     "personal": "Individual",
@@ -259,7 +275,8 @@
     "cancel": "Cancel Session",
     "duration": "Duration",
     "minutes": "minutes",
-    "date": "Date"
+    "date": "Date",
+    "manage_availability": "Manage availability"
   },
   "certificates": {
     "subtitle": "Certificates issued from completed relationships.",
@@ -321,7 +338,19 @@
   "messages": {
     "subtitle": "Conversations linked to your mentorships.",
     "empty_title": "No messages yet",
-    "empty_desc": "Conversations will appear when you have active mentoring relationships."
+    "empty_desc": "Conversations will appear when you have active mentoring relationships.",
+    "conversations": "Conversations",
+    "select_conversation": "Select a conversation",
+    "back_to_list": "Back to conversations",
+    "load_older": "Load older messages",
+    "composer_placeholder": "Write a message…",
+    "composer_send": "Send message",
+    "composer_sending": "Sending…",
+    "empty_conversation": "No messages yet. Write the first one!",
+    "you": "You",
+    "new_message_announcement": "New message received",
+    "send_error": "The message could not be sent. Try again.",
+    "unknown_participant": "Participant"
   },
   "profile": {
     "subtitle": "Basic account information and client type.",
@@ -585,7 +614,6 @@
     "navigation": "Admin navigation",
     "sessions_description": "Schedule, complete, and audit sessions created from active relationships.",
     "search_sessions": "Search sessions",
-    "complete_session": "Complete",
     "create_session": "Create session",
     "edit_session": "Edit session",
     "session_title": "Title",
@@ -667,7 +695,15 @@
       "sex_invalid": "Select a valid sex",
       "language_invalid": "Select a valid language",
       "password_required": "Password is required"
-    }
+    },
+    "delete_session": "Delete session",
+    "delete_session_confirm": "Are you sure you want to delete \"{title}\"? This action cannot be undone.",
+    "cancel_session": "Cancel session",
+    "cancel_session_desc": "You are about to cancel \"{title}\". Participants will be notified.",
+    "cancel_reason": "Cancellation reason",
+    "cancel_reason_required": "Please provide the cancellation reason.",
+    "confirm_cancel_session": "Confirm cancellation",
+    "session_canceled": "Session canceled."
   },
   "common": {
     "save": "Save",
@@ -691,6 +727,7 @@
     "page": "Page",
     "of": "of",
     "previous": "Previous",
+    "back": "Back",
     "next": "Next",
     "load_more": "Load more",
     "pagination": "Pagination",
@@ -715,7 +752,8 @@
     "skip_to_content": "Skip to content",
     "not_applicable": "Not applicable",
     "minutes_short": "min",
-    "seconds_short": "s"
+    "seconds_short": "s",
+    "dismiss": "Dismiss"
   },
   "landing": {
     "metric_ocean": "OCEAN profile",
@@ -954,6 +992,235 @@
     "meet_pending": "Meet link pending",
     "meet_available": "Meet link available",
     "meet_hidden": "Meet link hidden",
-    "more_sessions": "more"
+    "more_sessions": "more",
+    "show_more_sessions": "{count, plural, one {Show # more session} other {Show # more sessions}}",
+    "show_fewer_sessions": "Show fewer sessions",
+    "day_sessions_count": "{count, plural, =0 {no sessions} one {# session} other {# sessions}}",
+    "region_label": "Sessions calendar",
+    "previous_period": "Previous period",
+    "next_period": "Next period"
+  },
+  "notifications": {
+    "title": "Notifications",
+    "aria_button": "{badge} · Notifications, {count} unread",
+    "aria_button_none": "Notifications, none unread",
+    "empty": "You have no notifications.",
+    "mark_read": "Mark as read",
+    "mark_all_read": "Mark all as read",
+    "types": {
+      "mentor_alert": "Mentorship alert",
+      "session_reminder": "Session reminder",
+      "session_change": "Session change",
+      "generic": "Notification"
+    },
+    "just_now": "now",
+    "minutes_ago": "{count} min ago",
+    "hours_ago": "{count} h ago",
+    "days_ago": "{count} d ago"
+  },
+  "reminders": {
+    "region_label": "Session reminders",
+    "view_session": "View session",
+    "default_title": "Session reminder"
+  },
+  "session_actions": {
+    "reasons": {
+      "terminal_status": "The session is already closed (canceled, completed or not completed).",
+      "already_started": "The session has already started.",
+      "insufficient_notice": "At least 2 hours' notice is required.",
+      "invalid_schedule": "The session does not have a valid schedule.",
+      "not_ended": "The session has not ended yet.",
+      "window_closed": "The deadline for this action has passed.",
+      "not_started": "The session has not started yet.",
+      "not_registered": "This person is not registered in the session.",
+      "excluded": "This person was excluded from the session.",
+      "forbidden": "You do not have permission for this action.",
+      "not_chargeable": "This person is not in your care.",
+      "already_confirmed_by_member": "The person has already confirmed their own attendance.",
+      "unknown": "This action is not available right now."
+    },
+    "attendance_status": {
+      "not_confirmed": "Not confirmed",
+      "attended": "Attended",
+      "absent": "Absent"
+    },
+    "validation": {
+      "date_required": "Enter the date.",
+      "date_invalid": "Enter a valid date.",
+      "time_required": "Enter the time.",
+      "time_invalid": "Enter a valid time.",
+      "duration_invalid": "The duration must be between 15 and 480 minutes.",
+      "timezone_required": "Select the time zone.",
+      "timezone_invalid": "The time zone is not valid.",
+      "reason_required": "Provide a reason.",
+      "status_invalid": "Select a valid attendance status.",
+      "time_nonexistent": "That time does not exist in this time zone due to the clock change."
+    },
+    "cancel": {
+      "button": "Cancel session",
+      "title": "Cancel session",
+      "description": "Participants will be notified. This cannot be undone.",
+      "reason_label": "Reason for cancellation",
+      "late_warning": "This is a late cancellation: the session starts in less than {hours} hours.",
+      "confirm": "Confirm cancellation",
+      "success": "Session canceled."
+    },
+    "complete": {
+      "button": "Complete session",
+      "title": "Complete session",
+      "description": "The session will be marked as completed. This cannot be undone.",
+      "confirm": "Complete",
+      "success": "Session completed."
+    },
+    "common": {
+      "dismiss": "Go back",
+      "stale_notice": "The session changed in the meantime. We have refreshed its status and actions.",
+      "forbidden": "You no longer have permission for this action.",
+      "not_found": "The session is no longer available."
+    },
+    "reschedule": {
+      "button": "Reschedule session",
+      "title": "Reschedule session",
+      "description": "Choose the new date and time. Participants will be notified.",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration (minutes)",
+      "timezone": "Time zone",
+      "reason": "Reason (optional)",
+      "confirm": "Reschedule",
+      "success": "Session rescheduled for {when}."
+    },
+    "attendance": {
+      "title": "Attendance",
+      "self": "You",
+      "attended": "Attended",
+      "absent": "Absent",
+      "mark_self_attended": "Mark that I attended",
+      "mark_self_absent": "Mark that I did not attend",
+      "mark_attended": "Mark {name} as attended",
+      "mark_absent": "Mark {name} as absent",
+      "current": "Current status: {status}",
+      "success": "Attendance recorded: {name} — {status}.",
+      "unknown_person": "Participant"
+    },
+    "actions": {
+      "title": "Actions",
+      "blocked_item": "{action}: {reason}",
+      "names": {
+        "reschedule": "Reschedule",
+        "cancel": "Cancel",
+        "complete": "Complete"
+      }
+    }
+  },
+  "availability": {
+    "validation": {
+      "day_of_week_required": "Select the day of the week.",
+      "day_of_week_invalid": "Select a valid day of the week.",
+      "end_time_order": "The end time must be after the start time.",
+      "end_date_order": "The end date cannot be before the start date.",
+      "times_paired": "Provide both a start and an end time, or leave both empty for all day.",
+      "mode_invalid": "Select a valid exception mode."
+    },
+    "title": "Availability",
+    "mentor_only": "Availability is only available to mentors.",
+    "go_to_agenda": "Go to the agenda",
+    "weekly": {
+      "title": "Weekly schedule",
+      "zone_note": "Times are shown in each slot's time zone.",
+      "add": "Add time slot",
+      "empty_day": "No time slots",
+      "empty": "You haven't set your schedule yet. Until you add time slots, you can be booked at any free time.",
+      "edit": "Edit",
+      "delete": "Delete",
+      "edit_label": "Edit {day} time slot {range}",
+      "delete_label": "Delete {day} time slot {range}"
+    },
+    "window": {
+      "create_title": "New time slot",
+      "edit_title": "Edit time slot",
+      "day": "Day",
+      "start": "Start",
+      "end": "End",
+      "timezone": "Time zone",
+      "save": "Save",
+      "saved": "Time slot saved: {day} {range}.",
+      "delete_title": "Delete time slot",
+      "delete_description": "The {day} {range} time slot will be deleted. Sessions already booked won't change.",
+      "delete_confirm": "Delete",
+      "deleted": "Time slot deleted."
+    },
+    "exceptions": {
+      "title": "Exceptions",
+      "note": "Block specific days or hours, or open hours outside your usual schedule. Only you can see the reason.",
+      "add": "Add exception",
+      "empty": "You have no upcoming exceptions.",
+      "mode_block": "Block",
+      "mode_open": "Opening",
+      "all_day": "All day",
+      "reason_private": "Reason (private): {reason}",
+      "edit_label": "Edit exception {period}",
+      "delete_label": "Delete exception {period}",
+      "create_title": "New exception",
+      "edit_title": "Edit exception",
+      "mode_legend": "Type",
+      "mode_block_help": "No bookings in that period.",
+      "mode_open_help": "Bookings allowed even outside your schedule.",
+      "start_date": "From",
+      "end_date": "Until (optional)",
+      "end_date_hint": "Leave empty for a single day.",
+      "reason": "Reason (optional)",
+      "reason_hint": "Only you will see it; people booking don't see the reason.",
+      "saved": "Exception saved.",
+      "delete_title": "Delete exception",
+      "delete_description": "The {period} exception will be deleted. Sessions already booked won't change.",
+      "deleted": "Exception deleted.",
+      "conflicts": {
+        "title": "You have {count, plural, one {# session} other {# sessions}} in the blocked period",
+        "body": "They are kept. If you can't attend, reschedule or cancel them from their details.",
+        "dismiss": "Dismiss notice"
+      }
+    }
+  },
+  "booking": {
+    "validation": {
+      "relationship_required": "Select the relationship.",
+      "title_required": "Enter a title.",
+      "title_too_long": "The title cannot exceed 200 characters."
+    },
+    "book": "Book a session",
+    "back": "Back to the agenda",
+    "no_relationships": "You have no active relationships you can book in.",
+    "step1": "1. Relationship and duration",
+    "relationship": "Relationship",
+    "relationship_placeholder": "Choose a relationship",
+    "duration": "Duration (minutes)",
+    "step2": "2. Choose a time slot",
+    "week": "Week of {start} to {end}",
+    "prev_week": "Previous week",
+    "next_week": "Next week",
+    "zone_note": "Times in your time zone: {tz}",
+    "day_option": "{day}: {count, plural, one {# slot} other {# slots}}",
+    "day_none": "{day}: no slots",
+    "slot_label": "{range}, {date} ({tz})",
+    "slot_selected": "Slot selected: {date}, {range} ({tz}).",
+    "loading_slots": "Loading slots…",
+    "empty_week": "There are no free slots this week. Try another week or change the duration.",
+    "searching": "Looking for the first week with free slots…",
+    "no_slots_horizon": "There are no free slots in the next {weeks} weeks. Try another duration or come back later.",
+    "step3": "3. Details and confirmation",
+    "title": "Title",
+    "description": "Description (optional)",
+    "summary_relationship": "Relationship",
+    "summary_when": "Date and time",
+    "summary_duration": "Duration",
+    "duration_value": "{minutes} min",
+    "collective_note": "It will be booked for the whole group {source}. If anyone in the group has another session at that time, it can't be booked.",
+    "confirm": "Confirm booking",
+    "slot_taken": "That slot is no longer free. Choose another.",
+    "success_created": "Session booked: {title}, {when}.",
+    "success_existing": "This session was already booked: {title}, {when}.",
+    "view_session": "View session",
+    "book_another": "Book another"
   }
 }

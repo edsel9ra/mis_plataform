@@ -7,6 +7,15 @@ const DEFAULT_LOCALE = 'es';
 const SUPPORTED_LOCALES = new Set(['es', 'en', 'pt']);
 
 let csrfRequest: Promise<void> | null = null;
+let socketId: string | null = null;
+
+export function setSocketId(id: string | null) {
+  socketId = id;
+}
+
+export function getSocketId(): string | null {
+  return socketId;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -21,6 +30,8 @@ export class ApiError extends Error {
 }
 
 export interface ApiRequestOptions extends RequestInit {
+  /** Internal: wrap a successful payload as `{ data, status }` (POST /sessions returns 201 vs 200). */
+  withStatus?: boolean;
   params?: Record<string, string | number | undefined>;
   timeoutMs?: number;
 }
@@ -77,6 +88,7 @@ class ApiClient {
     if (!headers.has('Accept')) headers.set('Accept', 'application/json');
     if (!headers.has('Accept-Language')) headers.set('Accept-Language', currentLocale());
     if (!headers.has('X-MIS-Locale')) headers.set('X-MIS-Locale', currentLocale());
+    if (socketId && !headers.has('X-Socket-ID')) headers.set('X-Socket-ID', socketId);
 
     if (externalSignal?.aborted) {
       controller.abort();
@@ -118,6 +130,10 @@ class ApiClient {
         );
       }
 
+      if (options.withStatus) {
+        return { data: payload, status: response.status } as T;
+      }
+
       return payload as T;
     } catch (error) {
       if (timedOut) throw new ApiError('Request timed out', 408, undefined, 'timeout');
@@ -146,6 +162,16 @@ class ApiClient {
 
   post<T>(endpoint: string, data?: unknown, options: ApiRequestOptions = {}): Promise<T> {
     return this.request<T>(endpoint, { ...options, method: 'POST', body: serializeBody(data) });
+  }
+
+  /** POST variant that also exposes the HTTP status (e.g. booking: 201 new vs 200 idempotent). */
+  postWithStatus<T>(endpoint: string, data?: unknown, options: ApiRequestOptions = {}): Promise<{ data: T | null; status: number }> {
+    return this.request(endpoint, {
+      ...options,
+      method: 'POST',
+      body: serializeBody(data),
+      withStatus: true,
+    }) as Promise<{ data: T | null; status: number }>;
   }
 
   put<T>(endpoint: string, data?: unknown, options: ApiRequestOptions = {}): Promise<T> {

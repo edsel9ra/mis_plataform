@@ -6,6 +6,7 @@ const intlMiddleware = createMiddleware(routing);
 const authCookieName = process.env.AUTH_COOKIE_NAME || 'mis_auth_token';
 const protectedPrefixes = [
   '/admin',
+  '/availability',
   '/dashboard',
   '/evaluations',
   '/certificates',

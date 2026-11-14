@@ -67,4 +67,5 @@ export const mentorObservationSchema = z.object({
 
 export type MentorChallengeFormValues = z.infer<typeof mentorChallengeSchema>;
 export type MentorFeedbackFormValues = z.infer<typeof mentorFeedbackSchema>;
-export type MentorObservationFormValues = z.infer<typeof mentorObservationSchema>;
+export type MentorObservationFormInput = z.input<typeof mentorObservationSchema>;
+export type MentorObservationFormValues = z.output<typeof mentorObservationSchema>;

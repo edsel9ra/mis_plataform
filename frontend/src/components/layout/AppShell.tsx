@@ -9,40 +9,18 @@ import { SessionVerificationFallback } from '@/components/auth/SessionVerificati
 import { PageSpinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { localePath } from '@/i18n/paths';
+import { NotificationBell } from '@/components/layout/NotificationBell';
+import { SessionReminderNotices } from '@/components/layout/SessionReminderNotices';
 import {
   AlertTriangle,
-  Award,
-  BookOpen,
   Brain,
-  Calendar,
-  ClipboardCheck,
   ChevronLeft,
   ChevronRight,
-  LayoutDashboard,
-  ListChecks,
   LogOut,
   Menu,
-  MessageSquare,
-  Shield,
-  Sparkles,
-  TrendingUp,
-  User,
-  Users,
   X,
 } from 'lucide-react';
-
-const baseNavItems = [
-  { href: '/dashboard', label: 'nav.dashboard', icon: LayoutDashboard },
-  { href: '/dashboard/progreso', label: 'nav.progress', icon: TrendingUp },
-  { href: '/recommendations', label: 'nav.recommendations', icon: Sparkles },
-  { href: '/evaluations', label: 'nav.evaluations', icon: ClipboardCheck },
-  { href: '/mentors', label: 'nav.mentors', icon: Users },
-  { href: '/sessions', label: 'nav.sessions', icon: Calendar },
-  { href: '/messages', label: 'nav.messages', icon: MessageSquare },
-  { href: '/learning-paths', label: 'nav.learning', icon: BookOpen },
-  { href: '/certificates', label: 'nav.certificates', icon: Award },
-  { href: '/profile', label: 'nav.profile', icon: User },
-];
+import { buildNavItems } from '@/lib/nav-items';
 
 export function AppShell({ children }: { children: ReactNode }) {
   const t = useTranslations();
@@ -54,19 +32,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
-  const navItems = isAdmin
-      ? [...baseNavItems, { href: '/admin', label: 'nav.admin', icon: Shield }]
-      : user?.role === 'mentor'
-      ? [
-        ...baseNavItems.map((item) => item.href === '/dashboard'
-          ? { ...item, href: '/dashboard/mentor', label: 'nav.assigned_users' }
-          : item.href === '/dashboard/progreso'
-          ? { ...item, href: '/dashboard/mentor/progress' }
-          : item),
-        { href: '/dashboard/mentor/challenges', label: 'nav.mentor_challenges', icon: ListChecks },
-        { href: '/dashboard/mentor/feedback', label: 'nav.mentor_feedback', icon: MessageSquare },
-      ]
-      : baseNavItems;
+  const navItems = buildNavItems(user?.role, Boolean(isAdmin));
   const fullName = [user?.name, user?.last_name].filter(Boolean).join(' ') || user?.email || 'MIS';
   const sidebarToggleLabel = t(isSidebarCollapsed ? 'common.show_navigation' : 'common.hide_navigation');
 
@@ -103,16 +69,19 @@ export function AppShell({ children }: { children: ReactNode }) {
           <Brain className="h-6 w-6 text-primary-400" aria-hidden="true" />
           MIS
         </Link>
-        <button
-          type="button"
-          onClick={() => setIsMobileNavOpen(true)}
-          className="rounded-lg p-2 text-slate-200 transition hover:bg-slate-800 focus-visible:ring-white"
-          aria-label={t('common.open_menu')}
-          aria-expanded={isMobileNavOpen}
-          aria-controls="app-sidebar"
-        >
-          <Menu className="h-6 w-6" aria-hidden="true" />
-        </button>
+        <div className="flex items-center gap-1">
+          <NotificationBell />
+          <button
+            type="button"
+            onClick={() => setIsMobileNavOpen(true)}
+            className="rounded-lg p-2 text-slate-200 transition hover:bg-slate-800 focus-visible:ring-white"
+            aria-label={t('common.open_menu')}
+            aria-expanded={isMobileNavOpen}
+            aria-controls="app-sidebar"
+          >
+            <Menu className="h-6 w-6" aria-hidden="true" />
+          </button>
+        </div>
       </header>
 
       <button
@@ -142,7 +111,6 @@ export function AppShell({ children }: { children: ReactNode }) {
             <Link
               href={localePath('/dashboard', locale)}
               className={cn('flex min-w-0 items-center gap-3 transition-all duration-300', isSidebarCollapsed && 'lg:justify-center')}
-              aria-label={t('nav.dashboard')}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 shadow-lg shadow-primary-950/40">
                 <Brain className="h-6 w-6 text-white" aria-hidden="true" />
@@ -243,7 +211,12 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main id="app-content" className="min-w-0 flex-1 overflow-auto bg-slate-50 p-4 transition-[padding] duration-300 sm:p-6 lg:p-8">
+      <main id="app-content" tabIndex={-1} className="min-w-0 flex-1 overflow-auto bg-slate-50 p-4 transition-[padding] duration-300 sm:p-6 lg:p-8">
+        <div className="mb-4 hidden justify-end lg:flex">
+          <div className="rounded-xl border border-slate-200 bg-white/80 px-1 py-1 shadow-sm [&_button]:text-slate-600 [&_button:hover]:bg-slate-100">
+            <NotificationBell />
+          </div>
+        </div>
         {user.role !== 'mentor' && !user.personality_assessment?.completed_at && (
           <div className="mb-6 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 shadow-sm">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />
@@ -257,6 +230,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         )}
         {children}
       </main>
+      <SessionReminderNotices />
     </div>
   );
 }
