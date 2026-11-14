@@ -41,6 +41,7 @@ use App\Http\Controllers\Api\MenteeCheckInController;
 use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
 use App\Http\Controllers\Api\ObjectiveController;
 use App\Http\Controllers\Api\ProgressPanelController;
+use App\Http\Controllers\Api\LearningMapController;
 use App\Http\Controllers\Api\LearningPathProgressController;
 use App\Http\Controllers\Api\ChallengePathModuleController;
 use App\Http\Controllers\Api\CollectiveProgressController;
@@ -179,6 +180,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/progress/panel', [ProgressPanelController::class, 'show']);
         Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
         Route::get('/progress/learning-paths', [LearningPathProgressController::class, 'index']);
+        Route::get('/progress/map', [LearningMapController::class, 'index']);
 
         // Mentee workspace activity. Every route resolves the relationship to
         // the authenticated personal user before reading or writing data.
@@ -203,6 +205,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/progress/overview', [MentorProgressController::class, 'index']);
             Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
             Route::get('/users/{user}/progress/learning-paths', [LearningPathProgressController::class, 'show']);
+            Route::get('/users/{user}/progress/map', [LearningMapController::class, 'show']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
             Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);

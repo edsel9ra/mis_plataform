@@ -16,7 +16,7 @@ use App\Services\Progress\Support\MetricValue;
 final class CollectiveAggregateCalculator
 {
     public const DEFAULT_THRESHOLD = 3;
-    public const SUPPRESSION_REASON = 'insufficient_base';
+    public const SUPPRESSION_REASON = \App\Services\Progress\Support\SuppressionReason::InsufficientBase->value;
 
     /**
      * F11 — base below the threshold must be suppressed.

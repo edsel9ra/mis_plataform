@@ -35,6 +35,7 @@ class CollectiveProgressController
             'subject' => $subject,
             'viewer_role' => $access['role'],
             'aggregate' => $this->collectives->aggregate($type, $id),
+            'learning' => $this->collectives->learningAggregate($type, $id),
         ]);
     }
 }

@@ -16,7 +16,7 @@ class CollectiveProgressResource extends JsonResource
         $suppressed = (bool) ($aggregate['suppressed'] ?? false);
         $subject = $this->resource['subject'] ?? null;
 
-        return [
+        $payload = [
             'subject' => $subject,
             'viewer_role' => $this->resource['viewer_role'] ?? 'member',
 
@@ -39,5 +39,14 @@ class CollectiveProgressResource extends JsonResource
                     'contributing_members' => $aggregate['contributing_members'] ?? null,
                 ],
         ];
+
+        // Additive learning block (RF-013.5-.8): present only on the
+        // collectives endpoint — the panel keeps its payload untouched.
+        if (array_key_exists('learning', (array) $this->resource)) {
+            $payload['learning'] = (new CollectiveLearningAggregateResource($this->resource['learning']))
+                ->toArray($request);
+        }
+
+        return $payload;
     }
 }
