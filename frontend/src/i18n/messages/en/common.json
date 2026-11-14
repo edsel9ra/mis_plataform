@@ -960,6 +960,14 @@
         "family_group": "Family group",
         "cohort": "Cohort",
         "company": "Company"
+      },
+      "learning": {
+        "title": "Learning",
+        "activity_rate": "Activity",
+        "path_rates": "Paths",
+        "suppressed_base": "This learning aggregate is not shown because the participant base is too small.",
+        "suppressed_metric": "This metric is not shown because there are not enough calculable contributions.",
+        "suppressed": "This data is protected and not shown."
       }
     },
     "mentor": {
@@ -995,6 +1003,17 @@
       "link_saved": "Link saved",
       "link_error_field": "Choose a valid module or remove the link.",
       "link_error_unavailable": "The link could not be updated. Please try again."
+    },
+    "map": {
+      "title": "Learning map",
+      "title_mentor": "Mentee map",
+      "subtitle": "Modules in each path's current order, with their linked elements.",
+      "back": "Back to the panel",
+      "view_map": "View map",
+      "empty": "There are no learning paths in this map.",
+      "elements": "Linked elements",
+      "no_elements": "No linked elements.",
+      "element_challenge": "Challenge"
     }
   },
   "calendar": {

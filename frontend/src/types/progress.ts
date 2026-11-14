@@ -191,6 +191,51 @@ export interface CollectiveProgress {
   suppression_reason: 'insufficient_base' | string | null;
   metrics: CollectiveAggregateMetrics | null;
   base: CollectiveProgressBase | null;
+  /**
+   * Learning block (spec 013): present only on
+   * `GET /progress/collectives/{type}/{id}` — the panel embed omits it.
+   */
+  learning?: CollectiveLearningAggregate;
+}
+
+// ---------------------------------------------------------------------------
+// Collective learning aggregate (spec 013, RF-013.5–.8)
+// ---------------------------------------------------------------------------
+
+export type CollectiveLearningState = 'available' | 'suppressed';
+
+export type LearningSuppressionReason =
+  | 'insufficient_base'
+  | 'insufficient_metric_contributions'
+  | string;
+
+/**
+ * A learning metric either carries an average `value` or is suppressed — a
+ * suppressed metric never has value/numerator/denominator/count fields.
+ */
+export interface AggregateLearningMetric {
+  state: 'value' | 'suppressed';
+  value?: number | null;
+  suppression_reason: LearningSuppressionReason | null;
+}
+
+export interface CollectivePathAggregateRate {
+  path_id: string;
+  version_key: string;
+  title: string | Record<string, string>;
+  rate: AggregateLearningMetric;
+}
+
+/**
+ * `GET /progress/collectives/{type}/{id}` → `learning`. When `state` is
+ * `suppressed` the payload carries only `state` + `suppression_reason` —
+ * `activity_rate` and `rates` are absent, not null-with-numbers.
+ */
+export interface CollectiveLearningAggregate {
+  state: CollectiveLearningState;
+  suppression_reason: LearningSuppressionReason | null;
+  activity_rate?: AggregateLearningMetric | null;
+  rates?: CollectivePathAggregateRate[];
 }
 
 // ---------------------------------------------------------------------------
@@ -333,4 +378,36 @@ export interface ChallengePathModuleLink {
     title: string;
     learning_path_id: string;
   } | null;
+}
+
+// ---------------------------------------------------------------------------
+// Learning map (spec 013)
+// ---------------------------------------------------------------------------
+
+/** Only `challenge` exists today; unknown types render the raw source type. */
+export type LearningMapElementType = 'challenge';
+
+export interface LearningMapElement {
+  type: LearningMapElementType;
+  id: string;
+  title: string;
+  /** Status copied verbatim from the source record — never derived (RF-013.3). */
+  source_status: string;
+}
+
+export interface LearningMapModule extends ModuleProgress {
+  /** Elements placed under this module only by an explicit registered link. */
+  elements: LearningMapElement[];
+}
+
+/** One entry of `GET /progress/map` (and the mentor variant). */
+export interface LearningMapPath {
+  learning_path: {
+    id: string;
+    title: string | Record<string, string>;
+  };
+  /** Stable fingerprint of the current path definition (hex, 32 chars). */
+  version_key: string;
+  rate: MetricValue;
+  modules: LearningMapModule[];
 }

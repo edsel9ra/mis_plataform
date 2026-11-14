@@ -8,6 +8,7 @@ import type {
   ChallengePathModuleLink,
   CollectiveProgress,
   CollectiveSubjectType,
+  LearningMapPath,
   LearningPathProgress,
   MenteeProgressFlag,
   Objective,
@@ -169,6 +170,46 @@ export function useMentorLearningPathProgress(userId: string, enabled = true) {
       );
 
       return unwrapCollection<LearningPathProgress>(response);
+    },
+    enabled: enabled && Boolean(userId),
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Learning map (spec 013)
+// ---------------------------------------------------------------------------
+
+export function useLearningMap(enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.progressMap(),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<{ data: LearningMapPath[] }>(
+        PROGRESS_ENDPOINTS.map,
+        undefined,
+        { signal },
+      );
+
+      return unwrapCollection<LearningMapPath>(response);
+    },
+    enabled,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+export function useMentorLearningMap(userId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.mentorMap(userId),
+    queryFn: async ({ signal }) => {
+      const response = await api.get<{ data: LearningMapPath[] }>(
+        PROGRESS_ENDPOINTS.mentorMap(userId),
+        undefined,
+        { signal },
+      );
+
+      return unwrapCollection<LearningMapPath>(response);
     },
     enabled: enabled && Boolean(userId),
     staleTime: 30_000,

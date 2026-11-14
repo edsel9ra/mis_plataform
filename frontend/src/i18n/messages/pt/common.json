@@ -960,6 +960,14 @@
         "family_group": "Grupo familiar",
         "cohort": "Coorte",
         "company": "Empresa"
+      },
+      "learning": {
+        "title": "Aprendizagem",
+        "activity_rate": "Atividade",
+        "path_rates": "Trilhas",
+        "suppressed_base": "Este agregado de aprendizagem não é exibido porque a base de participantes é insuficiente.",
+        "suppressed_metric": "Esta métrica não é exibida porque não há contribuições calculáveis suficientes.",
+        "suppressed": "Este dado está protegido e não é exibido."
       }
     },
     "mentor": {
@@ -995,6 +1003,17 @@
       "link_saved": "Vínculo salvo",
       "link_error_field": "Escolha um módulo válido ou remova o vínculo.",
       "link_error_unavailable": "Não foi possível atualizar o vínculo. Tente novamente."
+    },
+    "map": {
+      "title": "Mapa de aprendizagem",
+      "title_mentor": "Mapa do mentorado",
+      "subtitle": "Módulos na ordem vigente de cada trilha, com seus elementos vinculados.",
+      "back": "Voltar ao painel",
+      "view_map": "Ver mapa",
+      "empty": "Não há trilhas de aprendizagem neste mapa.",
+      "elements": "Elementos vinculados",
+      "no_elements": "Sem elementos vinculados.",
+      "element_challenge": "Desafio"
     }
   },
   "calendar": {

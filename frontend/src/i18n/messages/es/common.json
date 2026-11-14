@@ -960,6 +960,14 @@
         "family_group": "Grupo familiar",
         "cohort": "Cohorte",
         "company": "Empresa"
+      },
+      "learning": {
+        "title": "Aprendizaje",
+        "activity_rate": "Actividad",
+        "path_rates": "Rutas",
+        "suppressed_base": "Este agregado de aprendizaje no se muestra porque la base de participantes es insuficiente.",
+        "suppressed_metric": "Esta métrica no se muestra porque no hay suficientes contribuciones calculables.",
+        "suppressed": "Este dato está protegido y no se muestra."
       }
     },
     "mentor": {
@@ -995,6 +1003,17 @@
       "link_saved": "Vínculo guardado",
       "link_error_field": "Elige un módulo válido o retira el vínculo.",
       "link_error_unavailable": "No se pudo actualizar el vínculo. Inténtalo de nuevo."
+    },
+    "map": {
+      "title": "Mapa de aprendizaje",
+      "title_mentor": "Mapa del mentee",
+      "subtitle": "Módulos en el orden vigente de cada ruta, con sus elementos vinculados.",
+      "back": "Volver al panel",
+      "view_map": "Ver mapa",
+      "empty": "No hay rutas de aprendizaje en este mapa.",
+      "elements": "Elementos vinculados",
+      "no_elements": "Sin elementos vinculados.",
+      "element_challenge": "Reto"
     }
   },
   "calendar": {

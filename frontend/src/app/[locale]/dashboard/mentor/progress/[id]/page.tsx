@@ -50,7 +50,10 @@ export default function MentorMenteeProgressPage() {
       ) : (
         <>
           <ProgressPanel query={query} relationshipId={relationshipId} showCollectives={false} />
-          <LearningPathsCard query={learningPaths} />
+          <LearningPathsCard
+            query={learningPaths}
+            mapHref={localePath(`/dashboard/mentor/progress/${params.id}/mapa`, locale)}
+          />
         </>
       )}
     </div>

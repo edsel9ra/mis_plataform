@@ -33,6 +33,8 @@ export const PROGRESS_ENDPOINTS = {
   adminPanel: '/admin/progress/panel',
   learningPaths: '/progress/learning-paths',
   mentorLearningPaths: (userId: string) => `/mentor/users/${userId}/progress/learning-paths`,
+  map: '/progress/map',
+  mentorMap: (userId: string) => `/mentor/users/${userId}/progress/map`,
   challengePathModule: (challengeId: string) => `/challenges/${challengeId}/path-module`,
 } as const;
 
@@ -320,4 +322,46 @@ export function challengeStatusKey(status: string | null | undefined): string {
   };
 
   return (status && keys[status]) || 'mentor_workspace.status_unknown';
+}
+
+// ---------------------------------------------------------------------------
+// Learning map (spec 013)
+// ---------------------------------------------------------------------------
+
+/**
+ * i18n key for a map element type badge, or null when the type is not known —
+ * the UI then renders the raw source type verbatim (RF-013.3).
+ */
+export function mapElementTypeKey(type: string): string | null {
+  return type === 'challenge' ? 'progress.map.element_challenge' : null;
+}
+
+/**
+ * i18n key for a map element status, or null when there is no known mapping —
+ * the UI then renders `source_status` verbatim, never a derived state.
+ */
+export function mapElementStatusKey(
+  element: { type: string; source_status: string },
+): string | null {
+  if (element.type === 'challenge') return challengeStatusKey(element.source_status);
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
+// Collective learning aggregate (spec 013)
+// ---------------------------------------------------------------------------
+
+/**
+ * i18n key for a learning-aggregate suppression reason (RF-013.7). Each reason
+ * maps to a distinct, count-free message; unknown reasons fall back to the
+ * generic suppression text rather than leaking which rule applied.
+ */
+export function learningSuppressionMessageKey(reason: string | null | undefined): string {
+  const keys: Record<string, string> = {
+    insufficient_base: 'progress.collective.learning.suppressed_base',
+    insufficient_metric_contributions: 'progress.collective.learning.suppressed_metric',
+  };
+
+  return (reason && keys[reason]) || 'progress.collective.learning.suppressed';
 }

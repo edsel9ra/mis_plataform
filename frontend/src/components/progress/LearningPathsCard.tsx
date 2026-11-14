@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
 import { Badge } from '@/components/ui/badge';
 import { ProgressCard } from './ProgressCard';
@@ -23,7 +24,7 @@ interface LearningPathsQuery {
  * and completion state as TEXT — `no_data` and `incomplete` render as words,
  * never as a misleading 0% (RF-012.1-.6, RNF-012.3).
  */
-export function LearningPathsCard({ query }: { query: LearningPathsQuery }) {
+export function LearningPathsCard({ query, mapHref }: { query: LearningPathsQuery; mapHref?: string }) {
   const t = useTranslations();
   const locale = useLocale();
 
@@ -32,7 +33,17 @@ export function LearningPathsCard({ query }: { query: LearningPathsQuery }) {
   }
 
   return (
-    <ProgressCard title={t('progress.learning_paths.title')}>
+    <ProgressCard
+      title={t('progress.learning_paths.title')}
+      action={mapHref ? (
+        <Link
+          href={mapHref}
+          className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+        >
+          {t('progress.map.view_map')}
+        </Link>
+      ) : null}
+    >
       <ul className="space-y-4">
         {query.data.map((entry) => (
           <li key={entry.learning_path.id} className="rounded-xl border border-slate-100 p-4">
@@ -67,7 +78,7 @@ export function LearningPathsCard({ query }: { query: LearningPathsQuery }) {
   );
 }
 
-function PathRateBadge({ rate }: { rate: MetricValue }) {
+export function PathRateBadge({ rate }: { rate: MetricValue }) {
   const t = useTranslations();
   const ui = metricUi(rate.state);
   const value = formatMetricValue(rate);
@@ -84,7 +95,7 @@ function PathRateBadge({ rate }: { rate: MetricValue }) {
   );
 }
 
-function ModuleActivityText({ rate }: { rate: MetricValue }) {
+export function ModuleActivityText({ rate }: { rate: MetricValue }) {
   const t = useTranslations();
   const ui = metricUi(rate.state);
   const value = formatMetricValue(rate);

@@ -12,6 +12,9 @@ import {
   hasMetricData,
   isBlockIncomplete,
   isPercentageMetric,
+  learningSuppressionMessageKey,
+  mapElementStatusKey,
+  mapElementTypeKey,
   metricUi,
   objectiveStatusBadgeVariant,
   periodLabelKey,
@@ -25,6 +28,7 @@ import {
   objectiveUpdateSchema,
 } from './schemas/objective';
 import type { CollectiveProgress, CommitmentItem, MetricValue, ProgressPanel } from '@/types/progress';
+import esMessages from '../i18n/messages/es/common.json';
 
 function metric(overrides: Partial<MetricValue> = {}): MetricValue {
   return {
@@ -212,5 +216,67 @@ describe('objective schema', () => {
 
     expect(objectiveEvidenceSchema.safeParse({ note: 'Evidence note' }).success).toBe(true);
     expect(objectiveEvidenceSchema.safeParse({}).success).toBe(false);
+  });
+});
+
+describe('learning map element labels (spec 013)', () => {
+  it('translates the challenge element type and leaves unknown types verbatim', () => {
+    expect(mapElementTypeKey('challenge')).toBe('progress.map.element_challenge');
+    // Unknown types render the raw source type, never a derived label.
+    expect(mapElementTypeKey('quiz')).toBeNull();
+    expect(mapElementTypeKey('')).toBeNull();
+  });
+
+  it('maps challenge element status to the shared status keys', () => {
+    expect(mapElementStatusKey({ type: 'challenge', source_status: 'completed' })).toBe('mentor_workspace.status_completed');
+    expect(mapElementStatusKey({ type: 'challenge', source_status: 'abandoned' })).toBe('mentor_workspace.status_abandoned');
+    // A source status outside the known set never fabricates a state.
+    expect(mapElementStatusKey({ type: 'challenge', source_status: 'bogus' })).toBe('mentor_workspace.status_unknown');
+  });
+
+  it('keeps a non-challenge element status verbatim instead of deriving it', () => {
+    expect(mapElementStatusKey({ type: 'quiz', source_status: 'graded' })).toBeNull();
+  });
+});
+
+describe('collective learning suppression messages (spec 013)', () => {
+  function resolveKey(key: string): string | undefined {
+    return key.split('.').reduce<unknown>(
+      (node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined),
+      esMessages,
+    ) as string | undefined;
+  }
+
+  it('gives a different message for each suppression reason', () => {
+    const base = learningSuppressionMessageKey('insufficient_base');
+    const metric = learningSuppressionMessageKey('insufficient_metric_contributions');
+
+    expect(base).toBe('progress.collective.learning.suppressed_base');
+    expect(metric).toBe('progress.collective.learning.suppressed_metric');
+    expect(base).not.toBe(metric);
+  });
+
+  it('falls back to a generic message for unknown or missing reasons', () => {
+    expect(learningSuppressionMessageKey(null)).toBe('progress.collective.learning.suppressed');
+    expect(learningSuppressionMessageKey(undefined)).toBe('progress.collective.learning.suppressed');
+    expect(learningSuppressionMessageKey('some_future_reason')).toBe('progress.collective.learning.suppressed');
+  });
+
+  it('resolves every message in Spanish without raw keys or counts', () => {
+    for (const reason of ['insufficient_base', 'insufficient_metric_contributions', 'other', null]) {
+      const key = learningSuppressionMessageKey(reason);
+      const message = resolveKey(key);
+
+      // Spanish fallback: a real translated string, never the raw key.
+      expect(message, key).toBeDefined();
+      expect(message).not.toBe(key);
+      // Suppression never carries counts, sizes or thresholds (RF-013.7).
+      expect(message).not.toMatch(/\{count\}|\{threshold\}|\d/);
+    }
+
+    // Static labels used by the block also resolve in Spanish.
+    for (const key of ['progress.collective.learning.title', 'progress.collective.learning.activity_rate', 'progress.collective.learning.path_rates']) {
+      expect(resolveKey(key), key).toBeDefined();
+    }
   });
 });

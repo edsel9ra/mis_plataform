@@ -98,8 +98,10 @@ export const queryKeys = {
   progressPanel: (subjectId?: string) => ['progress', 'panel', subjectId ?? 'self'] as const,
   collectiveProgress: (type: string, id: string) => ['progress', 'collectives', type, id] as const,
   progressLearningPaths: (subjectId?: string) => ['progress', 'learning-paths', subjectId ?? 'self'] as const,
+  progressMap: (subjectId?: string) => ['progress', 'map', subjectId ?? 'self'] as const,
   relationshipChallenges: (relationshipId: string) => ['challenges', 'relationships', relationshipId] as const,
   mentorLearningPaths: (userId: string) => ['mentor', 'progress', 'users', userId, 'learning-paths'] as const,
+  mentorMap: (userId: string) => ['mentor', 'progress', 'users', userId, 'map'] as const,
   objectivesRoot: ['objectives'] as const,
   objectives: (subjectType: string, subjectId: string, status = 'all') => [
     'objectives',
