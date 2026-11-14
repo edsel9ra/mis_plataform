@@ -1,6 +1,6 @@
 # Spec 010 — Interfaz accesible e internacionalizada de agenda
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.2, aprobada.
 **Dependencias:** hijas 003–009; integra sus contratos sin redefinir reglas de negocio ni autorización. La hija 008 es propietaria de identificadores, persistencia de entrega, estado del proveedor y política de reintentos.

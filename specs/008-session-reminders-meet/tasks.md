@@ -1,6 +1,6 @@
 # Tareas — Spec 008: Recordatorios y Meet
 
-**Estado:** aprobado; implementación/revalidación en curso; T008-01–06 completadas históricamente; T008-07 pendiente tras T010-07; aceptación final de RF-008.2 pendiente.  
+**Estado:** aprobado; implementación/revalidación en curso; T008-01–07 completadas; aceptación de RF-008.2 superada vía T010-07.  
 **Spec:** `specs/008-session-reminders-meet/spec.md` (RF-008.2/caso 43, cambio propuesto en padre) · **Plan:** `plan.md`.
 
 - [x] **T008-01. Añadir estado de entrega y probar claves idempotentes.** RF-008.1–008.2; CA hija RF-008.1/2; CA padre CA-5.1–5.3/5.6.
@@ -16,8 +16,9 @@
 - [x] **T008-06. Cubrir fallos externos, backfill y privacidad con tests.** RF-008.1–008.7; CA hija RF-008.1–7; CA padre CA-5.2/5.6/5.7, CA-7.4, CA-9.1/9.2/9.4/9.5, RNF-10.
   - Hecho cuando: fakes HTTP/broadcast prueban reintentos, cancelación con éxito y fallo Google, conservación del valor histórico y ocultación API en ambos resultados, ausencia de `meet_link` en evento/log, backfill y registros de fallo seguros. Para el caso 43, los tests backend simulan aceptación antes de persistir `sent` y redelivery; prueban ID igual, success confirmado y retryability de ambigüedad, sin afirmar upsert visible. La publicación de transporte puede repetirse; no se exige exactly-once. La casilla histórica no declara aceptada la deduplicación visible; mantener cobertura del caso 42/CA-7.4/CA-9.5.
 
-- [ ] **T008-07. Cerrar aceptación integrada de RF-008.2 tras el consumidor de 010.** RF-008.2; RF-010.4; CA hija RF-008.2/43 y RF-010.4.
+- [x] **T008-07. Cerrar aceptación integrada de RF-008.2 tras el consumidor de 010.** RF-008.2; RF-010.4; CA hija RF-008.2/43 y RF-010.4.
   - Hecho cuando: después de implementar T010-07, la prueba integrada del evento privado existente `SessionReminder` confirma que dos entregas con el mismo `notification_id` dejan un único aviso visible actualizado y dos IDs distintos producen avisos distintos; payload/idioma y accesibilidad se mantienen; no se incorpora canal/API/bandeja persistente. Esta tarea solo valida/cierra la aceptación de 008 y no cambia el orden de implementación 009→010.
+  - Resultado: aceptación superada con la prueba integrada de T010-07 contra el stack real (broadcasts por tinker procesados por el queue worker; evidencia `/tmp/audit/a11y/reminders-e2e.log` + `reminders-axe.json` + capturas 320/1280): mismo `notification_id` → un único aviso actualizado ("A"→"B") con re-anuncio; id distinto → aviso separado; payload ya localizado por el servidor se renderiza tal cual; axe 0 violaciones; sin canal/API/bandeja nuevos.
 
 ## Puerta de aceptación y dependencia de validación
 

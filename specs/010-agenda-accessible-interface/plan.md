@@ -1,7 +1,7 @@
 # Plan — Spec 010: Interfaz accesible e internacionalizada de agenda
 
-**Estado:** aprobado; implementación no iniciada.  
-**Spec:** `specs/010-agenda-accessible-interface/spec.md`; scope hijo aprobado.  
+**Estado:** implementado; T010-01–07 completadas.  
+**Spec:** `specs/010-agenda-accessible-interface/spec.md` (implementada).  
 **Base:** Spec 002 v0.4.2 aprobada, plan 002 v1.2.0 aprobado y contratos 003–009.
 **Dependencias:** 003–009 definen antes las superficies y conductas; 008 proporciona el evento privado existente `SessionReminder` con `notification_id`. 010 no introduce reglas de negocio, permisos, endpoints, estados ni canales de notificación nuevos; sí implementa su consumo/presentación y el upsert visible RF-010.4.
 
