@@ -53,7 +53,11 @@ jobs:
       DB_PASSWORD: ci-only-postgres-password
       REDIS_HOST: 127.0.0.1
       REDIS_PORT: 6379
+      QUEUE_CONNECTION: redis
       MATCHING_SERVICE_API_KEY: ci-only-matching-key
+      REVERB_APP_ID: ci-only-reverb-app
+      REVERB_APP_KEY: ci-only-reverb-key
+      REVERB_APP_SECRET: ci-only-reverb-secret
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
       - uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
