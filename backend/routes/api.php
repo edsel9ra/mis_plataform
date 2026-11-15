@@ -45,8 +45,10 @@ use App\Http\Controllers\Api\LearningMapController;
 use App\Http\Controllers\Api\LearningPathProgressController;
 use App\Http\Controllers\Api\ChallengePathModuleController;
 use App\Http\Controllers\Api\CollectiveProgressController;
+use App\Http\Controllers\Api\CompetencyEvidenceLinkController;
 use App\Http\Controllers\Api\MentorProgressController;
 use App\Http\Controllers\Api\AdminProgressController;
+use App\Http\Controllers\Api\EvidenceDeletionAuditController;
 
 Route::prefix('v1')->group(function () {
     // Auth
@@ -181,6 +183,9 @@ Route::prefix('v1')->group(function () {
         Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
         Route::get('/progress/learning-paths', [LearningPathProgressController::class, 'index']);
         Route::get('/progress/map', [LearningMapController::class, 'index']);
+        Route::post('/progress/competencies/evidence-links', [CompetencyEvidenceLinkController::class, 'store']);
+        Route::put('/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'update']);
+        Route::delete('/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'destroy']);
 
         // Mentee workspace activity. Every route resolves the relationship to
         // the authenticated personal user before reading or writing data.
@@ -206,6 +211,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
             Route::get('/users/{user}/progress/learning-paths', [LearningPathProgressController::class, 'show']);
             Route::get('/users/{user}/progress/map', [LearningMapController::class, 'show']);
+            Route::post('/users/{user}/progress/competencies/evidence-links', [CompetencyEvidenceLinkController::class, 'storeFor']);
+            Route::put('/users/{user}/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'updateFor']);
+            Route::delete('/users/{user}/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'destroyFor']);
             Route::get('/users/{user}/personality', [MentorDashboardController::class, 'personality']);
             Route::get('/users/{user}/recommendations', [MentorDashboardController::class, 'recommendations']);
             Route::get('/users/{user}/profile', [MentorWorkspaceController::class, 'profile']);
@@ -258,6 +266,12 @@ Route::prefix('v1')->group(function () {
             Route::get('/users', [AdminController::class, 'users']);
             Route::get('/progress/panel', [AdminProgressController::class, 'show'])
                 ->middleware('permission:progress.view.support');
+
+            // Audit (spec 014 — política de retención §4.4)
+            Route::get('/audit/evidence-deletion-events/{event}/actor', [EvidenceDeletionAuditController::class, 'actor'])
+                ->whereUuid('event')
+                ->middleware('permission:audit.identify_actor');
+
             Route::post('/users', [AdminController::class, 'userStore']);
             Route::get('/users/{id}', [AdminController::class, 'userShow']);
             Route::put('/users/{id}', [AdminController::class, 'userUpdate']);

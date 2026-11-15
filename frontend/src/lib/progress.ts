@@ -8,15 +8,25 @@ import { ApiError } from '@/lib/api';
 import type {
   CollectiveAggregateState,
   CollectiveProgress,
+  CompletedAssessmentResultSource,
+  CompletedEvaluationSource,
+  CompetencyEvidenceCompetencyType,
+  CompetencyEvidenceEntry,
+  CompetencyEvidenceSourceType,
+  CompetencyEvidenceState,
+  CompetencySkillItem,
+  EvidenceSourceCandidate,
   LearningPathProgress,
   CommitmentItem,
   MetricState,
   MetricValue,
   Objective,
   ObjectiveStatus,
+  OceanBlock,
   ProgressPanel,
   ProgressPeriod,
   ProgressPeriodType,
+  SetCompetencyEvidenceLinkPayload,
 } from '@/types/progress';
 
 /** API paths consumed by `hooks/use-progress.ts`. */
@@ -36,6 +46,13 @@ export const PROGRESS_ENDPOINTS = {
   map: '/progress/map',
   mentorMap: (userId: string) => `/mentor/users/${userId}/progress/map`,
   challengePathModule: (challengeId: string) => `/challenges/${challengeId}/path-module`,
+  evidenceLinks: '/progress/competencies/evidence-links',
+  evidenceLink: (id: string) => `/progress/competencies/evidence-links/${id}`,
+  mentorEvidenceLinks: (userId: string) => `/mentor/users/${userId}/progress/competencies/evidence-links`,
+  mentorEvidenceLink: (userId: string, id: string) =>
+    `/mentor/users/${userId}/progress/competencies/evidence-links/${id}`,
+  evaluations: '/evaluations',
+  mentorEvaluationResults: (userId: string) => `/mentor/evaluation-results?user_id=${userId}&per_page=100`,
 } as const;
 
 /** Minimum base size below which a collective aggregate is suppressed (RNF-2). */
@@ -364,4 +381,131 @@ export function learningSuppressionMessageKey(reason: string | null | undefined)
   };
 
   return (reason && keys[reason]) || 'progress.collective.learning.suppressed';
+}
+
+// ---------------------------------------------------------------------------
+// Competency evidence links (spec 014)
+// ---------------------------------------------------------------------------
+
+/** Explicit entries linked to a skill — empty when no link exists (RF-014.5). */
+export function evidenceEntriesForSkill(skill: CompetencySkillItem): CompetencyEvidenceEntry[] {
+  return skill.evidence ?? [];
+}
+
+/** Explicit entries linked to an OCEAN factor — empty when no link exists. */
+export function evidenceEntriesForOceanFactor(ocean: OceanBlock, factor: string): CompetencyEvidenceEntry[] {
+  return ocean.evidence?.[factor] ?? [];
+}
+
+/**
+ * Only `current` is presentable as vigente. `incomplete`, `missing_source` and
+ * `blocked` describe historical or unavailable context (RF-014.6).
+ */
+export function isCurrentEvidence(entry: CompetencyEvidenceEntry): boolean {
+  return entry.state === 'current';
+}
+
+/** i18n key for an evidence state — each state resolves to a distinct label. */
+export function evidenceStateKey(state: CompetencyEvidenceState): string {
+  const keys: Record<CompetencyEvidenceState, string> = {
+    current: 'progress.competencies.evidence.state_current',
+    incomplete: 'progress.competencies.evidence.state_incomplete',
+    missing_source: 'progress.competencies.evidence.state_missing_source',
+    blocked: 'progress.competencies.evidence.state_blocked',
+  };
+
+  return keys[state] ?? 'progress.competencies.evidence.state_incomplete';
+}
+
+/** i18n key distinguishing the two source kinds. */
+export function evidenceSourceKindKey(type: CompetencyEvidenceSourceType | undefined): string {
+  return type === 'personality_assessment'
+    ? 'progress.competencies.evidence.source_personality'
+    : 'progress.competencies.evidence.source_catalog';
+}
+
+/**
+ * Source identity shown next to the link: the real Assessment title for a
+ * catalog result, `test_version` for a personality assessment (RF-014.2).
+ * Empty when the entry hides its source (blocked or missing).
+ */
+export function evidenceInstrumentLabel(entry: CompetencyEvidenceEntry, locale: string): string {
+  if (entry.state === 'blocked') return '';
+  if (entry.source_type === 'personality_assessment') return entry.test_version ?? '';
+  return localizedTitle(entry.instrument?.title, locale);
+}
+
+/** Mutation payload — never carries level or user_id (the server resolves them). */
+export function buildEvidenceLinkPayload(
+  source: EvidenceSourceCandidate,
+  competencyType: CompetencyEvidenceCompetencyType,
+  competencyKey: string,
+): SetCompetencyEvidenceLinkPayload {
+  return {
+    source_type: source.source_type,
+    source_id: source.source_id,
+    competency_type: competencyType,
+    competency_key: competencyKey,
+  };
+}
+
+/** Completed sources minus those already linked to this competency. */
+export function availableEvidenceSources(
+  candidates: EvidenceSourceCandidate[],
+  linked: CompetencyEvidenceEntry[],
+): EvidenceSourceCandidate[] {
+  const linkedIds = new Set(linked.map((entry) => entry.source_id).filter(Boolean));
+  return candidates.filter((candidate) => !linkedIds.has(candidate.source_id));
+}
+
+/** Catalog candidates from GET /evaluations — only rows with a completed result. */
+export function evaluationSourceOptions(
+  evaluations: CompletedEvaluationSource[],
+  locale: string,
+): EvidenceSourceCandidate[] {
+  return evaluations
+    .filter((evaluation) => Boolean(evaluation.user_result?.id))
+    .map((evaluation) => ({
+      source_type: 'assessment_result' as const,
+      source_id: evaluation.user_result!.id,
+      label: localizedTitle(evaluation.title, locale),
+    }));
+}
+
+/** Catalog candidates from GET /mentor/evaluation-results. */
+export function assessmentResultSourceOptions(
+  results: CompletedAssessmentResultSource[],
+  locale: string,
+): EvidenceSourceCandidate[] {
+  return results.map((result) => ({
+    source_type: 'assessment_result' as const,
+    source_id: result.id,
+    label: localizedTitle(result.assessment?.title, locale),
+  }));
+}
+
+/**
+ * The subject's personality assessment as a linkable source — offered only
+ * when it is completed (ocean state `value` implies `completed_at` set).
+ */
+export function personalitySourceOption(ocean: OceanBlock): EvidenceSourceCandidate | null {
+  if (ocean.state !== 'value' || !ocean.assessment_id) return null;
+  return {
+    source_type: 'personality_assessment',
+    source_id: ocean.assessment_id,
+    label: ocean.test_version ?? '',
+  };
+}
+
+/**
+ * 422 → field-level error; 404/403/network → generic alert that reveals
+ * nothing about the link (mirrors the backend's hidden denials).
+ */
+export function evidenceLinkErrorMessage(error: unknown): LinkErrorMessage {
+  if (error === null || error === undefined) return null;
+  if (error instanceof ApiError && error.status === 422) {
+    return { kind: 'field', key: 'progress.competencies.evidence.error_field' };
+  }
+
+  return { kind: 'alert', key: 'progress.competencies.evidence.error_unavailable' };
 }

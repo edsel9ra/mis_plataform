@@ -938,7 +938,26 @@
       "ocean_blocked": "Your plan does not include the OCEAN profile",
       "assessed_at": "Assessed on {date}",
       "source_skills": "Source: skills",
-      "source_personality": "Source: personality"
+      "source_personality": "Source: personality",
+      "evidence": {
+        "manage_title": "Linked evidence",
+        "select_competency": "Competency",
+        "select_source": "Completed source",
+        "select_competency_placeholder": "Choose a competency",
+        "select_source_placeholder": "Choose a source",
+        "no_sources": "No completed sources available",
+        "link": "Link",
+        "unlink": "Remove link to {source}",
+        "factor_option": "Factor {factor}",
+        "state_current": "Current",
+        "state_incomplete": "Historical · not completed",
+        "state_missing_source": "Historical · source unavailable",
+        "state_blocked": "Blocked by plan",
+        "source_catalog": "Assessment",
+        "source_personality": "Personality",
+        "error_field": "Check the chosen source or competency",
+        "error_unavailable": "The link could not be updated"
+      }
     },
     "commitments": {
       "title": "Upcoming commitments",

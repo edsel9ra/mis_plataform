@@ -1,9 +1,10 @@
 # Plan de implementación — Spec 014: Evidencia de evaluaciones y competencias
 
-**Estado:** propuesto para implementación · **Spec:** aprobada
+**Estado:** aprobado para implementación (2026-11-14) · **Spec:** aprobada
 **Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 implementado.
 **Dependencia:** independiente de 012/013; 015 consumirá los eventos que esta ampliación produzca.
 **Bloqueo explícito:** la retención de evento mínimo tras eliminación NO se implementa hasta que la política general de conservación/eliminación esté identificada y documentada. No se fija plazo ni se propone una política aquí.
+**Enmienda 2026-11-15 (aprobada 2026-11-15):** el prerrequisito se cumple con `docs/politica-retencion.md` v1.0.0, que está vigente. La §9 de este plan describe cómo implementar la retención del evento mínimo con lo que fija esa política. El plazo no lo decide este plan, sino la política. El bloqueo de la línea anterior queda levantado únicamente para lo que cubre la §9.
 
 ## 1. Alcance y archivos
 
@@ -89,4 +90,76 @@ El acceso a fuentes se hace en lotes/eager loading con índices por sujeto y ori
 | Actions, policy y registro de cambios | RF-014.3–.5, .9 |
 | Lectura de evidencia contextual y UI | RF-014.1–.3, .5–.6, .9 |
 | Events del resultado con relación activa | RF-014.4, .6–.7 (solo transiciones disponibles) |
-| Retención de eliminación | RF-014.7–.8 **bloqueados** hasta política documentada; no se implementa aquí |
+| Retención de eliminación | RF-014.7–.8: política v1.0.0 vigente; implementación según §9 (enmienda aprobada 2026-11-15), tareas T014.10–T014.13 |
+
+## 9. Enmienda — Retención del evento mínimo de eliminación (RF-014.7–.8)
+
+**Fuente normativa:** `docs/politica-retencion.md` v1.0.0, §4, §5, §6, §7 y §9. Esta sección solo aplica lo que fija la política y no añade plazos ni categorías nuevas. Cubre la retención y la identificación audit-only. Mostrar el evento en la cronología del historial corresponde a la Spec 015 (T015.10).
+
+### 9.1. Archivos y responsabilidades
+
+| Archivo o área | Responsabilidad | RF |
+|---|---|---|
+| `backend/database/migrations/*evidence_deletion_events*` | Dos tablas. **`evidence_deletion_events`**: UUID, `subject_id` (FK `users`, `cascadeOnDelete`), `source_type`, `competency_type`, `competency_key` (string sin FK, para que el evento no bloquee el borrado de un skill tag), `change_type` (`source_deleted`), `actor_pseudonym` (UUID aleatorio, único), `occurred_at`, `expires_at` e índice por `expires_at` y por `(subject_id, occurred_at)`. **`evidence_deletion_actor_links`**: UUID, `event_id` (FK único, `cascadeOnDelete`) y `actor_id` (FK `users`, `nullOnDelete`). Ninguna de las dos tiene columnas de respuestas, puntuación, id de resultado ni id de vínculo. Checks para `source_type`, `competency_type` y `change_type`. | RF-014.7 |
+| `backend/app/Models/{EvidenceDeletionEvent,EvidenceDeletionActorLink}.php` | Los modelos. El evento no expone ninguna relación con el actor. La correspondencia solo se lee desde la Action de identificación. `$hidden` sobre `subject_id` en la serialización por defecto. | RF-014.7 |
+| `backend/config/progress.php` | `deletion_event_retention_months`, por defecto `12` (política §5.1). Con `0` o `null` no se crean eventos nuevos (política §5.3). El valor debe coincidir con la política vigente; un test fija el valor por defecto. | RF-014.8 |
+| `backend/app/Actions/RecordEvidenceDeletionEventAction.php` | Recibe un vínculo que se va a retirar porque su fuente se borra. Crea el evento mínimo y su correspondencia en la transacción del llamador. Si el plazo está deshabilitado, no hace nada. | RF-014.7–.8 |
+| `backend/app/Actions/RetireEvidenceLinksForSourceAction.php` | Por cada vínculo: llama a `RecordEvidenceDeletionEventAction` y después al retiro auditado que ya existe. El registro operativo no cambia (política §6). | RF-014.7 |
+| `backend/app/Http/Controllers/Api/PersonalityController.php` | El retake mete el retiro y el `delete()` en una `DB::transaction`, igual que ya hacen las dos rutas de admin. Así un fallo no deja el evento sin borrado ni el borrado sin evento. | RF-014.7 |
+| `backend/database/seeders/RolePermissionSeeder.php` | Permiso nuevo `audit.identify_actor`, asignado a `super_admin` y `admin` (política §4.4). Se sigue la convención actual: los permisos se dan de alta en el seeder, no en migraciones. | RF-014.7 |
+| `backend/app/Actions/IdentifyEvidenceDeletionActorAction.php` + `EvidenceDeletionAuditController` + Resource | `GET /api/v1/admin/audit/evidence-deletion-events/{event}/actor`, dentro del grupo `role:super_admin\|admin` y con `permission:audit.identify_actor`. Devuelve solo `{actor: {id, name} \| null, event_id}`. Cada consulta deja una actividad `audit.evidence_deletion_actor_identified` con auditor, evento y fecha, sin el contenido del evento (política §4.5). Si el evento no existe o ha expirado → 404. | RF-014.7 |
+| `backend/app/Console/Commands/ExpireEvidenceDeletionEvents.php` + `routes/console.php` | `app:expire-evidence-deletion-events`, una vez al día con `withoutOverlapping`. Borra los eventos con `expires_at <= now` (la correspondencia se va en cascada). Registra una actividad `competency.evidence_deletion_events_expired` que solo lleva el recuento (política §5.2). Es el único proceso de purga que habilita la excepción de la política §7. | RF-014.8 |
+| `backend/lang/{es,en,pt}/*` | Mensajes de la ruta de auditoría, si hacen falta. | RNF-014.6 |
+| `backend/tests/Feature/Progress/EvidenceDeletion*Test.php` | Ver §9.5. | RNF-014.5 |
+
+### 9.2. Reglas puras y pseudocódigo
+
+```text
+retentionMonths(config): int|null        # null o <= 0 → retención deshabilitada (§5.3)
+expiresAt(occurredAt, months): occurredAt + months   # "now" llega como parámetro
+minimalEvent(link, subjectId, now, months):
+  { subject_id, source_type: link.sourceType(), competency_type: link.competencyType(),
+    competency_key: link.competencyKey(), change_type: 'source_deleted',
+    actor_pseudonym: random UUID, occurred_at: now, expires_at: expiresAt(now, months) }
+  # nunca: source_id, link_id, answers, score, raw_scores, results, level
+
+retire(source, actor, now):
+  for link in links(source):
+    if retentionMonths() enabled:
+      event = insert minimalEvent(link, link.user_id, now, months)
+      insert actorLink(event.id, actor.id)
+    RemoveCompetencyAssessmentLinkAction(link)   # registro operativo existente, sin cambios
+```
+
+`minimalEvent` y `expiresAt` son funciones puras: reciben `now` y los meses como parámetros, sin reloj global, y tienen tests unitarios.
+
+### 9.3. Decisiones técnicas y alternativas descartadas
+
+| Decisión | Alternativa descartada | Justificación |
+|---|---|---|
+| Tablas propias para el evento y la correspondencia | Guardarlos en `activity_log` | El evento tiene su propio plazo (12 meses) y el log operativo no tiene purga (política §6). Mezclarlos obligaría a purgar solo parte del log y metería al actor real junto al seudónimo. |
+| Seudónimo UUID aleatorio por evento y correspondencia en tabla aparte | HMAC/hash determinista del `actor_id` | La política §4.5 lo prohíbe: un valor determinista permite cruzar eventos del mismo actor y no se puede borrar la correspondencia de un evento concreto. |
+| Correspondencia en la misma base de datos, en tabla separada y solo accesible desde una Action con permiso | Una conexión o base de datos aparte | La política pide separación lógica y control en el servidor. Una base aparte complica las transacciones atómicas con el borrado de la fuente sin mejorar el control que se exige. |
+| Un evento por vínculo retirado | Un evento por fuente borrada | Cada vínculo es una competencia afectada. La Spec 015 tiene que mostrar el efecto en cada competencia (CA-19.3). |
+| `competency_key` como string sin FK | FK a `skill_tags` | Con FK, un evento que dura 12 meses impediría borrar etiquetas. La clave es un metadato del vínculo, no una relación viva. |
+| `actor_id` con `nullOnDelete` | `restrict` o `cascade` | `restrict` bloquearía el borrado definitivo de un administrador. `cascade` borraría el evento antes de tiempo. Con `null`, el evento sigue y la identificación responde «actor no disponible». |
+| Permiso dado de alta en el seeder | Migración de permisos | Es la convención actual del proyecto (`progress.view.support`, `scheduling.*`). En entornos desplegados hay que volver a ejecutar `RolePermissionSeeder`. |
+| Plazo configurable con valor por defecto igual a la política | Plazo fijo en el código | Permite cumplir la política §5.3 (desactivar la creación si se retira el plazo) sin desplegar código. Un test fija el valor por defecto en 12. |
+
+### 9.4. Eliminación del participante — **decidido 2026-11-15: propuesta (cascada solo en borrado definitivo)**
+
+La política §4.1 dice que, si se elimina la cuenta del participante, sus eventos y correspondencias se eliminan con ella. Sin embargo, hoy `User` usa `SoftDeletes` y no hay ningún borrado definitivo (`AdminController::userDestroy` hace `delete()` y no existe `forceDelete`). Con soft delete, la FK `cascadeOnDelete` no se dispara.
+
+- **Propuesta:** aplicar la cascada solo en el borrado definitivo, igual que ya ocurre con los vínculos y el resto de datos del usuario. Un usuario dado de baja con soft delete conserva sus eventos hasta que caduquen (12 meses como máximo).
+- **Alternativa (descartada):** un observer en `User::deleted` (soft delete) que borre también sus eventos y correspondencias. Sería la lectura más estricta de §4.1, pero rompería la simetría con el resto de datos, que se conservan cuando se restaura una cuenta.
+
+Un test de T014.10 fija esta decisión: el soft delete del sujeto conserva sus eventos y el borrado definitivo los elimina en cascada junto con su correspondencia.
+
+### 9.5. Estrategia de tests
+
+- **Unit:** `expiresAt` con 12 meses, incluido un 31 → fin de mes; `retentionMonths` con 0, null y negativo → deshabilitado; `minimalEvent` no contiene `source_id`, `link_id`, `answers`, `score`, `raw_scores`, `results` ni `level` (comprobado sobre JSON).
+- **Feature, creación:** las tres rutas de borrado (retake, `admin/assessments/{id}`, `admin/evaluation-catalog/{id}`) crean un evento por vínculo con los metadatos aprobados, el `subject` correcto y `expires_at` = ahora + 12 meses. La correspondencia apunta al actor real y el evento no lleva el `actor_id`. Dos borrados del mismo actor generan seudónimos distintos. Sin vínculos no se crea evento. Con la retención deshabilitada, se retira el vínculo pero no se crea evento. Si el `delete()` falla, el evento se revierte (atomicidad del retake). El registro operativo sigue igual.
+- **Feature, identificación:** `super_admin` y `admin` con el permiso → 200 con `{id, name}` y actividad de auditoría registrada. Admin sin el permiso → 403. Mentor o participante → 403 por el grupo de rol. Evento inexistente o expirado → 404. Actor nulo → `actor: null`. La respuesta no lleva contenido del evento más allá de `event_id`.
+- **Feature, expiración:** el comando borra solo lo vencido, la correspondencia se va en cascada, después la identificación devuelve 404, la actividad registra solo el recuento y el comando está programado a diario en `routes/console.php`.
+- **Privacidad:** ni el panel ni ningún endpoint de progreso (propio o de mentor) exponen eventos, seudónimos o correspondencias. El JSON del evento persistido no contiene ninguna clave prohibida.
+- **Esquema:** checks y FKs comprobados por SQLSTATE con savepoints (patrón T014.1); rollback y reaplicación limpios.

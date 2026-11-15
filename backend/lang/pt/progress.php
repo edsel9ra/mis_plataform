@@ -55,6 +55,7 @@ return [
         'access_denied' => 'Você não tem acesso a este painel de progresso.',
         'not_visible' => 'O recurso solicitado não está disponível.',
         'workspace_locked' => 'O plano do mentorado não inclui o espaço do mentor.',
+        'entitlement_missing' => 'O plano não inclui a avaliação de personalidade.',
         'no_active_process' => 'Você ainda não tem um processo ativo. Complete seu onboarding ou explore mentores.',
     ],
 ];

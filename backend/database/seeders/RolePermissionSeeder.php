@@ -22,6 +22,7 @@ class RolePermissionSeeder extends Seeder
             'view_reports', 'issue_certificates', 'revoke_certificates',
             'progress.view.support',
             'scheduling.view.support', 'scheduling.manage.support',
+            'audit.identify_actor',
         ];
 
         foreach ($permissions as $permission) {
@@ -32,6 +33,7 @@ class RolePermissionSeeder extends Seeder
             UserRole::SuperAdmin->value => [
                 'manage_all', 'view_reports', 'progress.view.support',
                 'scheduling.view.support', 'scheduling.manage.support',
+                'audit.identify_actor',
             ],
             UserRole::Admin->value => [
                 'manage_users', 'manage_mentors', 'manage_plans',
@@ -40,6 +42,7 @@ class RolePermissionSeeder extends Seeder
                 'view_dashboard', 'view_sessions', 'view_messages',
                 'progress.view.support',
                 'scheduling.view.support', 'scheduling.manage.support',
+                'audit.identify_actor',
             ],
             UserRole::CompanyAdmin->value => [
                 'manage_company', 'manage_employees', 'manage_relationships',

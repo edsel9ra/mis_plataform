@@ -111,6 +111,8 @@ export const queryKeys = {
   mentorProgressOverview: ['mentor', 'progress', 'overview'] as const,
   mentorProgressPanel: (userId: string) => ['mentor', 'progress', 'users', userId] as const,
   adminProgressPanel: (userId: string) => ['admin', 'progress', 'panel', userId] as const,
+  // Completed sources offered by the evidence-link picker (spec 014)
+  evidenceSources: (subjectId?: string) => ['progress', 'evidence-sources', subjectId ?? 'self'] as const,
 
   // Realtime messaging & notifications (phase 4)
   notificationsRoot: ['notifications'] as const,

@@ -2,7 +2,9 @@
 
 namespace App\Services\Progress;
 
+use App\Models\AssessmentResult;
 use App\Models\Challenge;
+use App\Models\CompetencyAssessmentLink;
 use App\Models\MentorshipRelationship;
 use App\Models\Objective;
 use App\Models\PersonalityAssessment;
@@ -13,6 +15,7 @@ use App\Models\UserSkill;
 use App\Services\PlanEntitlementService;
 use App\Services\Progress\Calculators\ActivityMetricsCalculator;
 use App\Services\Progress\Calculators\CommitmentMetricsCalculator;
+use App\Services\Progress\Calculators\CompetencyEvidenceCalculator;
 use App\Services\Progress\Calculators\CompetencyMetricsCalculator;
 use App\Services\Progress\Calculators\ObjectiveMetricsCalculator;
 use App\Services\Progress\Calculators\SessionMetricsCalculator;
@@ -217,6 +220,7 @@ class ProgressPanelService
             ->get()
             ->map(fn (UserSkill $skill): array => [
                 'id' => $skill->id,
+                'skill_tag_id' => $skill->skill_tag_id,
                 'tag' => $skill->skillTag?->name,
                 'category' => $skill->skillTag?->category,
                 'level' => $skill->level,
@@ -234,7 +238,94 @@ class ProgressPanelService
         $access = $this->entitlements->forModel($subject, 'personal');
         $entitled = $this->entitlements->allows($access['plan'], PlanEntitlementService::OCEAN);
 
-        return $this->competencies->build($skills, $oceanArray, $entitled);
+        $block = $this->competencies->build($skills, $oceanArray, $entitled);
+
+        // Explicit evidence links only (RF-014.1–.3, .5–.6): the map is keyed
+        // "competency_type:competency_key" and entries carry the minimized
+        // source context — never answers, score or raw_scores. The metrics
+        // calculator whitelists its output keys, so the tag id is re-attached
+        // per user_skill id from the input rows.
+        $evidence = $this->evidenceMap($subject, $entitled);
+        $tagBySkillId = array_column($skills, 'skill_tag_id', 'id');
+
+        $block['skills'] = array_map(
+            function (array $skill) use ($evidence, $tagBySkillId): array {
+                $tagId = $tagBySkillId[$skill['id']] ?? null;
+
+                return $skill + [
+                    'skill_tag_id' => $tagId,
+                    'evidence' => $tagId === null ? [] : ($evidence['skill_tag:'.$tagId] ?? []),
+                ];
+            },
+            $block['skills'],
+        );
+
+        $oceanEvidence = [];
+        foreach ($evidence as $key => $entries) {
+            if (str_starts_with($key, 'ocean_factor:')) {
+                $oceanEvidence[substr($key, strlen('ocean_factor:'))] = $entries;
+            }
+        }
+        $block['ocean']['evidence'] = $oceanEvidence;
+        // The subject's own assessment id — needed so an authorized viewer can
+        // link the personality source; carries no answers or scores.
+        $block['ocean']['assessment_id'] = $ocean?->id;
+
+        return $block;
+    }
+
+    /**
+     * Explicit link → minimized source resolution for the competencies block
+     * (RF-014.1–.3). Three flat queries only when links exist: the links
+     * themselves plus one per referenced source kind. The catalog source
+     * keeps its real Assessment; the personality source keeps test_version.
+     *
+     * @return array<string, array<int, array<string, mixed>>>
+     */
+    private function evidenceMap(User $subject, bool $oceanEntitled): array
+    {
+        $links = CompetencyAssessmentLink::query()
+            ->where('user_id', $subject->id)
+            ->get();
+
+        if ($links->isEmpty()) {
+            return [];
+        }
+
+        $normalized = $links->map(fn (CompetencyAssessmentLink $link): array => [
+            'id' => $link->id,
+            'source_type' => $link->sourceType(),
+            'source_id' => $link->assessment_result_id ?? $link->personality_assessment_id,
+            'competency_type' => $link->competencyType(),
+            'competency_key' => $link->competencyKey(),
+        ])->all();
+
+        $resultIds = $links->pluck('assessment_result_id')->filter()->values()->all();
+        $personalityIds = $links->pluck('personality_assessment_id')->filter()->values()->all();
+
+        $sources = [
+            'assessment_result' => $resultIds === [] ? [] : AssessmentResult::query()
+                ->whereIn('id', $resultIds)
+                ->with('assessment')
+                ->get()
+                ->mapWithKeys(fn (AssessmentResult $result): array => [$result->id => [
+                    'completed_at' => $result->completed_at?->toIso8601String(),
+                    'instrument' => $result->assessment === null ? null : [
+                        'id' => $result->assessment->id,
+                        'slug' => $result->assessment->slug,
+                        'title' => $result->assessment->title,
+                    ],
+                ]])->all(),
+            'personality_assessment' => $personalityIds === [] ? [] : PersonalityAssessment::query()
+                ->whereIn('id', $personalityIds)
+                ->get()
+                ->mapWithKeys(fn (PersonalityAssessment $assessment): array => [$assessment->id => [
+                    'completed_at' => $assessment->completed_at?->toIso8601String(),
+                    'test_version' => $assessment->test_version,
+                ]])->all(),
+        ];
+
+        return CompetencyEvidenceCalculator::build($normalized, $sources, $oceanEntitled);
     }
 
     /**

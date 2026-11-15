@@ -81,6 +81,10 @@ export function ProgressPanel({ query, relationshipId, showCollectives = true }:
   const panel = query.data;
   const subjectId = panel.subject?.id ?? '';
   const canCreate = panel.viewer_role === 'mentor' || panel.viewer_role === 'support' || panel.viewer_role === 'admin';
+  // Evidence links (spec 014): only the owner and the assigned mentor mutate;
+  // support/admin stay read-only like the backend.
+  const canManageEvidence = panel.viewer_role === 'self' || panel.viewer_role === 'mentor';
+  const evidenceSubjectId = panel.viewer_role === 'mentor' ? subjectId : undefined;
 
   if (isPanelEmpty(panel)) {
     return (
@@ -125,7 +129,11 @@ export function ProgressPanel({ query, relationshipId, showCollectives = true }:
         relationshipId={relationshipId}
       />
 
-      <CompetenciesCard block={panel.competencies} />
+      <CompetenciesCard
+        block={panel.competencies}
+        subjectId={evidenceSubjectId}
+        canManage={canManageEvidence}
+      />
 
       {showCollectives && panel.collectives.length > 0 ? (
         <div className="grid gap-4 lg:grid-cols-2">

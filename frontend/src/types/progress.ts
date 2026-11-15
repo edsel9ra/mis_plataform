@@ -89,12 +89,37 @@ export interface ActivitiesBlock {
   completed: number;
 }
 
+// Explicit evidence link states (spec 014): only `current` counts as vigente.
+export type CompetencyEvidenceState = 'current' | 'incomplete' | 'missing_source' | 'blocked';
+
+export type CompetencyEvidenceSourceType = 'assessment_result' | 'personality_assessment';
+
+export type CompetencyEvidenceCompetencyType = 'skill_tag' | 'ocean_factor';
+
+/** Serialized evidence entry: source context minimized, never answers/scores/level. */
+export interface CompetencyEvidenceEntry {
+  link_id: string;
+  state: CompetencyEvidenceState;
+  reason?: 'entitlement_missing';
+  source_type?: CompetencyEvidenceSourceType;
+  source_id?: string;
+  instrument?: {
+    id: string;
+    slug: string;
+    title: string | Record<string, string>;
+  };
+  test_version?: string | null;
+  completed_at?: string | null;
+}
+
 export interface CompetencySkillItem {
   id: string | null;
+  skill_tag_id?: string | null;
   tag: string | null;
   category: string | null;
   level: number | null;
   source: 'skills';
+  evidence?: CompetencyEvidenceEntry[];
 }
 
 export type OceanState = 'value' | 'no_data' | 'blocked';
@@ -103,9 +128,51 @@ export interface OceanBlock {
   state: OceanState;
   source: 'personality';
   reason?: 'entitlement_missing';
+  /** Subject's personality-assessment id; present when the assessment exists (spec 014). */
+  assessment_id?: string;
   factors?: Record<string, number>;
   assessed_at?: string;
   test_version?: string | null;
+  /** Factor letter (O/C/E/A/N) → explicit evidence entries. */
+  evidence?: Record<string, CompetencyEvidenceEntry[]>;
+}
+
+/** Confirmed link relation returned by the evidence-link endpoints (spec 014). */
+export interface CompetencyEvidenceLink {
+  id: string;
+  source_type: CompetencyEvidenceSourceType;
+  source_id: string;
+  competency_type: CompetencyEvidenceCompetencyType;
+  competency_key: string;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SetCompetencyEvidenceLinkPayload {
+  source_type: CompetencyEvidenceSourceType;
+  source_id: string;
+  competency_type: CompetencyEvidenceCompetencyType;
+  competency_key: string;
+}
+
+/** Option offered by the link picker: a completed source for this subject. */
+export interface EvidenceSourceCandidate {
+  source_type: CompetencyEvidenceSourceType;
+  source_id: string;
+  label: string;
+}
+
+/** Catalog evaluation row as returned by GET /evaluations (id + title + own result). */
+export interface CompletedEvaluationSource {
+  id: string;
+  title: string | Record<string, string>;
+  user_result?: { id: string } | null;
+}
+
+/** Assessment result row as returned by GET /mentor/evaluation-results. */
+export interface CompletedAssessmentResultSource {
+  id: string;
+  assessment?: { title: string | Record<string, string> } | null;
 }
 
 export interface CompetenciesBlock {

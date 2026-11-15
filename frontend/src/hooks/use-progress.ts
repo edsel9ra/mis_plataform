@@ -2,12 +2,21 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tansta
 import { api } from '@/lib/api';
 import { unwrapCollection, unwrapData } from '@/lib/mentor-workspace';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
-import { PROGRESS_ENDPOINTS } from '@/lib/progress';
+import {
+  PROGRESS_ENDPOINTS,
+  assessmentResultSourceOptions,
+  evaluationSourceOptions,
+} from '@/lib/progress';
 import { queryKeys } from '@/lib/query-keys';
 import type {
   ChallengePathModuleLink,
   CollectiveProgress,
   CollectiveSubjectType,
+  CompetencyEvidenceLink,
+  CompletedAssessmentResultSource,
+  CompletedEvaluationSource,
+  EvidenceSourceCandidate,
+  SetCompetencyEvidenceLinkPayload,
   LearningMapPath,
   LearningPathProgress,
   MenteeProgressFlag,
@@ -304,5 +313,94 @@ export function useAddObjectiveEvidence() {
     mutationFn: async ({ id, payload }: { id: string; payload: ObjectiveEvidencePayload }) =>
       api.post(PROGRESS_ENDPOINTS.objectiveEvidences(id), payload),
     onSuccess: (_evidence, variables) => invalidateProgress(queryClient, variables.id),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Competency evidence links (spec 014)
+// ---------------------------------------------------------------------------
+
+function invalidateCompetencyEvidence(queryClient: QueryClient): void {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.progressRoot });
+  void queryClient.invalidateQueries({ queryKey: ['mentor', 'progress'] });
+}
+
+/**
+ * Completed sources offered by the link picker (RF-014.3): own completed
+ * evaluations for the owner, the subject's results for an assigned mentor.
+ * The personality source is added by the card from the panel's ocean block.
+ */
+export function useEvidenceSourceCandidates(locale: string, subjectId?: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.evidenceSources(subjectId),
+    queryFn: async ({ signal }): Promise<EvidenceSourceCandidate[]> => {
+      if (subjectId) {
+        const response = await api.get<RawPaginatedResponse<CompletedAssessmentResultSource>>(
+          PROGRESS_ENDPOINTS.mentorEvaluationResults(subjectId),
+          undefined,
+          { signal },
+        );
+        return assessmentResultSourceOptions(
+          normalizePaginatedResponse(response, { page: 1, perPage: 100 }).data,
+          locale,
+        );
+      }
+
+      const response = await api.get<RawPaginatedResponse<CompletedEvaluationSource>>(
+        PROGRESS_ENDPOINTS.evaluations,
+        { per_page: 100 },
+        { signal },
+      );
+      return evaluationSourceOptions(
+        normalizePaginatedResponse(response, { page: 1, perPage: 100 }).data,
+        locale,
+      );
+    },
+    enabled,
+    staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/**
+ * Create or repoint an explicit evidence link (RF-014.3). `subjectId` selects
+ * the mentor routes; undefined targets the owner routes. The payload never
+ * carries level or user_id — the server resolves the subject.
+ */
+export function useSetCompetencyEvidenceLink(subjectId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({ payload, linkId }: { payload: SetCompetencyEvidenceLinkPayload; linkId?: string }) => {
+      const url = subjectId
+        ? linkId
+          ? PROGRESS_ENDPOINTS.mentorEvidenceLink(subjectId, linkId)
+          : PROGRESS_ENDPOINTS.mentorEvidenceLinks(subjectId)
+        : linkId
+          ? PROGRESS_ENDPOINTS.evidenceLink(linkId)
+          : PROGRESS_ENDPOINTS.evidenceLinks;
+
+      return unwrapData<CompetencyEvidenceLink>(
+        await (linkId
+          ? api.put<CompetencyEvidenceLink | { data: CompetencyEvidenceLink }>(url, payload)
+          : api.post<CompetencyEvidenceLink | { data: CompetencyEvidenceLink }>(url, payload)),
+      );
+    },
+    onSettled: () => invalidateCompetencyEvidence(queryClient),
+  });
+}
+
+/** Remove an explicit evidence link — the level and the source stay untouched. */
+export function useRemoveCompetencyEvidenceLink(subjectId?: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (linkId: string) =>
+      api.delete(
+        subjectId
+          ? PROGRESS_ENDPOINTS.mentorEvidenceLink(subjectId, linkId)
+          : PROGRESS_ENDPOINTS.evidenceLink(linkId),
+      ),
+    onSettled: () => invalidateCompetencyEvidence(queryClient),
   });
 }

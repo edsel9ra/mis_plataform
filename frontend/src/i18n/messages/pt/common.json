@@ -938,7 +938,26 @@
       "ocean_blocked": "Seu plano não inclui o perfil OCEAN",
       "assessed_at": "Avaliado em {date}",
       "source_skills": "Fonte: skills",
-      "source_personality": "Fonte: personalidade"
+      "source_personality": "Fonte: personalidade",
+      "evidence": {
+        "manage_title": "Evidência vinculada",
+        "select_competency": "Competência",
+        "select_source": "Fonte concluída",
+        "select_competency_placeholder": "Escolha uma competência",
+        "select_source_placeholder": "Escolha uma fonte",
+        "no_sources": "Sem fontes concluídas disponíveis",
+        "link": "Vincular",
+        "unlink": "Remover vínculo de {source}",
+        "factor_option": "Fator {factor}",
+        "state_current": "Vigente",
+        "state_incomplete": "Histórica · não concluída",
+        "state_missing_source": "Histórica · fonte indisponível",
+        "state_blocked": "Bloqueada pelo plano",
+        "source_catalog": "Avaliação",
+        "source_personality": "Personalidade",
+        "error_field": "Verifique a fonte ou a competência escolhida",
+        "error_unavailable": "Não foi possível atualizar o vínculo"
+      }
     },
     "commitments": {
       "title": "Próximos compromissos",

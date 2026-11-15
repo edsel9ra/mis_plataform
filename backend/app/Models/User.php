@@ -165,6 +165,11 @@ class User extends Authenticatable
         return $this->hasMany(UserLearningProgress::class);
     }
 
+    public function competencyAssessmentLinks(): HasMany
+    {
+        return $this->hasMany(CompetencyAssessmentLink::class);
+    }
+
     public function moduleCompletions(): HasMany
     {
         return $this->hasMany(UserModuleCompletion::class);
