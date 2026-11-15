@@ -35,4 +35,14 @@ return [
     | or challenge movement within this many days (RF-9 CA-9.4).
     */
     'inactivity_days' => (int) env('PROGRESS_INACTIVITY_DAYS', 30),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Deletion-event retention
+    |--------------------------------------------------------------------------
+    | Months a minimal evidence-deletion event is retained before purge
+    | (docs/politica-retencion.md §5.1/§5.3). Disabled values normalize to
+    | null in EvidenceDeletionEventCalculator::retentionMonths.
+    */
+    'deletion_event_retention_months' => env('PROGRESS_DELETION_EVENT_RETENTION_MONTHS', 12),
 ];

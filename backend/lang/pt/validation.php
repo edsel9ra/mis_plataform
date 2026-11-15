@@ -37,4 +37,9 @@ return [
     'mentor_client_type_invalid' => 'O mentor não corresponde ao tipo de cliente.',
     'relationship_exists' => 'Já existe um relacionamento ativo com este mentor.',
     'availability_slots_range' => 'O intervalo de consulta não pode exceder :days dias.',
+    'competency_evidence_link_duplicate' => 'Já existe um vínculo entre esse resultado e essa competência.',
+    'competency_evidence_link_source_type' => 'A origem do resultado não é válida.',
+    'competency_evidence_link_source_incomplete' => 'Somente um resultado concluído pode ser vinculado.',
+    'competency_evidence_link_ocean_factor' => 'O fator OCEAN não é válido.',
+    'competency_evidence_link_competency_type' => 'O tipo de competência não é válido.',
 ];

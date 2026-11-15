@@ -3,6 +3,7 @@
 namespace App\Services\Progress;
 
 use App\Models\Challenge;
+use App\Models\CompetencyAssessmentLink;
 use App\Models\MentorshipRelationship;
 use App\Models\Objective;
 use App\Models\PersonalityAssessment;
@@ -78,6 +79,10 @@ class ProgressCacheObserver
         }
 
         if ($model instanceof UserLearningProgress || $model instanceof PersonalityAssessment || $model instanceof UserSkill) {
+            return $model->user_id ? [(string) $model->user_id] : [];
+        }
+
+        if ($model instanceof CompetencyAssessmentLink) {
             return $model->user_id ? [(string) $model->user_id] : [];
         }
 

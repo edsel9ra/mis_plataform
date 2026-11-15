@@ -55,6 +55,7 @@ return [
         'access_denied' => 'You do not have access to this progress panel.',
         'not_visible' => 'The requested resource is not available.',
         'workspace_locked' => "The mentee's plan does not include the mentor workspace.",
+        'entitlement_missing' => 'The plan does not include the personality assessment.',
         'no_active_process' => 'You do not have an active process yet. Complete your onboarding or explore mentors.',
     ],
 ];

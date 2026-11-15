@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class PersonalityAssessment extends Model
 {
@@ -33,6 +34,11 @@ class PersonalityAssessment extends Model
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function competencyAssessmentLinks(): HasMany
+    {
+        return $this->hasMany(CompetencyAssessmentLink::class);
     }
 
     public function getOceanScores(): array

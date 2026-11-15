@@ -37,4 +37,9 @@ return [
     'mentor_client_type_invalid' => 'The mentor does not match the client type.',
     'relationship_exists' => 'An active relationship with this mentor already exists.',
     'availability_slots_range' => 'The query range cannot exceed :days days.',
+    'competency_evidence_link_duplicate' => 'A link between that result and that competency already exists.',
+    'competency_evidence_link_source_type' => 'The result source is not valid.',
+    'competency_evidence_link_source_incomplete' => 'Only a completed result can be linked.',
+    'competency_evidence_link_ocean_factor' => 'The OCEAN factor is not valid.',
+    'competency_evidence_link_competency_type' => 'The competency type is not valid.',
 ];

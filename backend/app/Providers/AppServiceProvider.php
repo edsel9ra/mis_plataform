@@ -11,6 +11,7 @@ use App\Models\CohortMember;
 use App\Models\Challenge;
 use App\Models\ChallengeSubmission;
 use App\Models\Company;
+use App\Models\CompetencyAssessmentLink;
 use App\Models\Employee;
 use App\Models\FeedbackThread;
 use App\Models\FamilyGroup;
@@ -31,6 +32,7 @@ use App\Models\UserSkill;
 use App\Observers\ChallengeObserver;
 use App\Observers\CohortMemberObserver;
 use App\Observers\EmployeeObserver;
+use App\Observers\EvidenceSourceStateObserver;
 use App\Observers\FamilyMemberObserver;
 use App\Observers\LearningPathObserver;
 use App\Observers\PathModuleObserver;
@@ -159,6 +161,8 @@ class AppServiceProvider extends ServiceProvider
         UserLearningProgress::observe(ProgressCacheObserver::class);
         PersonalityAssessment::observe(ProgressCacheObserver::class);
         UserSkill::observe(ProgressCacheObserver::class);
+        CompetencyAssessmentLink::observe(ProgressCacheObserver::class);
+        PersonalityAssessment::observe(EvidenceSourceStateObserver::class);
 
         Challenge::observe(ChallengeObserver::class);
         PathModule::observe(PathModuleObserver::class);

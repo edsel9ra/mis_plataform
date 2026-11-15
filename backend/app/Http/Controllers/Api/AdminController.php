@@ -6,6 +6,7 @@ use App\Actions\CreateSessionAction;
 use App\Support\LikePattern;
 use App\Actions\CancelSessionAction;
 use App\Actions\RescheduleSessionAction;
+use App\Actions\RetireEvidenceLinksForSourceAction;
 use App\Enums\UserRole;
 use App\Http\Requests\Admin\StoreAdminAssessmentRequest;
 use App\Http\Requests\Admin\StoreAdminMentorRequest;
@@ -45,6 +46,7 @@ use App\Models\User;
 use App\Services\Scheduling\SchedulingAuditLogger;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Hash;
@@ -53,6 +55,7 @@ class AdminController
 {
     public function __construct(
         private SchedulingAuditLogger $schedulingAuditLogger,
+        private RetireEvidenceLinksForSourceAction $retireLinks,
     ) {}
 
     // ──────────────────────────────────────────────
@@ -442,10 +445,16 @@ class AdminController
         return response()->json((new AdminAssessmentResource($assessment))->resolve($request));
     }
 
-    public function assessmentDestroy(string $id): JsonResponse
+    public function assessmentDestroy(Request $request, string $id): JsonResponse
     {
         $assessment = PersonalityAssessment::findOrFail($id);
-        $assessment->delete();
+
+        // Retire linked evidence through the audited removal path before the
+        // restrictive FK would block the delete (RF-014.4/.6).
+        DB::transaction(function () use ($assessment, $request): void {
+            $this->retireLinks->execute($assessment, $request->user());
+            $assessment->delete();
+        });
 
         return response()->json(['message' => __('admin.assessment_deleted')]);
     }
@@ -502,10 +511,19 @@ class AdminController
         return response()->json((new AdminCatalogAssessmentResource($assessment))->resolve($request));
     }
 
-    public function evaluationCatalogDestroy(string $id): JsonResponse
+    public function evaluationCatalogDestroy(Request $request, string $id): JsonResponse
     {
         $assessment = LearningAssessment::findOrFail($id);
-        $assessment->delete();
+
+        // The cascade to assessment_results hits the restrictive link FK when
+        // any result is linked — retire those links first, each audited with
+        // an explicitly absent resulting relation (RF-014.4/.6).
+        DB::transaction(function () use ($assessment, $request): void {
+            $assessment->results->each(
+                fn (AssessmentResult $result) => $this->retireLinks->execute($result, $request->user()),
+            );
+            $assessment->delete();
+        });
 
         return response()->json(['message' => __('admin.evaluation_deleted')]);
     }

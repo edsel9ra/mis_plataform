@@ -32,4 +32,9 @@ class SkillTag extends Model
     {
         return $this->hasMany(UserSkill::class);
     }
+
+    public function competencyAssessmentLinks(): HasMany
+    {
+        return $this->hasMany(CompetencyAssessmentLink::class);
+    }
 }

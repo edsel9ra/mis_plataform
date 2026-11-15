@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers\Api;
 
+use App\Actions\RetireEvidenceLinksForSourceAction;
 use App\Actions\SubmitPersonalityTestAction;
 use App\Http\Requests\Personality\CalculatePersonalityRequest;
 use App\Http\Requests\Personality\SubmitAnswersRequest;
@@ -9,6 +10,7 @@ use App\Http\Resources\PersonalityAssessmentResource;
 use App\Models\PersonalityAssessment;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use App\Services\PersonalityInterpretationService;
 
@@ -17,6 +19,7 @@ class PersonalityController
     public function __construct(
         private SubmitPersonalityTestAction $submitTest,
         private PersonalityInterpretationService $interpretation,
+        private RetireEvidenceLinksForSourceAction $retireLinks,
     ) {}
 
     public function startTest(Request $request): JsonResponse
@@ -68,7 +71,14 @@ class PersonalityController
         }
 
         if ($existing) {
-            $existing->delete();
+            // Retire linked evidence through the audited removal path before
+            // the restrictive FK would block the retake delete (RF-014.4/.6).
+            // The minimal deletion event is recorded atomically with the
+            // retirement and the source delete (política-retencion §4–§5).
+            DB::transaction(function () use ($existing, $user): void {
+                $this->retireLinks->execute($existing, $user);
+                $existing->delete();
+            });
         }
 
         try {
