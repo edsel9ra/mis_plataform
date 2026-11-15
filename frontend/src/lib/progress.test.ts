@@ -1,8 +1,15 @@
 import { describe, expect, it } from 'vitest';
 import {
   allowedObjectiveTransitions,
+  availableEvidenceSources,
+  buildEvidenceLinkPayload,
   collectiveMessageKey,
   collectiveSuppressionMessageKey,
+  evidenceEntriesForOceanFactor,
+  evidenceEntriesForSkill,
+  evidenceInstrumentLabel,
+  evidenceSourceKindKey,
+  evidenceStateKey,
   formatAggregateMean,
   formatAggregateSum,
   formatCount,
@@ -11,6 +18,7 @@ import {
   formatRatio,
   hasMetricData,
   isBlockIncomplete,
+  isCurrentEvidence,
   isPercentageMetric,
   learningSuppressionMessageKey,
   mapElementStatusKey,
@@ -18,6 +26,7 @@ import {
   metricUi,
   objectiveStatusBadgeVariant,
   periodLabelKey,
+  personalitySourceOption,
   resolvePeriodLabel,
   sortCommitments,
 } from './progress';
@@ -27,8 +36,19 @@ import {
   objectiveSchema,
   objectiveUpdateSchema,
 } from './schemas/objective';
-import type { CollectiveProgress, CommitmentItem, MetricValue, ProgressPanel } from '@/types/progress';
+import type {
+  CollectiveProgress,
+  CommitmentItem,
+  CompetencyEvidenceEntry,
+  CompetencySkillItem,
+  EvidenceSourceCandidate,
+  MetricValue,
+  OceanBlock,
+  ProgressPanel,
+} from '@/types/progress';
 import esMessages from '../i18n/messages/es/common.json';
+import enMessages from '../i18n/messages/en/common.json';
+import ptMessages from '../i18n/messages/pt/common.json';
 
 function metric(overrides: Partial<MetricValue> = {}): MetricValue {
   return {
@@ -277,6 +297,157 @@ describe('collective learning suppression messages (spec 013)', () => {
     // Static labels used by the block also resolve in Spanish.
     for (const key of ['progress.collective.learning.title', 'progress.collective.learning.activity_rate', 'progress.collective.learning.path_rates']) {
       expect(resolveKey(key), key).toBeDefined();
+    }
+  });
+});
+
+describe('competency evidence presentation (spec 014)', () => {
+  function resolveKey(key: string): string | undefined {
+    return key.split('.').reduce<unknown>(
+      (node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined),
+      esMessages,
+    ) as string | undefined;
+  }
+
+  const catalogEntry = (overrides: Partial<CompetencyEvidenceEntry> = {}): CompetencyEvidenceEntry => ({
+    link_id: 'link-1',
+    state: 'current',
+    source_type: 'assessment_result',
+    source_id: 'result-1',
+    instrument: { id: 'a1', slug: 'liderazgo', title: { es: 'Liderazgo', en: 'Leadership' } },
+    completed_at: '2025-01-01T00:00:00.000000Z',
+    ...overrides,
+  });
+
+  const personalityEntry = (overrides: Partial<CompetencyEvidenceEntry> = {}): CompetencyEvidenceEntry => ({
+    link_id: 'link-2',
+    state: 'current',
+    source_type: 'personality_assessment',
+    source_id: 'pa-1',
+    test_version: 'IPIP-NEO-120',
+    completed_at: '2025-02-02T00:00:00.000000Z',
+    ...overrides,
+  });
+
+  it('returns only explicit evidence entries — unlinked skills and factors have none', () => {
+    const skill: CompetencySkillItem = { id: 'us1', skill_tag_id: 'tag-1', tag: 'Comunicación', category: null, level: 3, source: 'skills', evidence: [catalogEntry()] };
+    const bare: CompetencySkillItem = { id: 'us2', tag: 'Empatía', category: null, level: 2, source: 'skills' };
+
+    expect(evidenceEntriesForSkill(skill)).toHaveLength(1);
+    expect(evidenceEntriesForSkill(bare)).toEqual([]);
+
+    const ocean = { state: 'value', source: 'personality', factors: {}, evidence: { C: [personalityEntry()] } } as OceanBlock;
+    expect(evidenceEntriesForOceanFactor(ocean, 'C')).toHaveLength(1);
+    expect(evidenceEntriesForOceanFactor(ocean, 'O')).toEqual([]);
+  });
+
+  it('presents only state=current as current evidence — never inferred', () => {
+    expect(isCurrentEvidence(catalogEntry())).toBe(true);
+    for (const state of ['incomplete', 'missing_source', 'blocked'] as const) {
+      expect(isCurrentEvidence(catalogEntry({ state }))).toBe(false);
+    }
+  });
+
+  it('never labels an incomplete or blocked entry as vigente', () => {
+    const states = ['current', 'incomplete', 'missing_source', 'blocked'] as const;
+    const keys = states.map((s) => evidenceStateKey(s));
+
+    expect(new Set(keys).size).toBe(states.length);
+    for (const state of states) {
+      const key = evidenceStateKey(state);
+      const message = resolveKey(key);
+      expect(message, key).toBeDefined();
+      expect(message).not.toBe(key);
+      if (state !== 'current') {
+        // No vigente: the label must not reuse the "current" wording.
+        expect(message).not.toBe(resolveKey(evidenceStateKey('current')));
+      }
+    }
+  });
+
+  it('distinguishes source kinds: catalog instrument title vs personality test_version', () => {
+    expect(evidenceInstrumentLabel(catalogEntry(), 'es')).toBe('Liderazgo');
+    expect(evidenceInstrumentLabel(catalogEntry(), 'en')).toBe('Leadership');
+    expect(evidenceInstrumentLabel(personalityEntry(), 'es')).toBe('IPIP-NEO-120');
+    expect(evidenceSourceKindKey('assessment_result')).not.toBe(evidenceSourceKindKey('personality_assessment'));
+  });
+
+  it('hides source metadata for blocked entries', () => {
+    const blocked = personalityEntry({ state: 'blocked', reason: 'entitlement_missing', source_id: undefined, test_version: undefined, completed_at: undefined });
+    expect(isCurrentEvidence(blocked)).toBe(false);
+    expect(evidenceInstrumentLabel(blocked, 'es')).toBe('');
+  });
+
+  it('builds a link payload without level or subject fields', () => {
+    const payload = buildEvidenceLinkPayload(
+      { source_type: 'assessment_result', source_id: 'r1', label: 'X' },
+      'skill_tag',
+      'tag-9',
+    );
+
+    expect(payload).toEqual({
+      source_type: 'assessment_result',
+      source_id: 'r1',
+      competency_type: 'skill_tag',
+      competency_key: 'tag-9',
+    });
+    expect(payload).not.toHaveProperty('level');
+    expect(payload).not.toHaveProperty('user_id');
+  });
+
+  it('filters already-linked sources for that competency only', () => {
+    const candidates: EvidenceSourceCandidate[] = [
+      { source_type: 'assessment_result', source_id: 'r1', label: 'A' },
+      { source_type: 'personality_assessment', source_id: 'p1', label: 'B' },
+    ];
+
+    const options = availableEvidenceSources(candidates, [catalogEntry({ source_id: 'r1' })]);
+    expect(options.map((o) => o.source_id)).toEqual(['p1']);
+  });
+
+  it('offers the personality source only when the ocean assessment is completed', () => {
+    const ocean = { state: 'value', source: 'personality', factors: {}, assessment_id: 'pa-9', test_version: 'IPIP-NEO-120' } as OceanBlock;
+    expect(personalitySourceOption(ocean)).toEqual({ source_type: 'personality_assessment', source_id: 'pa-9', label: 'IPIP-NEO-120' });
+
+    const noData = { state: 'no_data', source: 'personality', factors: {} } as OceanBlock;
+    expect(personalitySourceOption(noData)).toBeNull();
+  });
+
+  it('resolves every evidence label in es/en/pt without raw keys (RF-15)', () => {
+    const resolveIn = (catalog: unknown, key: string): string | undefined =>
+      key.split('.').reduce<unknown>(
+        (node, part) => (node && typeof node === 'object' ? (node as Record<string, unknown>)[part] : undefined),
+        catalog,
+      ) as string | undefined;
+
+    const keys = [
+      ...(['current', 'incomplete', 'missing_source', 'blocked'] as const).map(evidenceStateKey),
+      evidenceSourceKindKey('assessment_result'),
+      evidenceSourceKindKey('personality_assessment'),
+      'progress.competencies.evidence.manage_title',
+      'progress.competencies.evidence.select_competency',
+      'progress.competencies.evidence.select_source',
+      'progress.competencies.evidence.no_sources',
+      'progress.competencies.evidence.link',
+      'progress.competencies.evidence.unlink',
+      'progress.competencies.evidence.factor_option',
+      'progress.competencies.evidence.error_field',
+      'progress.competencies.evidence.error_unavailable',
+    ];
+
+    // Same key set across the three catalogs — the es fallback is a real
+    // string everywhere and no locale renders the raw key.
+    const esKeys = new Set(
+      keys.filter((key) => resolveIn(esMessages, key) !== undefined),
+    );
+    expect(esKeys.size).toBe(keys.length);
+
+    for (const catalog of [enMessages, ptMessages]) {
+      for (const key of keys) {
+        const message = resolveIn(catalog, key);
+        expect(message, `${key} missing in catalog`).toBeDefined();
+        expect(message).not.toBe(key);
+      }
     }
   });
 });
