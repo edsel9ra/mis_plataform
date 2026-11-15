@@ -2,6 +2,7 @@
     "name": "mis/backend",
     "type": "project",
     "description": "Mentorias Integrales Sistemicas - Backend",
+    "license": "proprietary",
     "require": {
         "php": "^8.4",
         "laravel/framework": "^13.0",
