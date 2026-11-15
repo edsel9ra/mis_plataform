@@ -23,3 +23,4 @@
   - Hecho cuando: revisión confirma no respuestas/score/datos de otro usuario, fallback idioma, UI teclado/320px y benchmark reproducible a 50 concurrentes con objetivo p95 ≤2 s (sin declarar medición ejecutada).
 - [ ] **T015.10 · [BLOQUEADA] Retención mínima de eliminación** (25 min solo tras desbloqueo). RF-015.9. No ejecutar antes de documentar y aprobar la política general de conservación/eliminación. Skills: `sdd`, `laravel-security`, `laravel-tdd`.
   - Hecho cuando: la política está identificada y documentada, plan/tasks se revisan si procede, y la implementación posterior conserva solo fecha/tipo/metadato mínimo/actor pseudónimo audit-only, sin respuesta, score ni fuente; hasta entonces no se crea ni retiene evento de eliminación.
+  - Prerrequisito (2026-11-15): **cumplido** — `docs/politica-retencion.md` v1.0.0 vigente. Esta tarea consume el evento mínimo que produce T014.10 de la spec 014; pendiente que T014.10 se implemente y que se revise este plan.
