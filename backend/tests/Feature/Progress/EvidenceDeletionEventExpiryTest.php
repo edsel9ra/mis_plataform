@@ -153,12 +153,10 @@ it('purges real recorded events exactly when their written expiry arrives', func
         ->assertOk();
 
     $event = EvidenceDeletionEvent::query()->sole();
-    // The stored timestampTz keeps the app-timezone wall clock: reinterpret
-    // it in the app zone so CarbonImmutable::now() writes the same string.
-    $expiryWall = CarbonImmutable::parse(
-        $event->expires_at->format('Y-m-d H:i:s'),
-        config('app.timezone'),
-    );
+    // T014.14: expires_at is a local timestamp; the cast reads the true
+    // instant directly, matching the wall clock CarbonImmutable::now()
+    // writes.
+    $expiryWall = $event->expires_at;
 
     $this->travelTo($expiryWall->subMinute());
     $this->artisan('app:expire-evidence-deletion-events')->assertSuccessful();

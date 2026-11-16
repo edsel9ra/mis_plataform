@@ -42,4 +42,5 @@ return [
     'competency_evidence_link_source_incomplete' => 'Somente um resultado concluído pode ser vinculado.',
     'competency_evidence_link_ocean_factor' => 'O fator OCEAN não é válido.',
     'competency_evidence_link_competency_type' => 'O tipo de competência não é válido.',
+    'progress_history_cursor' => 'O cursor do histórico não é válido.',
 ];

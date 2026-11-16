@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { ArrowLeft, LockKeyhole } from 'lucide-react';
+import { ArrowLeft, History, LockKeyhole } from 'lucide-react';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { Alert } from '@/components/ui/alert';
 import { LearningPathsCard } from '@/components/progress/LearningPathsCard';
@@ -49,6 +49,12 @@ export default function MentorMenteeProgressPage() {
         </Alert>
       ) : (
         <>
+          <Link
+            href={localePath(`/dashboard/mentor/progress/${params.id}/historial`, locale)}
+            className="inline-flex items-center gap-2 text-sm font-semibold text-slate-600 hover:text-primary-700"
+          >
+            <History className="h-4 w-4" aria-hidden="true" /> {t('progress.history.view_history')}
+          </Link>
           <ProgressPanel query={query} relationshipId={relationshipId} showCollectives={false} />
           <LearningPathsCard
             query={learningPaths}

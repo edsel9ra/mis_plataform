@@ -1,6 +1,6 @@
 # Spec 015 — Historial verificable de progreso
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre aprobada:** `specs/001-progress-tracking-dashboard/spec.md`, v0.5.1 (2026-10-13). Esta spec desglosa RF-19 y sus eventos relacionados ya aprobados en RF-17, RF-18 y RF-20; no crea eventos ausentes ni analítica de tendencias.
 
@@ -91,3 +91,4 @@ El estado actual del panel no cuenta por sí solo cómo se llegó a él. Una cro
 ## Dudas abiertas
 
 - La política general de conservación/eliminación debe identificarse y documentarse antes de implementar la retención del evento mínimo de eliminación. Es un prerrequisito aprobado pendiente, no una decisión delegada a implementación ni una duda que esta spec pueda resolver.
+  - **Resuelta (2026-11-15):** `docs/politica-retencion.md` v1.0.0 está vigente y la Spec 014 (T014.10–T014.13) ya implementa la retención del evento mínimo. Esta spec solo lo presenta (plan §1 y §3).

@@ -1,7 +1,8 @@
-import { useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
+import { infiniteQueryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { unwrapCollection, unwrapData } from '@/lib/mentor-workspace';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
+import { HISTORY_PAGE_SIZE } from '@/lib/progress-history';
 import {
   PROGRESS_ENDPOINTS,
   assessmentResultSourceOptions,
@@ -26,6 +27,7 @@ import type {
   ObjectiveProposalPayload,
   ObjectiveStatus,
   ObjectiveUpdatePayload,
+  ProgressHistoryPage,
   ProgressPanel,
 } from '@/types/progress';
 
@@ -403,4 +405,60 @@ export function useRemoveCompetencyEvidenceLink(subjectId?: string) {
       ),
     onSettled: () => invalidateCompetencyEvidence(queryClient),
   });
+}
+
+// ---------------------------------------------------------------------------
+// Progress history (spec 015, T015.8): cursor-paginated unified timeline.
+// ---------------------------------------------------------------------------
+
+/**
+ * Options for the own unified history (`GET /progress/history`). The opaque
+ * server cursor is the page param; pages merge client-side keeping server
+ * order, and `undated` only travels on the first page (RF-015.1/.7/.8).
+ */
+export function progressHistoryQueryOptions(enabled = true) {
+  return infiniteQueryOptions({
+    queryKey: queryKeys.progressHistory(),
+    queryFn: async ({ pageParam, signal }) =>
+      api.get<ProgressHistoryPage>(
+        PROGRESS_ENDPOINTS.history,
+        pageParam
+          ? { cursor: pageParam, limit: HISTORY_PAGE_SIZE }
+          : { limit: HISTORY_PAGE_SIZE },
+        { signal },
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    staleTime: 30_000,
+    retry: false,
+    enabled,
+  });
+}
+
+/** Same timeline for an authorized mentee (404 unassigned, 403 locked). */
+export function mentorProgressHistoryQueryOptions(userId: string, enabled = true) {
+  return infiniteQueryOptions({
+    queryKey: queryKeys.mentorHistory(userId),
+    queryFn: async ({ pageParam, signal }) =>
+      api.get<ProgressHistoryPage>(
+        PROGRESS_ENDPOINTS.mentorHistory(userId),
+        pageParam
+          ? { cursor: pageParam, limit: HISTORY_PAGE_SIZE }
+          : { limit: HISTORY_PAGE_SIZE },
+        { signal },
+      ),
+    initialPageParam: null as string | null,
+    getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+    staleTime: 30_000,
+    retry: false,
+    enabled: enabled && Boolean(userId),
+  });
+}
+
+export function useProgressHistory(enabled = true) {
+  return useInfiniteQuery(progressHistoryQueryOptions(enabled));
+}
+
+export function useMentorProgressHistory(userId: string, enabled = true) {
+  return useInfiniteQuery(mentorProgressHistoryQueryOptions(userId, enabled));
 }

@@ -40,6 +40,7 @@ use App\Http\Controllers\Api\MenteeChallengeController;
 use App\Http\Controllers\Api\MenteeCheckInController;
 use App\Http\Controllers\Api\MenteeEmotionalCheckInController;
 use App\Http\Controllers\Api\ObjectiveController;
+use App\Http\Controllers\Api\ProgressHistoryController;
 use App\Http\Controllers\Api\ProgressPanelController;
 use App\Http\Controllers\Api\LearningMapController;
 use App\Http\Controllers\Api\LearningPathProgressController;
@@ -183,6 +184,7 @@ Route::prefix('v1')->group(function () {
         Route::get('/progress/collectives/{type}/{id}', [CollectiveProgressController::class, 'show']);
         Route::get('/progress/learning-paths', [LearningPathProgressController::class, 'index']);
         Route::get('/progress/map', [LearningMapController::class, 'index']);
+        Route::get('/progress/history', [ProgressHistoryController::class, 'index']);
         Route::post('/progress/competencies/evidence-links', [CompetencyEvidenceLinkController::class, 'store']);
         Route::put('/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'update']);
         Route::delete('/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'destroy']);
@@ -211,6 +213,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/users/{user}/progress', [MentorProgressController::class, 'show']);
             Route::get('/users/{user}/progress/learning-paths', [LearningPathProgressController::class, 'show']);
             Route::get('/users/{user}/progress/map', [LearningMapController::class, 'show']);
+            Route::get('/users/{user}/progress/history', [ProgressHistoryController::class, 'show'])
+                ->whereUuid('user');
             Route::post('/users/{user}/progress/competencies/evidence-links', [CompetencyEvidenceLinkController::class, 'storeFor']);
             Route::put('/users/{user}/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'updateFor']);
             Route::delete('/users/{user}/progress/competencies/evidence-links/{link}', [CompetencyEvidenceLinkController::class, 'destroyFor']);
@@ -265,6 +269,8 @@ Route::prefix('v1')->group(function () {
             // Users
             Route::get('/users', [AdminController::class, 'users']);
             Route::get('/progress/panel', [AdminProgressController::class, 'show'])
+                ->middleware('permission:progress.view.support');
+            Route::get('/progress/history', [ProgressHistoryController::class, 'support'])
                 ->middleware('permission:progress.view.support');
 
             // Audit (spec 014 — política de retención §4.4)

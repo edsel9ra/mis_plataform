@@ -163,3 +163,16 @@ Un test de T014.10 fija esta decisión: el soft delete del sujeto conserva sus e
 - **Feature, expiración:** el comando borra solo lo vencido, la correspondencia se va en cascada, después la identificación devuelve 404, la actividad registra solo el recuento y el comando está programado a diario en `routes/console.php`.
 - **Privacidad:** ni el panel ni ningún endpoint de progreso (propio o de mentor) exponen eventos, seudónimos o correspondencias. El JSON del evento persistido no contiene ninguna clave prohibida.
 - **Esquema:** checks y FKs comprobados por SQLSTATE con savepoints (patrón T014.1); rollback y reaplicación limpios.
+
+## 10. Corrección — zona horaria de `occurred_at`/`expires_at` (solicitada por el usuario 2026-11-15)
+
+**Defecto (hallado en Spec 015 T015.5):** `evidence_deletion_events.occurred_at` y `expires_at` son las únicas columnas `timestamptz` de toda la BD. Laravel (gramática pgsql, formato `Y-m-d H:i:s` sin offset) escribe la hora local de `app.timezone` (America/Mexico_City) y la sesión de Postgres está en UTC, así que el instante guardado queda 6 h antes del real (verificado: −21600 s), y el cast `immutable_datetime` devuelve un instante erróneo (`…+00`). Dentro de la 014 era coherente (escritura, auditoría y purga comparan hora local con hora local), pero cualquier lector del instante se equivoca.
+
+**Corrección:** migración aditiva que convierte ambas columnas a `timestamp(0)` sin zona, como el resto del proyecto, conservando la hora de reloj guardada: `USING (col AT TIME ZONE 'UTC')`. El `down` vuelve a `timestamptz(0)` con `USING (col AT TIME ZONE 'UTC')` y restaura exactamente los valores previos. Los índices se reconstruyen solos. El escritor, el endpoint de auditoría y la purga no cambian: siguen comparando hora local con hora local. El adapter de historial de la 015 pasa a la convención común `(col AT TIME ZONE app.timezone)`.
+
+| Decisión | Alternativa descartada | Justificación |
+|---|---|---|
+| `timestamp` sin zona, hora local (convención del proyecto) | Mantener `timestamptz` y corregir los instantes (`AT TIME ZONE app.tz`) | Con `timestamptz`, cada escritura y cada binding de comparación tendría que llevar offset o cambiar la zona de sesión de la conexión, lo que afectaría a toda la app. Alinear el tipo elimina el riesgo de raíz y no toca ningún escritor. |
+| Migración nueva | Editar la migración original | La original ya está aplicada en desarrollo; editarla no corregiría los entornos existentes. |
+
+**Tests:** el tipo de ambas columnas es `timestamp without time zone`; un evento registrado por la ruta real en un instante T devuelve `occurred_at` igual a T y `expires_at` igual a T + 12 meses como instantes; la migración conserva los datos previos (fila escrita antes de migrar → instante correcto después) y su `down`/`up` es reversible; la purga y la auditoría siguen respetando la frontera exacta.

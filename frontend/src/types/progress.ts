@@ -478,3 +478,45 @@ export interface LearningMapPath {
   rate: MetricValue;
   modules: LearningMapModule[];
 }
+
+
+// ---------------------------------------------------------------------------
+// Progress history (spec 015)
+// ---------------------------------------------------------------------------
+
+/**
+ * Actor of a history event: an identified user, the system marker, the
+ * privacy-hiding marker for source deletions, or null when the source cannot
+ * prove authorship (never reconstructed — `incomplete` carries it).
+ */
+export type HistoryActor =
+  | { id: string; name: string }
+  | { kind: 'system' }
+  | { kind: 'hidden' }
+  | null;
+
+/**
+ * One normalized history event. `subject_ref`, `before` and `after` arrive
+ * already whitelisted server-side; `incomplete` lists the fields the source
+ * could not prove (RF-015.7/.8).
+ */
+export interface HistoryEvent {
+  id: string;
+  type: string;
+  domain: 'objectives' | 'activities' | 'competencies';
+  /** ISO-8601 UTC instant, or null ("fecha no disponible", never backfilled). */
+  occurred_at: string | null;
+  actor: HistoryActor;
+  subject_ref: Record<string, unknown>;
+  before: Record<string, unknown> | null;
+  after: Record<string, unknown> | null;
+  incomplete: string[];
+}
+
+/** One page of `GET /progress/history` (and the mentor variant). Unwrapped. */
+export interface ProgressHistoryPage {
+  data: HistoryEvent[];
+  /** Events without a date — only non-empty on the first page. */
+  undated: HistoryEvent[];
+  next_cursor: string | null;
+}

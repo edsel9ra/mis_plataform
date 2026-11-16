@@ -42,4 +42,5 @@ return [
     'competency_evidence_link_source_incomplete' => 'Only a completed result can be linked.',
     'competency_evidence_link_ocean_factor' => 'The OCEAN factor is not valid.',
     'competency_evidence_link_competency_type' => 'The competency type is not valid.',
+    'progress_history_cursor' => 'The history cursor is invalid.',
 ];
