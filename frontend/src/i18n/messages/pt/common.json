@@ -1033,6 +1033,91 @@
       "elements": "Elementos vinculados",
       "no_elements": "Sem elementos vinculados.",
       "element_challenge": "Desafio"
+    },
+    "history": {
+      "title": "Histórico de progresso",
+      "title_mentor": "Histórico do mentee",
+      "subtitle": "Alterações registradas em objetivos, atividades e competências, da mais recente à mais antiga.",
+      "back": "Voltar ao painel",
+      "view_history": "Ver histórico",
+      "empty": "Ainda não há alterações registradas.",
+      "load_more": "Carregar mais",
+      "loading_more": "Carregando mais eventos…",
+      "undated_title": "Data não disponível",
+      "undated_hint": "Eventos registrados sem data; nenhuma é atribuída.",
+      "incomplete": "Informação incompleta",
+      "domains": {
+        "objectives": "Objetivos",
+        "activities": "Atividades",
+        "competencies": "Competências"
+      },
+      "actor": {
+        "by": "Por {name}",
+        "system": "Sistema",
+        "hidden": "Ator oculto",
+        "hidden_hint": "Quem excluiu o resultado não é exibido.",
+        "unknown": "Autor não registrado"
+      },
+      "events": {
+        "objective_created": "Objetivo criado: {title}",
+        "objective_status_changed": "Mudança de estado do objetivo {title}",
+        "objective_evidence_added": "Evidência adicionada a {title}",
+        "challenge_status_transition": "Mudança de estado do desafio {title}",
+        "challenge_module_link_changed": "Vínculo do desafio {title} com um módulo",
+        "module_completion_granted": "Módulo concluído: {title}",
+        "module_completion_revoked": "Conclusão retirada: {title}",
+        "challenge_submission_submitted": "Entrega enviada: {title}",
+        "challenge_submission_reviewed": "Entrega revisada: {title}",
+        "learning_path_started": "Rota iniciada: {title}",
+        "learning_path_completed": "Rota concluída: {title}",
+        "competency_evidence_link_changed": "Evidência de competência atualizada",
+        "competency_evidence_source_state_changed": "Mudança de estado de uma avaliação vinculada",
+        "competency_evidence_source_deleted": "Avaliação vinculada excluída",
+        "unknown": "Evento registrado"
+      },
+      "detail": {
+        "status_change": "{from} → {to}",
+        "status_initial": "Estado inicial: {to}",
+        "with_attachment": "Com anexo",
+        "without_attachment": "Sem anexo",
+        "linked": "Vinculado a um módulo",
+        "unlinked": "Vínculo retirado",
+        "relinked": "Vínculo movido para outro módulo",
+        "reason_module_deleted": "Vínculo retirado ao excluir o módulo",
+        "completion_trigger": "Por {event}",
+        "competency_linked": "Vinculada a {competency}",
+        "competency_unlinked": "Vínculo retirado de {competency}",
+        "competency_relinked": "Vínculo movido para {competency}",
+        "source_state": "{from} → {to}",
+        "source_deleted": "Competência: {competency}"
+      },
+      "trigger": {
+        "challenge_status_transition": "mudança de estado de um desafio",
+        "challenge_module_link_changed": "mudança de vínculo de um desafio",
+        "path_module_deleted": "exclusão do módulo",
+        "learning_path_deleted": "exclusão da rota",
+        "challenge_deleted": "exclusão de um desafio",
+        "challenge_force_deleted": "exclusão definitiva de um desafio",
+        "challenge_restored": "restauração de um desafio"
+      },
+      "source_state": {
+        "current": "vigente",
+        "incomplete": "incompleta"
+      },
+      "incomplete_fields": {
+        "actor": "autor",
+        "occurred_at": "data",
+        "status": "estado",
+        "path_module_id": "módulo",
+        "triggered_by": "acionador",
+        "before": "valor anterior",
+        "after": "valor posterior",
+        "state": "estado",
+        "source_type": "tipo de fonte",
+        "competency_type": "tipo de competência",
+        "competency_key": "competência",
+        "other": "outro dado"
+      }
     }
   },
   "calendar": {

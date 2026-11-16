@@ -45,6 +45,8 @@ export const PROGRESS_ENDPOINTS = {
   mentorLearningPaths: (userId: string) => `/mentor/users/${userId}/progress/learning-paths`,
   map: '/progress/map',
   mentorMap: (userId: string) => `/mentor/users/${userId}/progress/map`,
+  history: '/progress/history',
+  mentorHistory: (userId: string) => `/mentor/users/${userId}/progress/history`,
   challengePathModule: (challengeId: string) => `/challenges/${challengeId}/path-module`,
   evidenceLinks: '/progress/competencies/evidence-links',
   evidenceLink: (id: string) => `/progress/competencies/evidence-links/${id}`,

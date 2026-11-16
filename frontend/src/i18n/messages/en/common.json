@@ -1033,6 +1033,91 @@
       "elements": "Linked elements",
       "no_elements": "No linked elements.",
       "element_challenge": "Challenge"
+    },
+    "history": {
+      "title": "Progress history",
+      "title_mentor": "Mentee history",
+      "subtitle": "Recorded changes to objectives, activities and competencies, newest first.",
+      "back": "Back to panel",
+      "view_history": "View history",
+      "empty": "No recorded changes yet.",
+      "load_more": "Load more",
+      "loading_more": "Loading more events…",
+      "undated_title": "No date available",
+      "undated_hint": "Events recorded without a date; none is assigned.",
+      "incomplete": "Incomplete information",
+      "domains": {
+        "objectives": "Objectives",
+        "activities": "Activities",
+        "competencies": "Competencies"
+      },
+      "actor": {
+        "by": "By {name}",
+        "system": "System",
+        "hidden": "Hidden actor",
+        "hidden_hint": "Who deleted the result is not shown.",
+        "unknown": "Author not recorded"
+      },
+      "events": {
+        "objective_created": "Objective created: {title}",
+        "objective_status_changed": "Objective status change: {title}",
+        "objective_evidence_added": "Evidence added to {title}",
+        "challenge_status_transition": "Challenge status change: {title}",
+        "challenge_module_link_changed": "Challenge {title} linked to a module",
+        "module_completion_granted": "Module completed: {title}",
+        "module_completion_revoked": "Completion withdrawn: {title}",
+        "challenge_submission_submitted": "Submission sent: {title}",
+        "challenge_submission_reviewed": "Submission reviewed: {title}",
+        "learning_path_started": "Path started: {title}",
+        "learning_path_completed": "Path completed: {title}",
+        "competency_evidence_link_changed": "Competency evidence updated",
+        "competency_evidence_source_state_changed": "Linked assessment state change",
+        "competency_evidence_source_deleted": "Linked assessment deleted",
+        "unknown": "Recorded event"
+      },
+      "detail": {
+        "status_change": "{from} → {to}",
+        "status_initial": "Initial status: {to}",
+        "with_attachment": "With attachment",
+        "without_attachment": "Without attachment",
+        "linked": "Linked to a module",
+        "unlinked": "Link removed",
+        "relinked": "Link moved to another module",
+        "reason_module_deleted": "Link removed when the module was deleted",
+        "completion_trigger": "By {event}",
+        "competency_linked": "Linked to {competency}",
+        "competency_unlinked": "Link removed from {competency}",
+        "competency_relinked": "Link moved to {competency}",
+        "source_state": "{from} → {to}",
+        "source_deleted": "Competency: {competency}"
+      },
+      "trigger": {
+        "challenge_status_transition": "a challenge status change",
+        "challenge_module_link_changed": "a challenge link change",
+        "path_module_deleted": "module deletion",
+        "learning_path_deleted": "path deletion",
+        "challenge_deleted": "a challenge deletion",
+        "challenge_force_deleted": "a permanent challenge deletion",
+        "challenge_restored": "a challenge restoration"
+      },
+      "source_state": {
+        "current": "current",
+        "incomplete": "incomplete"
+      },
+      "incomplete_fields": {
+        "actor": "author",
+        "occurred_at": "date",
+        "status": "status",
+        "path_module_id": "module",
+        "triggered_by": "trigger",
+        "before": "previous value",
+        "after": "new value",
+        "state": "state",
+        "source_type": "source type",
+        "competency_type": "competency type",
+        "competency_key": "competency",
+        "other": "other field"
+      }
     }
   },
   "calendar": {

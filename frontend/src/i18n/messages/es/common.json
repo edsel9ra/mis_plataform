@@ -1033,6 +1033,91 @@
       "elements": "Elementos vinculados",
       "no_elements": "Sin elementos vinculados.",
       "element_challenge": "Reto"
+    },
+    "history": {
+      "title": "Historial de progreso",
+      "title_mentor": "Historial del mentee",
+      "subtitle": "Cambios registrados en objetivos, actividades y competencias, del más reciente al más antiguo.",
+      "back": "Volver al panel",
+      "view_history": "Ver historial",
+      "empty": "Todavía no hay cambios registrados.",
+      "load_more": "Cargar más",
+      "loading_more": "Cargando más eventos…",
+      "undated_title": "Fecha no disponible",
+      "undated_hint": "Eventos registrados sin fecha; no se les asigna una.",
+      "incomplete": "Información incompleta",
+      "domains": {
+        "objectives": "Objetivos",
+        "activities": "Actividades",
+        "competencies": "Competencias"
+      },
+      "actor": {
+        "by": "Por {name}",
+        "system": "Sistema",
+        "hidden": "Actor oculto",
+        "hidden_hint": "No se muestra quién eliminó el resultado.",
+        "unknown": "Autor no registrado"
+      },
+      "events": {
+        "objective_created": "Objetivo creado: {title}",
+        "objective_status_changed": "Cambio de estado del objetivo {title}",
+        "objective_evidence_added": "Evidencia añadida a {title}",
+        "challenge_status_transition": "Cambio de estado del reto {title}",
+        "challenge_module_link_changed": "Vínculo del reto {title} con un módulo",
+        "module_completion_granted": "Módulo completado: {title}",
+        "module_completion_revoked": "Completitud retirada: {title}",
+        "challenge_submission_submitted": "Entrega enviada: {title}",
+        "challenge_submission_reviewed": "Entrega revisada: {title}",
+        "learning_path_started": "Ruta iniciada: {title}",
+        "learning_path_completed": "Ruta completada: {title}",
+        "competency_evidence_link_changed": "Evidencia de competencia actualizada",
+        "competency_evidence_source_state_changed": "Cambio de estado de una evaluación vinculada",
+        "competency_evidence_source_deleted": "Evaluación vinculada eliminada",
+        "unknown": "Evento registrado"
+      },
+      "detail": {
+        "status_change": "{from} → {to}",
+        "status_initial": "Estado inicial: {to}",
+        "with_attachment": "Con archivo adjunto",
+        "without_attachment": "Sin archivo adjunto",
+        "linked": "Vinculado a un módulo",
+        "unlinked": "Vínculo retirado",
+        "relinked": "Vínculo cambiado de módulo",
+        "reason_module_deleted": "Vínculo retirado al eliminar el módulo",
+        "completion_trigger": "Por {event}",
+        "competency_linked": "Vinculada a {competency}",
+        "competency_unlinked": "Vínculo retirado de {competency}",
+        "competency_relinked": "Vínculo cambiado a {competency}",
+        "source_state": "{from} → {to}",
+        "source_deleted": "Competencia: {competency}"
+      },
+      "trigger": {
+        "challenge_status_transition": "cambio de estado de un reto",
+        "challenge_module_link_changed": "cambio de vínculo de un reto",
+        "path_module_deleted": "eliminación del módulo",
+        "learning_path_deleted": "eliminación de la ruta",
+        "challenge_deleted": "eliminación de un reto",
+        "challenge_force_deleted": "eliminación definitiva de un reto",
+        "challenge_restored": "restauración de un reto"
+      },
+      "source_state": {
+        "current": "vigente",
+        "incomplete": "incompleta"
+      },
+      "incomplete_fields": {
+        "actor": "autor",
+        "occurred_at": "fecha",
+        "status": "estado",
+        "path_module_id": "módulo",
+        "triggered_by": "detonante",
+        "before": "valor anterior",
+        "after": "valor posterior",
+        "state": "estado",
+        "source_type": "tipo de fuente",
+        "competency_type": "tipo de competencia",
+        "competency_key": "competencia",
+        "other": "otro dato"
+      }
     }
   },
   "calendar": {
