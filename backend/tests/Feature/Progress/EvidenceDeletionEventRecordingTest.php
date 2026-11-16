@@ -106,8 +106,8 @@ it('records one minimal event per link on the retake delete path', function (): 
     expect($events)->toHaveCount(2);
 
     // Persisted timestamps hold the app.timezone wall clock (project
-    // convention); compare the wall clock, not the offset label.
-    $expected = CarbonImmutable::parse('2026-11-15T10:00:00Z')->setTimezone(config('app.timezone'));
+    // convention); the cast now reads the true instant (T014.14).
+    $expected = CarbonImmutable::parse('2026-11-15T10:00:00Z');
     $expectedExpiry = $expected->addMonthsNoOverflow(12);
     foreach ([['C', $events[0]], ['O', $events[1]]] as [$factor, $event]) {
         expect($event->subject_id)->toBe($this->user->id)
@@ -115,8 +115,8 @@ it('records one minimal event per link on the retake delete path', function (): 
             ->and($event->competency_type)->toBe('ocean_factor')
             ->and($event->competency_key)->toBe($factor)
             ->and($event->change_type)->toBe('source_deleted')
-            ->and($event->occurred_at->format('Y-m-d H:i:s'))->toBe($expected->format('Y-m-d H:i:s'))
-            ->and($event->expires_at->format('Y-m-d H:i:s'))->toBe($expectedExpiry->format('Y-m-d H:i:s'));
+            ->and($event->occurred_at->eq($expected))->toBeTrue()
+            ->and($event->expires_at->eq($expectedExpiry))->toBeTrue();
 
         $actorLink = EvidenceDeletionActorLink::query()->where('event_id', $event->id)->first();
         expect($actorLink)->not->toBeNull()
