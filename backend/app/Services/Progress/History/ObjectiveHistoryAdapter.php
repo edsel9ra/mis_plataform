@@ -21,9 +21,36 @@ use Illuminate\Support\Facades\DB;
  */
 final class ObjectiveHistoryAdapter implements HistoryAdapter
 {
+    private const ID_SQL = "('objective_activity:' || lpad(activity_log.id::text, 20, '0'))";
+
     public function dated(User $subject, ?array $after, int $limit): array
     {
-        $query = DB::table('activity_log')
+        $rows = HistoryCursorQuery::apply(
+            $this->baseQuery($subject)->whereNotNull('activity_log.created_at'),
+            '(activity_log.created_at AT TIME ZONE ?)',
+            [config('app.timezone')],
+            self::ID_SQL,
+            $after,
+            $limit,
+        )->get();
+
+        return $this->toEvents($rows);
+    }
+
+    public function undated(User $subject, int $cap): array
+    {
+        $rows = $this->baseQuery($subject)
+            ->whereNull('activity_log.created_at')
+            ->orderByRaw('('.self::ID_SQL.') COLLATE "C"')
+            ->limit($cap)
+            ->get();
+
+        return $this->toEvents($rows);
+    }
+
+    private function baseQuery(User $subject)
+    {
+        return DB::table('activity_log')
             ->select(['id', 'event', 'properties', 'subject_id', 'causer_id', 'created_at'])
             ->where('log_name', 'objective')
             ->where('subject_type', (new Objective)->getMorphClass())
@@ -31,16 +58,10 @@ final class ObjectiveHistoryAdapter implements HistoryAdapter
             ->whereRaw(
                 "(event = 'created' OR (event = 'updated' AND (properties::jsonb -> 'attributes' -> 'status') IS NOT NULL))",
             );
+    }
 
-        $rows = HistoryCursorQuery::apply(
-            $query,
-            '(activity_log.created_at AT TIME ZONE ?)',
-            [config('app.timezone')],
-            "('objective_activity:' || lpad(activity_log.id::text, 20, '0'))",
-            $after,
-            $limit,
-        )->get();
-
+    private function toEvents($rows): array
+    {
         if ($rows->isEmpty()) {
             return [];
         }
@@ -58,11 +79,6 @@ final class ObjectiveHistoryAdapter implements HistoryAdapter
             ->map(fn (object $row): array => $this->toEvent($row, $objectives, $causers))
             ->values()
             ->all();
-    }
-
-    public function undated(User $subject, int $cap): array
-    {
-        return [];
     }
 
     private function individualObjectiveIds(User $subject)

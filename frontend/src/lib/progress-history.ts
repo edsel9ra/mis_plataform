@@ -96,11 +96,12 @@ export type HistoryViewState = 'loading' | 'error' | 'empty' | 'ready';
 export function historyViewState(input: {
   isLoading: boolean;
   isError: boolean;
+  hasData: boolean;
   events: HistoryEvent[];
   undated: HistoryEvent[];
 }): HistoryViewState {
   if (input.isLoading) return 'loading';
-  if (input.isError) return 'error';
+  if (!input.hasData) return 'error';
   if (input.events.length === 0 && input.undated.length === 0) return 'empty';
 
   return 'ready';

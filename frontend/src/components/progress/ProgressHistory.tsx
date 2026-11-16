@@ -50,7 +50,8 @@ export function ProgressHistory({ query }: { query: ProgressHistoryQuery }) {
   );
   const state = historyViewState({
     isLoading: query.isLoading,
-    isError: query.isError || !query.data,
+    isError: query.isError,
+    hasData: Boolean(query.data),
     events,
     undated,
   });

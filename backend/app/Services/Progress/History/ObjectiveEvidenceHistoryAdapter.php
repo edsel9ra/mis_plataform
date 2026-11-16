@@ -18,21 +18,42 @@ use Illuminate\Support\Facades\DB;
  */
 final class ObjectiveEvidenceHistoryAdapter implements HistoryAdapter
 {
+    private const ID_SQL = "('objective_evidence:' || objective_evidences.id::text)";
+
     public function dated(User $subject, ?array $after, int $limit): array
     {
-        $query = DB::table('objective_evidences')
-            ->select(['id', 'objective_id', 'user_id', 'media_asset_id', 'created_at'])
-            ->whereIn('objective_id', $this->individualObjectiveIds($subject));
-
         $rows = HistoryCursorQuery::apply(
-            $query,
+            $this->baseQuery($subject)->whereNotNull('objective_evidences.created_at'),
             '(objective_evidences.created_at AT TIME ZONE ?)',
             [config('app.timezone')],
-            "('objective_evidence:' || objective_evidences.id::text)",
+            self::ID_SQL,
             $after,
             $limit,
         )->get();
 
+        return $this->toEvents($rows);
+    }
+
+    public function undated(User $subject, int $cap): array
+    {
+        $rows = $this->baseQuery($subject)
+            ->whereNull('objective_evidences.created_at')
+            ->orderByRaw('('.self::ID_SQL.') COLLATE "C"')
+            ->limit($cap)
+            ->get();
+
+        return $this->toEvents($rows);
+    }
+
+    private function baseQuery(User $subject)
+    {
+        return DB::table('objective_evidences')
+            ->select(['id', 'objective_id', 'user_id', 'media_asset_id', 'created_at'])
+            ->whereIn('objective_id', $this->individualObjectiveIds($subject));
+    }
+
+    private function toEvents($rows): array
+    {
         if ($rows->isEmpty()) {
             return [];
         }
@@ -50,11 +71,6 @@ final class ObjectiveEvidenceHistoryAdapter implements HistoryAdapter
             ->map(fn (object $row): array => $this->toEvent($row, $objectives, $authors))
             ->values()
             ->all();
-    }
-
-    public function undated(User $subject, int $cap): array
-    {
-        return [];
     }
 
     private function individualObjectiveIds(User $subject)

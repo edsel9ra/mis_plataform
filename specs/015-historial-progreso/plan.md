@@ -47,6 +47,7 @@ Hoy, al borrar una fuente vinculada, el retiro auditado `competency.evidence_lin
 - **Productor (cambio mínimo en 014):** `RetireEvidenceLinksForSourceAction` pasa `reason: 'source_deleted'` a `RemoveCompetencyAssessmentLinkAction`, que lo añade a las propiedades del evento operativo. Los retiros manuales no llevan `reason`. El registro operativo sigue igual en todo lo demás (política §6).
 - **Lectura:** el adapter de vínculos excluye los retiros con `reason=source_deleted`; el borrado aparece una sola vez, como evento mínimo, con `actor: {kind: "hidden"}`.
 - Retiros anteriores a este cambio no llevan la marca. Solo existen en entornos donde 014 ya corrió; se acepta y se documenta.
+- **Revisión del PR #6 (2026-11-15) — se corrige esa limitación:** la 014 ya está en `main`, así que dejarla abierta expone al actor en cualquier entorno desplegado. Una migración de datos de una sola vez marca los retiros anteriores (`after` nulo y sin `reason`) que coinciden exactamente con un evento mínimo en sujeto, tipo de fuente, tipo y clave de competencia e instante. `RetireEvidenceLinksForSourceAction` usa el mismo `$now` para el evento y para el retiro, así que la coincidencia es exacta y no aproximada. Añade `reason: source_deleted` y `reason_backfilled: true`; el `down` quita solo las claves que la migración añadió. Limitación residual: si un retiro por borrado se hizo con la retención desactivada (sin evento mínimo), no hay con qué hacer la correspondencia y queda sin marcar.
 
 ## 4. Flujo de lectura, autorización y presentación
 

@@ -106,11 +106,23 @@ describe('groupHistoryByDay / formatHistoryTime', () => {
 
 describe('historyViewState', () => {
   it('maps the query into the four states', () => {
-    expect(historyViewState({ isLoading: true, isError: false, events: [], undated: [] })).toBe('loading');
-    expect(historyViewState({ isLoading: false, isError: true, events: [], undated: [] })).toBe('error');
-    expect(historyViewState({ isLoading: false, isError: false, events: [], undated: [] })).toBe('empty');
-    expect(historyViewState({ isLoading: false, isError: false, events: [ev()], undated: [] })).toBe('ready');
-    expect(historyViewState({ isLoading: false, isError: false, events: [], undated: [ev({ occurred_at: null })] })).toBe('ready');
+    expect(historyViewState({ isLoading: true, isError: false, hasData: false, events: [], undated: [] })).toBe('loading');
+    expect(historyViewState({ isLoading: false, isError: true, hasData: false, events: [], undated: [] })).toBe('error');
+    expect(historyViewState({ isLoading: false, isError: false, hasData: true, events: [], undated: [] })).toBe('empty');
+    expect(historyViewState({ isLoading: false, isError: false, hasData: true, events: [ev()], undated: [] })).toBe('ready');
+    expect(historyViewState({ isLoading: false, isError: false, hasData: true, events: [], undated: [ev({ occurred_at: null })] })).toBe('ready');
+  });
+
+  it('keeps loaded pages visible when a next-page fetch fails', () => {
+    // TanStack Query v5 sets isError on next-page failures too; the loaded
+    // pages must stay visible (the inline next-page error handles the retry).
+    expect(historyViewState({ isLoading: false, isError: true, hasData: true, events: [ev()], undated: [] })).toBe('ready');
+    expect(historyViewState({ isLoading: false, isError: true, hasData: true, events: [], undated: [] })).toBe('empty');
+  });
+
+  it('still shows the full error when nothing loaded, and loading always wins', () => {
+    expect(historyViewState({ isLoading: false, isError: true, hasData: false, events: [ev()], undated: [] })).toBe('error');
+    expect(historyViewState({ isLoading: true, isError: true, hasData: true, events: [ev()], undated: [] })).toBe('loading');
   });
 });
 

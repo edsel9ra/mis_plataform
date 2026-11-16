@@ -30,9 +30,40 @@ final class CompetencyHistoryAdapter implements HistoryAdapter
 
     private const RELATION_KEYS = ['source_type', 'competency_type', 'competency_key'];
 
+    private const ID_SQL = "('competency_activity:' || lpad(activity_log.id::text, 20, '0'))";
+
     public function dated(User $subject, ?array $after, int $limit): array
     {
-        $query = DB::table('activity_log')
+        $rows = HistoryCursorQuery::apply(
+            $this->baseQuery($subject)->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NOT NULL OR activity_log.created_at IS NOT NULL)",
+            ),
+            "COALESCE((activity_log.properties::jsonb ->> 'occurred_at')::timestamptz, activity_log.created_at AT TIME ZONE ?)",
+            [config('app.timezone')],
+            self::ID_SQL,
+            $after,
+            $limit,
+        )->get();
+
+        return $this->toEvents($rows);
+    }
+
+    public function undated(User $subject, int $cap): array
+    {
+        $rows = $this->baseQuery($subject)
+            ->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NULL AND activity_log.created_at IS NULL)",
+            )
+            ->orderByRaw('('.self::ID_SQL.') COLLATE "C"')
+            ->limit($cap)
+            ->get();
+
+        return $this->toEvents($rows);
+    }
+
+    private function baseQuery(User $subject)
+    {
+        return DB::table('activity_log')
             ->select(['id', 'event', 'properties', 'subject_id', 'causer_id', 'created_at'])
             ->where('log_name', 'progress')
             ->whereIn('event', self::EVENTS)
@@ -41,16 +72,10 @@ final class CompetencyHistoryAdapter implements HistoryAdapter
                 "(activity_log.properties::jsonb ->> 'reason') IS DISTINCT FROM ?",
                 [RemoveCompetencyAssessmentLinkAction::REASON_SOURCE_DELETED],
             );
+    }
 
-        $rows = HistoryCursorQuery::apply(
-            $query,
-            "COALESCE((activity_log.properties::jsonb ->> 'occurred_at')::timestamptz, activity_log.created_at AT TIME ZONE ?)",
-            [config('app.timezone')],
-            "('competency_activity:' || lpad(activity_log.id::text, 20, '0'))",
-            $after,
-            $limit,
-        )->get();
-
+    private function toEvents($rows): array
+    {
         if ($rows->isEmpty()) {
             return [];
         }
@@ -68,11 +93,6 @@ final class CompetencyHistoryAdapter implements HistoryAdapter
             ->map(fn (object $row): array => $this->toEvent($row, $causers, $skillTags))
             ->values()
             ->all();
-    }
-
-    public function undated(User $subject, int $cap): array
-    {
-        return [];
     }
 
     /**

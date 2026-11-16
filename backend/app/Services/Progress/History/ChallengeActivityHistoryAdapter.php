@@ -21,24 +21,49 @@ final class ChallengeActivityHistoryAdapter implements HistoryAdapter
 {
     private const EVENTS = ['challenge.status_transition', 'challenge.module_link_changed'];
 
+    private const ID_SQL = "('challenge_activity:' || lpad(activity_log.id::text, 20, '0'))";
+
     public function dated(User $subject, ?array $after, int $limit): array
     {
-        $query = DB::table('activity_log')
+        $rows = HistoryCursorQuery::apply(
+            $this->baseQuery($subject)->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NOT NULL OR activity_log.created_at IS NOT NULL)",
+            ),
+            "COALESCE((activity_log.properties::jsonb ->> 'occurred_at')::timestamptz, activity_log.created_at AT TIME ZONE ?)",
+            [config('app.timezone')],
+            self::ID_SQL,
+            $after,
+            $limit,
+        )->get();
+
+        return $this->toEvents($rows);
+    }
+
+    public function undated(User $subject, int $cap): array
+    {
+        $rows = $this->baseQuery($subject)
+            ->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NULL AND activity_log.created_at IS NULL)",
+            )
+            ->orderByRaw('('.self::ID_SQL.') COLLATE "C"')
+            ->limit($cap)
+            ->get();
+
+        return $this->toEvents($rows);
+    }
+
+    private function baseQuery(User $subject)
+    {
+        return DB::table('activity_log')
             ->select(['id', 'event', 'properties', 'subject_id', 'causer_id', 'created_at'])
             ->where('log_name', 'challenge')
             ->where('subject_type', (new Challenge)->getMorphClass())
             ->whereIn('subject_id', $this->subjectChallengeIds($subject))
             ->whereIn('event', self::EVENTS);
+    }
 
-        $rows = HistoryCursorQuery::apply(
-            $query,
-            "COALESCE((activity_log.properties::jsonb ->> 'occurred_at')::timestamptz, activity_log.created_at AT TIME ZONE ?)",
-            [config('app.timezone')],
-            "('challenge_activity:' || lpad(activity_log.id::text, 20, '0'))",
-            $after,
-            $limit,
-        )->get();
-
+    private function toEvents($rows): array
+    {
         if ($rows->isEmpty()) {
             return [];
         }
@@ -56,11 +81,6 @@ final class ChallengeActivityHistoryAdapter implements HistoryAdapter
             ->map(fn (object $row): array => $this->toEvent($row, $challenges, $causers))
             ->values()
             ->all();
-    }
-
-    public function undated(User $subject, int $cap): array
-    {
-        return [];
     }
 
     private function subjectChallengeIds(User $subject)

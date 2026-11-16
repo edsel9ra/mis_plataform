@@ -20,23 +20,48 @@ final class ModuleCompletionHistoryAdapter implements HistoryAdapter
 {
     private const EVENTS = ['module_completion.granted', 'module_completion.revoked'];
 
+    private const ID_SQL = "('module_completion:' || lpad(activity_log.id::text, 20, '0'))";
+
     public function dated(User $subject, ?array $after, int $limit): array
     {
-        $query = DB::table('activity_log')
-            ->select(['id', 'event', 'properties', 'created_at'])
-            ->where('log_name', 'module_completion')
-            ->whereIn('event', self::EVENTS)
-            ->whereRaw("(activity_log.properties::jsonb ->> 'user_id') = ?", [$subject->id]);
-
         $rows = HistoryCursorQuery::apply(
-            $query,
+            $this->baseQuery($subject)->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NOT NULL OR activity_log.created_at IS NOT NULL)",
+            ),
             "COALESCE((activity_log.properties::jsonb ->> 'occurred_at')::timestamptz, activity_log.created_at AT TIME ZONE ?)",
             [config('app.timezone')],
-            "('module_completion:' || lpad(activity_log.id::text, 20, '0'))",
+            self::ID_SQL,
             $after,
             $limit,
         )->get();
 
+        return $this->toEvents($rows);
+    }
+
+    public function undated(User $subject, int $cap): array
+    {
+        $rows = $this->baseQuery($subject)
+            ->whereRaw(
+                "((activity_log.properties::jsonb ->> 'occurred_at') IS NULL AND activity_log.created_at IS NULL)",
+            )
+            ->orderByRaw('('.self::ID_SQL.') COLLATE "C"')
+            ->limit($cap)
+            ->get();
+
+        return $this->toEvents($rows);
+    }
+
+    private function baseQuery(User $subject)
+    {
+        return DB::table('activity_log')
+            ->select(['id', 'event', 'properties', 'created_at'])
+            ->where('log_name', 'module_completion')
+            ->whereIn('event', self::EVENTS)
+            ->whereRaw("(activity_log.properties::jsonb ->> 'user_id') = ?", [$subject->id]);
+    }
+
+    private function toEvents($rows): array
+    {
         if ($rows->isEmpty()) {
             return [];
         }
@@ -54,11 +79,6 @@ final class ModuleCompletionHistoryAdapter implements HistoryAdapter
             ->map(fn (object $row): array => $this->toEvent($row, $modules))
             ->values()
             ->all();
-    }
-
-    public function undated(User $subject, int $cap): array
-    {
-        return [];
     }
 
     private function toEvent(object $row, $modules): array
