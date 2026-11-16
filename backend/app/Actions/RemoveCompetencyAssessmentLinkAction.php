@@ -18,13 +18,21 @@ use Illuminate\Support\Facades\DB;
  */
 class RemoveCompetencyAssessmentLinkAction
 {
+    /**
+     * Marker for retirements caused by a source deletion (Spec 015 plan §3):
+     * the operational audit keeps the real actor while the competency
+     * history adapter excludes these rows so the deleter is never revealed.
+     */
+    public const REASON_SOURCE_DELETED = 'source_deleted';
+
     public function execute(
         User $subject,
         User $actor,
         CompetencyAssessmentLink $link,
         CarbonInterface $now,
+        ?string $reason = null,
     ): void {
-        DB::transaction(function () use ($subject, $actor, $link, $now): void {
+        DB::transaction(function () use ($subject, $actor, $link, $now, $reason): void {
             $locked = CompetencyAssessmentLink::query()
                 ->whereKey($link->getKey())
                 ->lockForUpdate()
@@ -43,18 +51,24 @@ class RemoveCompetencyAssessmentLinkAction
 
             $locked->delete();
 
+            $properties = [
+                'link_id' => $locked->id,
+                'subject_id' => $subject->id,
+                'actor_id' => $actor->id,
+                'before' => $before,
+                'after' => null,
+                'occurred_at' => $now->toIso8601String(),
+            ];
+
+            if ($reason !== null) {
+                $properties['reason'] = $reason;
+            }
+
             activity('progress')
                 ->causedBy($actor)
                 ->performedOn($locked)
                 ->event('competency.evidence_link_changed')
-                ->withProperties([
-                    'link_id' => $locked->id,
-                    'subject_id' => $subject->id,
-                    'actor_id' => $actor->id,
-                    'before' => $before,
-                    'after' => null,
-                    'occurred_at' => $now->toIso8601String(),
-                ])
+                ->withProperties($properties)
                 ->log('competency.evidence_link_changed');
         });
     }

@@ -47,6 +47,15 @@ use App\Policies\ObjectivePolicy;
 use App\Policies\RelationshipPolicy;
 use App\Policies\SessionPolicy;
 use App\Policies\SystemicMapPolicy;
+use App\Services\Progress\History\ChallengeActivityHistoryAdapter;
+use App\Services\Progress\History\ChallengeSubmissionHistoryAdapter;
+use App\Services\Progress\History\CompetencyHistoryAdapter;
+use App\Services\Progress\History\EvidenceDeletionHistoryAdapter;
+use App\Services\Progress\History\LearningPathHistoryAdapter;
+use App\Services\Progress\History\ModuleCompletionHistoryAdapter;
+use App\Services\Progress\History\ObjectiveEvidenceHistoryAdapter;
+use App\Services\Progress\History\ObjectiveHistoryAdapter;
+use App\Services\Progress\History\ProgressHistoryService;
 use App\Services\Progress\ProgressCacheObserver;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
@@ -63,7 +72,17 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        //
+        // T015.6: the unified timeline merges every feed (plan §4 step 2).
+        $this->app->bind(ProgressHistoryService::class, fn ($app) => new ProgressHistoryService([
+            $app->make(ObjectiveHistoryAdapter::class),
+            $app->make(ObjectiveEvidenceHistoryAdapter::class),
+            $app->make(ChallengeActivityHistoryAdapter::class),
+            $app->make(ModuleCompletionHistoryAdapter::class),
+            $app->make(ChallengeSubmissionHistoryAdapter::class),
+            $app->make(LearningPathHistoryAdapter::class),
+            $app->make(CompetencyHistoryAdapter::class),
+            $app->make(EvidenceDeletionHistoryAdapter::class),
+        ]));
     }
 
     public function boot(): void

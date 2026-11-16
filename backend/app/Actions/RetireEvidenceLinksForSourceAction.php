@@ -21,7 +21,8 @@ use InvalidArgumentException;
  * history is silently lost. Before each removal the minimal deletion event
  * of the retention policy is recorded (docs/politica-retencion.md §4–§5,
  * plan §9): both registers coexist — the operational audit event
- * (competency.evidence_link_changed) is untouched.
+ * (competency.evidence_link_changed) is untouched, only marked with
+ * REASON_SOURCE_DELETED so Spec 015 history can exclude it (plan §3).
  */
 class RetireEvidenceLinksForSourceAction
 {
@@ -51,7 +52,13 @@ class RetireEvidenceLinksForSourceAction
         DB::transaction(function () use ($links, $actor, $now): void {
             foreach ($links as $link) {
                 $this->record->execute($link, $actor, $now);
-                $this->remove->execute($link->user, $actor, $link, $now);
+                $this->remove->execute(
+                    $link->user,
+                    $actor,
+                    $link,
+                    $now,
+                    RemoveCompetencyAssessmentLinkAction::REASON_SOURCE_DELETED,
+                );
             }
         });
 
