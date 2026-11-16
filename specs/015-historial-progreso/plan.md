@@ -1,86 +1,105 @@
 # Plan de implementación — Spec 015: Historial verificable de progreso
 
-**Estado:** propuesto para implementación · **Spec:** aprobada
-**Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 implementado.
-**Dependencias:** 012 antes de esta spec para eventos de retos/vínculos/completitud; 014 antes para eventos de evaluación/competencia. Por tanto, implementar 015 al final.
-**Bloqueo:** retención del evento mínimo de eliminación no se implementa hasta que exista política general de conservación/eliminación identificada y documentada.
+**Estado:** aprobado para implementación (revisión 2026-11-15, aprobada 2026-11-15) · **Spec:** aprobada
+**Base:** Spec 001 v0.5.1 aprobada; specs 012, 013 y 014 implementadas en `main` (PR #4).
+**Dependencias:** satisfechas. La 012 produce los eventos de retos, vínculo reto-módulo y completitud; la 014 produce los eventos de vínculo resultado-competencia, de estado de fuente y el evento mínimo de eliminación.
+**Retención (RF-015.9):** desbloqueada. `docs/politica-retencion.md` v1.0.0 está vigente y la Spec 014 (T014.10–T014.13) ya conserva el evento mínimo, su correspondencia audit-only y la purga a 12 meses. Esta spec solo **lee** ese evento: no crea almacenamiento, seudónimos ni plazos.
 
-## 1. Alcance y fuentes
+> **Revisión 2026-11-15.** La versión anterior era previa a la implementación de 012/014. Se contrastó cada fuente con el código: se corrigen productores inexistentes (no hay registro de cambios de `UserSkill.level`), se concretan los eventos reales de `activity_log` y se añade la ocultación de actor para los retiros causados por eliminación (CA-19.7).
 
-La cronología es una proyección de registros verificables existentes, no una tabla de métricas ni una reconstrucción. Reutilizar `spatie/laravel-activitylog` (ya instalado y usado por objetivos) como fuente inmutable ante operaciones ordinarias para cambios; leer evidencias y marcas de fecha directamente de sus modelos fuente. No duplicar el payload sensible en una tabla nueva.
+## 1. Alcance y fuentes verificadas
 
-| Fuente / área | Eventos que puede acreditar | Limitación que debe conservarse | RF |
-|---|---|---|---|
-| `Activity`/`activity_log` de `Objective` | Creación y cambios de estado/campos que hayan sido logueados, actor, instante, diff disponible | No fabricar eventos previos ausentes ni completar snapshots/campos que falten | RF-015.1–.2, .7–.8 |
-| `ObjectiveEvidence` | Registro de evidencia y `created_at`, referencia/id disponible | No copiar nota/contenido/URL si no se requiere; no inferir fecha previa a propuesta | RF-015.2, .7–.8 |
-| `Challenge` y ActivityLog producido por 012 | Transiciones, inicio/finalización y vínculo reto-módulo anterior/resultante | Evento ausente no demuestra que no ocurrió; no usar `progress` estimado | RF-015.3, .8 |
-| completitud individual de módulo / `UserLearningProgress` | Finalización automática persistida; `started_at`/`completed_at` disponibles como hechos fuente | No interpolar transiciones intermedias; timestamps nulos van a «fecha no disponible» | RF-015.3, .7–.8 |
-| `ChallengeSubmission` y `ObjectiveEvidence` | Evidencia registrada con fecha y referencia disponible | No exponer archivos/contenido fuera del permiso existente | RF-015.2–.3 |
-| `CompetencyAssessmentLink` events de 014 + `UserSkill` | Creación/cambio/retiro explícitos y cambios de nivel realmente registrados desde observer | No atribuir al resultado cambios automáticos de nivel ni reconstruir niveles históricos | RF-015.4–.6, .8 |
-| `AssessmentResult`/`PersonalityAssessment` events de 014 | Cambio de estado real de fuente con vínculo activo | La fuente actual representa completitud por `completed_at`; si no hay transición registrada no se crea evento | RF-015.4–.6, .8 |
-| resultado eliminado | Solo evento mínimo aprobado con actor pseudonimizado audit-only | Retención **bloqueada** hasta política documentada; no almacenar ni crear pseudónimo en esta fase | RF-015.9 |
-| `HistoryService`, controller/resource, policy y rutas API | Unión autorizada/paginada y normalización de fuentes | Prohibido responder con historial por vista colectiva | RF-015.1, .7–.10 |
-| `frontend/src/{app,components/progress,types,hooks,lib,i18n/messages/*}` | Vista accesible de eventos fechados y grupo separado sin fecha | No usar como serie de tendencias ni exponer identidad/payload borrado | RF-015.1–.10 |
+La cronología es una proyección de solo lectura de registros existentes, no una tabla nueva ni una reconstrucción. Cada adapter selecciona columnas/propiedades en whitelist y nunca serializa `properties` completo.
+
+| Fuente real | Eventos que acredita | Whitelist de salida | Limitación | RF |
+|---|---|---|---|---|
+| `activity_log` `log_name=objective` (`Objective` con `LogsActivity`, `logOnly` status/due_at/success_criteria/owner_id) | `created`; cambios de `status` (incluido el primer `in_progress`, `achieved`, `abandoned`) | objetivo id y título (el mismo que ya ve en el panel quien tiene acceso; añadido en T015.2 para que la UI no muestre solo ids), estado anterior/resultante, actor (causer), fecha | Solo objetivos **individuales** del sujeto (§9 D-2). No se exponen `success_criteria` ni `owner_id`; un `updated` sin cambio de `status` no genera entrada | RF-015.2, .7–.8 |
+| `objective_evidences` | Evidencia registrada (`created_at`) | evidencia id, objetivo id y título, autor, fecha, `has_attachment` (bool) | Nunca `note` ni URL/ruta del adjunto | RF-015.2 |
+| `activity_log` `challenge.status_transition` (`TransitionChallengeStatusAction`) | Inicio, finalización y cambios de estado del reto | reto id y título, estado anterior/resultante, actor, fecha | Sujeto = `challenges.mentee_id`. No se usa `progress` estimado | RF-015.3 |
+| `activity_log` `challenge.module_link_changed` (`SetChallengePathModuleAction`, `ModuleCompletionService`) | Creación/cambio/retiro del vínculo reto-módulo | reto id y título, módulo anterior/resultante, actor o `system`, `reason` si existe, fecha | Sin inferir vínculos | RF-015.3 |
+| `activity_log` `module_completion.granted` / `.revoked` | Completitud automática del módulo y su revocación | módulo id y título, actor `system`, desencadenante (`triggered_by.event`, `actor_id`, `challenge_id`), fecha | Sujeto = `properties.user_id` | RF-015.3 |
+| `challenge_submissions` | Evidencia de reto enviada (`submitted_at`) y revisada (`reviewed_at`) | entrega id, reto id y título, fechas (sin actor: la fuente no lo registra) | Nunca `note` ni el estado actual (no es el del momento). `submitted_at` es NOT NULL en el esquema: no hay entregas sin fecha (T015.3) | RF-015.3, .7 |
+| `user_learning_progress` | Ruta iniciada (`started_at`) y completada (`completed_at`) como hechos fechados | ruta id y título (mapa i18n), fecha | Una entrada por fecha presente; sin pasos intermedios. Fila sin ninguna fecha → no hay hecho que mostrar | RF-015.3, .7–.8 |
+| `activity_log` `competency.evidence_link_changed` | Crear/cambiar/retirar vínculo resultado-competencia | vínculo id, `before`/`after` (tipo de fuente, tipo y clave de competencia y nombre del skill tag; nunca el id del resultado), actor, fecha | Retiros con `reason=source_deleted` se **excluyen** (§3, CA-19.7): ese borrado se representa solo con el evento mínimo | RF-015.4–.5 |
+| `activity_log` `competency.evidence_source_state_changed` | Cambio real de `completed_at` de una fuente vinculada | fuente id, vínculos afectados, estado anterior/resultante, actor, fecha | Solo existe para `PersonalityAssessment` (catálogo es NOT NULL) | RF-015.6 |
+| `evidence_deletion_events` (Spec 014) | Eliminación de un resultado vinculado (evento mínimo) | evento id, tipo de fuente, tipo y clave de competencia, fecha, `actor: hidden` | **Nunca** `actor_pseudonym` ni la correspondencia; eventos vencidos no se muestran | RF-015.9 |
+| `UserSkill.level` | — | — | **Ningún productor registra cambios de nivel** (solo `SyncMentorSkillsAction` escribe niveles, sin auditoría). Por RF-015.8 no se crea ninguna entrada (§9 D-1) | RF-015.4, .8 |
 
 ## 2. Contrato normalizado y funciones puras
 
-`ProgressHistoryEvent` solo en memoria/response normaliza `type`, `source_type`, `source_id` (si persiste), `occurred_at|null`, `actor` disponible, `before/after` whitelisted, referencia de evidencia disponible y campos `incomplete[]`. Cada adapter conserva origen y no simula eventos. Se excluyen respuestas, puntuaciones, texto de evidencia innecesario y propiedades no whitelisted. El payload de eliminación, cuando sea legalmente habilitable en una futura tarea, queda fuera de la vista normal y no es un evento fuente implementado aquí.
+`ProgressHistoryEvent` (solo en memoria/respuesta): `id` (estable: `{source}:{source_id}[:{suffix}]`), `type` (p. ej. `objective.status_changed`), `domain` (`objectives`|`activities`|`competencies`), `occurred_at|null`, `actor` (`{id,name}` | `{kind:"system"}` | `{kind:"hidden"}` | `null`), `subject_ref` (ids de objetivo/reto/módulo/ruta/competencia según tipo), `before`/`after` en whitelist, `incomplete[]` (campos que la fuente no trae).
 
 ```text
-normalizeSourceEvent(record, whitelist): map fields only; missing fields -> incomplete[]
-classifyDate(event):
-  if occurred_at is null: date_unavailable + incomplete; never assign now()
-  else: dated
-sortHistory(events): dated events by occurred_at DESC, stable source/type/id tie-break;
-                   undated events form separate group, never interleaved
-mergeHistory(sourcePages): merge sorted feeds with stable key and cursor; no absent-event synthesis
+normalize(record, whitelist): map only whitelisted fields; missing → incomplete[]
+occurredAt(record): properties.occurred_at ?? created_at ?? source date column ?? null
+classify(event): occurred_at null → undated (never now())
+sortKey(event): (occurred_at DESC, id DESC)          # tie-break estable y total
+mergePage(feeds, cursor, limit): k-way merge of feeds already sorted by sortKey,
+                                 take limit, next_cursor = sortKey(last) | null
 ```
 
-Funciones puras no consultan DB ni reloj global. Si alguna clasificación usa fecha actual, `now` será argumento explícito; este historial no requiere `now` para posicionar eventos. Paginación por cursor opaco y tie-break estable limita memoria/tiempo de una consulta larga; el cursor no funciona como permiso.
+Funciones puras en `App\Services\Progress\Calculators\ProgressHistoryCalculator`: sin DB ni reloj. El cursor es opaco (base64 de `occurred_at|id`) y **no** concede acceso: el sujeto siempre se resuelve en servidor.
 
-## 3. Flujo de lectura, autorización y presentación
+## 3. Ocultación del actor en eliminaciones (CA-19.7)
 
-1. Auth middleware; resolver titular y autorizar en servidor con `ProgressAccessService`/accesos de relación vigentes: titular, mentor autorizado, admin con permiso explícito soporte/auditoría actual. No crear permiso paralelo ni habilitar agregado de cartera.
-2. Ejecutar adapters filtrados por sujeto, seleccionar columnas whitelisted, consultar lotes con índices, límite de página; excluir `collective` antes de serializar. La UI no decide acceso.
-3. Adaptar cada registro acreditado a DTO, conservando faltantes; nunca crear un evento si la fuente no lo registra. `started_at`/`completed_at` permiten afirmar solo ese hecho fechado, no pasos intermedios.
-4. Ordenar cronológicamente eventos fechados; agrupar registros acreditados sin fecha en apartado «fecha no disponible», marcado incompleto y sin `now()` o posición fabricada.
-5. Emitir log estructurado para errores/denegaciones sin respuesta/evidencia. Invalidar caché cuando 012/014/objetivos cambien.
-6. Serializer de actor: actor disponible en eventos ordinarios solo dentro del ámbito autorizado; no existe camino ordinario para revelar pseudónimo de eliminación. Si política no documentada, no implementar retención ni endpoint de resolución de pseudónimo.
+Hoy, al borrar una fuente vinculada, el retiro auditado `competency.evidence_link_changed` (`after: null`) guarda el actor real, y no se distingue de un retiro manual. Si la cronología lo mostrara, revelaría quién borró el resultado.
 
-API propuesta: `GET /api/v1/progress/history?cursor=&limit=` propio; equivalente con sujeto para mentor y soporte mediante rutas ya protegidas. Respuesta `{data:[...], next_cursor, undated:[...]}`; registros fechados y sin fecha separados; actor/cambios disponibles solo según fuente. No se integra en agregados de colectivo.
+- **Productor (cambio mínimo en 014):** `RetireEvidenceLinksForSourceAction` pasa `reason: 'source_deleted'` a `RemoveCompetencyAssessmentLinkAction`, que lo añade a las propiedades del evento operativo. Los retiros manuales no llevan `reason`. El registro operativo sigue igual en todo lo demás (política §6).
+- **Lectura:** el adapter de vínculos excluye los retiros con `reason=source_deleted`; el borrado aparece una sola vez, como evento mínimo, con `actor: {kind: "hidden"}`.
+- Retiros anteriores a este cambio no llevan la marca. Solo existen en entornos donde 014 ya corrió; se acepta y se documenta.
 
-## 4. Decisiones técnicas y alternativas descartadas
+## 4. Flujo de lectura, autorización y presentación
+
+1. Sujeto y rol con `ProgressAccessService::assertUserPanel` (misma matriz que panel, mapa y evidencia): titular → `self`; mentor asignado con `mentor_workspace` → `mentor`; admin con `progress.view.support` → `support`; resto → 404/403 sin revelar. Sin permisos nuevos.
+2. Cada adapter consulta por sujeto, ordenado por `sortKey` y limitado a `limit + 1` posteriores al cursor; solo columnas en whitelist. `activity_log` se filtra por `log_name`/`event` y por `subject` o propiedad de sujeto según la fuente (§6).
+3. Merge en memoria de como máximo `n_feeds × (limit + 1)` registros, corte a `limit`, `next_cursor`.
+4. Los registros sin fecha se devuelven en `undated` solo en la primera página (sin cursor), con tope; nunca se intercalan.
+5. Logs `progress.history_failed` / `progress.access_denied` estructurados, sin notas, respuestas, puntuaciones ni email.
+
+**API:** `GET /api/v1/progress/history?cursor=&limit=` (propio); `GET /api/v1/mentor/users/{user}/progress/history` (grupo `role:mentor`); `GET /api/v1/admin/progress/history?user_id=` (grupo admin + `permission:progress.view.support`, igual que el panel de soporte). `limit` 1–50, por defecto 25. Respuesta `{data: [...], undated: [...], next_cursor}`. Ningún endpoint colectivo.
+
+**UI:** página propia `/dashboard/progreso/historial` y variante de mentor `/dashboard/mentor/progress/[id]/historial`, con enlace «Ver historial» desde el panel (patrón del mapa de la 013). Lista cronológica agrupada por día, sección separada «Fecha no disponible», etiquetas de incompleto, botón «Cargar más» con `useInfiniteQuery`; sin gráficos ni tendencias.
+
+## 5. Decisiones técnicas y alternativas descartadas
 
 | Decisión | Alternativa descartada | Justificación |
 |---|---|---|
-| Adaptadores de fuentes existentes + `activitylog` append-only ya instalado | Tabla duplicada con copia de cada fuente y cronología materializada | Mantiene una verdad, no duplica datos ni agrega una nueva persistencia PII (P1/P4/P5). |
-| Whitelist de eventos/campos y actor/fecha solo si constan | Reconstruir snapshots por estado actual o inferir desde timestamps relacionados | Cumple la prohibición de inventar y minimiza exposición (P4/P6). |
-| Cursor paginado y tie-break determinista | Cargar toda la vida del usuario en una respuesta | Acota memoria/query y permite operar con historial creciente. |
-| «Fecha no disponible» separado, nunca sustituida por `now` | Insertar al inicio/fin o usar fecha de creación de otro registro | No crea orden temporal falso (RF-015.7–.8). |
-| Reutilizar permisos actuales, ningún endpoint colectivo | Compartir timeline a través de agregado | Historial/eventos son datos individuales protegidos (RF-015.10). |
-| Retención mínima de borrado se mantiene como gate | Implementarla usando `activitylog` genérico o asumir plazo | Política general pendiente y no delegable a implementación (RF-015.9). |
+| Adapters de solo lectura sobre fuentes existentes | Tabla de cronología materializada | Una sola verdad; no duplica PII (P1/P4/P5). |
+| Whitelist por tipo de evento | Serializar `properties` | Minimización: el log operativo lleva ids de fuente y actores que no siempre deben salir. |
+| Cursor `(occurred_at, id)` + merge k-way con `limit+1` por feed | Offset/página, o cargar toda la historia | Acota memoria y queries; estable ante inserciones. |
+| Marca `reason=source_deleted` en el retiro operativo | Correlacionar retiros y eventos mínimos por fecha | La correlación temporal es frágil; la marca es explícita y barata. |
+| Reusar `assertUserPanel` y la ruta de soporte del panel | Permiso nuevo de historial | Spec: sin cambios de permisos (§3.1 de la 001). |
+| No crear productor de cambios de nivel | Añadir observer sobre `UserSkill` | RF-015.8 / fuera de alcance «crear eventos que las fuentes no acreditan» (§9 D-1). |
 
-## 5. Observabilidad, constraints y rendimiento
+## 6. Rendimiento, índices y caché
 
-Los nuevos productores usan los mecanismos de auditoría append-oriented existentes; las operaciones normales no editan/borran actividades. `activity_log` se consulta por `log_name/event/subject_type/subject_id/causer_id/created_at` y, donde corresponda, propiedad mínima de sujeto; definir índices PostgreSQL aditivos sobre combinaciones usadas si el `EXPLAIN` lo requiere. Evitar un nuevo ledger; el contrato no serializa JSON arbitrario de `properties`. UUID/FKs de fuentes quedan intactos.
+- `activity_log` solo tiene índices por `log_name`, `(subject_type, subject_id)` y `(causer_type, causer_id)` (verificado en la BD de desarrollo). Las fuentes por `subject` (objetivos, retos) los aprovechan. Para eventos cuyo sujeto va en propiedades, migración aditiva con índices de expresión sobre `(event, (properties->>'user_id'))` (`module_completion.*`) y `(event, (properties->>'subject_id'))` (`competency.*`). Se valida con `EXPLAIN` en T015.6.
+- Retos y entregas se resuelven por `challenges.mentee_id`: primero ids de retos del sujeto, luego eventos con `subject_type=Challenge` y `subject_id IN (...)`.
+- **Ajuste T015.6 (2026-11-15):** los índices de expresión se crean **parciales** por `log_name` (`module_completion` y `progress`), sobre la misma expresión que usan los adapters (`(properties::jsonb ->> 'user_id')` y `(properties::jsonb ->> 'subject_id')`), seguidos de `event`. Además se verificó que `challenges` solo tiene `(mentor_id, mentee_id)` y que `challenge_submissions` no tiene ningún índice por `mentee_id`. Por eso la misma migración añade `challenges(mentee_id)` y `challenge_submissions(mentee_id, challenge_id)`. Todo es aditivo y reversible.
+- Sin caché propia en la primera versión (la consulta es paginada y acotada); se reevalúa con el benchmark.
+- Benchmark (T015.9): 50 concurrentes, p95 ≤ 2 s, definido y no ejecutado, igual que en 012/013.
 
-Logs `progress.history_failed`/`progress.access_denied` estructurados con excepción, endpoint/tipo y sujetos autorizados mínimos; nunca notas, respuestas, puntuaciones, email o contenido de evidencia. Medir queries y benchmark lectura de panel/mapa/historial con 50 solicitudes concurrentes; p95 de API ≤2 s según ventana del padre. Cache TTL e invalidación usan los observadores existentes y fuentes de 012/014. UI 320 px, teclado, foco, ARIA para carga/error/grupo sin fecha y estado incompleto.
+## 7. Estrategia de tests
 
-## 6. Estrategia de tests (planificada; no ejecutada)
+- **Unit:** `occurredAt`, clasificación sin fecha, `sortKey` con empates, merge k-way y cursor (sin duplicados ni huecos entre páginas), whitelist sin claves prohibidas.
+- **Feature por adapter:** cada fuente emite solo si existe el registro; `updated` de objetivo sin cambio de estado → nada; reto de otro mentee → nada; completitud con actor `system` y desencadenante; retiro manual visible con actor y retiro por borrado excluido; evento mínimo con `actor.kind=hidden` y sin seudónimo; evento mínimo vencido → no aparece; sin productor de nivel → ninguna entrada de nivel.
+- **Autorización/privacidad:** titular, mentor asignado/no asignado/sin workspace, soporte con y sin permiso, IDOR, sin acceso colectivo; JSON sin `note`, `answers`, `score`, `raw_scores`, `actor_pseudonym` ni ids de otro sujeto.
+- **Frontend (Vitest):** agrupación por día, sección sin fecha, incompletos, actor oculto/sistema, carga/error/vacío, «Cargar más» sin perder ni duplicar.
+- **A11y/i18n:** es/en/pt, teclado, foco, 320 px.
 
-- **Unit Pest:** normalizar whitelist, ausencia de fuente vs campos faltantes, fechas, sorting estable, misma fecha, cursor y no `now()` inventado; RF-015.1, .7–.8.
-- **Feature Pest/PostgreSQL:** fixtures de cada fuente existente, eventos anteriores solo donde activitylog/registro los prueba, actor/diff disponible, link 012/014, evidencia, cambio estado con relación activa, eliminación gate bloqueado; RF-015.2–.9.
-- **Autorización/privacidad:** titular, mentor asignado, relación terminada/sin grant, admin sin/ con permiso explícito, auditor no autorizado, IDOR y llamadas de miembro/responsable colectivo; no IDs/datos de otro sujeto ni actor pseudónimo ordinario; RF-015.9–.10, RNF-015.1.
-- **Frontend Vitest y revisión a11y:** orden y sección undated, campos incompletos sin inferir, errores/carga/empty, locales es/en/pt, navegación/ARIA/320px; RNF-015.3, .4, .6.
-- **Rendimiento y regresión:** índices/explain/query count, 50 concurrentes/p95 ≤2 s. Pruebas planificadas; no se ejecutan durante la redacción.
+## 8. Trazabilidad RF → partes
 
-## 7. Trazabilidad RF → partes
-
-| Parte | RF cubiertos |
+| Parte | RF |
 |---|---|
-| Adapters/normalización de registros | RF-015.1–.8 |
-| Producers y eventos de 012/014 | RF-015.3–.6, .8 |
-| Historial read service, cursor y fechas faltantes | RF-015.1–.8 |
-| Policies, resource y endpoint | RF-015.1, .9–.10; RNF-015.1–.2 |
-| UI cronológica, accesible e i18n | RF-015.1–.8; RNF-015.3–.6 |
-| Retención tras eliminación | RF-015.9 **bloqueado** hasta política documentada; no se implementa aquí |
+| Calculadora pura (normalización, fechas, orden, cursor) | RF-015.1, .7–.8 |
+| Adapters de objetivos y evidencias | RF-015.2, .7–.8 |
+| Adapters de retos, vínculo reto-módulo, completitud, entregas y rutas | RF-015.3, .7–.8 |
+| Adapters de competencias (vínculos, estado de fuente) + marca de retiro por borrado | RF-015.4–.6, .8 |
+| Adapter del evento mínimo de eliminación | RF-015.9 |
+| Servicio de merge, endpoints, resource y autorización | RF-015.1, .7, .10; RNF-015.1–.2 |
+| UI cronológica, a11y, i18n, benchmark | RF-015.1–.8; RNF-015.3–.6 |
+
+## 9. Decisiones (aprobadas 2026-11-15)
+
+- **D-1 · Cambios de nivel de competencia — decidido: no añadir productor.** Ninguna fuente los registra hoy. Propuesta: no añadir productor; la cronología no muestra cambios de nivel hasta que exista un registro (RF-015.8). Alternativa: observer sobre `UserSkill.level` que audite cambios desde ahora (sin reconstruir el pasado).
+- **D-2 · Objetivos colectivos — decidido: solo individuales.** Propuesta: la cronología individual incluye solo objetivos individuales del sujeto; los colectivos quedan fuera para no mezclar acciones de otros miembros en un historial individual (RF-015.10). Alternativa: incluir los objetivos colectivos donde el sujeto es miembro.
