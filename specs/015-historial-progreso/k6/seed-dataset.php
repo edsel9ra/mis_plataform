@@ -60,8 +60,8 @@ if (app()->environment('production') || ! str_ends_with($database, '_bench')) {
     fwrite(STDERR, "Refusing to seed: database '{$database}' is not a *_bench database.\n");
     exit(1);
 }
-if (DB::table('users')->exists() && DB::table('activity_log')->exists()) {
-    fwrite(STDERR, "Refusing to seed: '{$database}' already has users and activity_log rows. Recreate it first.\n");
+if (DB::table('users')->exists() || DB::table('activity_log')->exists()) {
+    fwrite(STDERR, "Refusing to seed: '{$database}' already has users or activity_log rows. Recreate it first.\n");
     exit(1);
 }
 
