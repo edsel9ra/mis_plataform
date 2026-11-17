@@ -16,7 +16,7 @@ mkdir -p \
 
 if [ "$(id -u)" -eq 0 ]; then
     chown -R www-data:www-data bootstrap/cache storage
-    chmod -R 775 bootstrap/cache storage
+    chmod -R ug+rwX,o+rX bootstrap/cache storage
 fi
 
 if [ "${RUN_DATABASE_BOOTSTRAP:-false}" = "true" ]; then
