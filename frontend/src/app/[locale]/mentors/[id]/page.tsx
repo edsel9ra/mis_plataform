@@ -6,7 +6,7 @@ import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { apiErrorMessage } from '@/lib/errors';
+import { apiErrorMessage, isNotFoundError } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { useCreateRelationship, useRelationshipContexts } from '@/hooks/use-relationships';
 import { AppShell } from '@/components/layout/AppShell';
@@ -19,7 +19,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Avatar } from '@/components/ui/avatar';
-import { Brain, Users } from 'lucide-react';
+import { ArrowLeft, Brain, Users } from 'lucide-react';
 import type { UserSkill } from '@/lib/mentor-skills';
 
 interface Mentor {
@@ -72,10 +72,27 @@ export default function MentorDetailPage() {
   if (isLoading) return frame(<PageSpinner />);
 
   if (error || !mentor) {
+    const notFound = !error || isNotFoundError(error);
     return frame(
-      <Alert variant="error" className="mx-auto max-w-3xl">
-        {error ? apiErrorMessage(error, (key) => t(key)) || t('common.load_error') : t('common.no_results')}
-      </Alert>,
+      <div className="mx-auto max-w-3xl px-4 py-10 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {notFound ? t('mentors.not_found_title') : t('nav.mentors')}
+        </h1>
+        {notFound ? (
+          <p className="text-gray-600">{t('mentors.not_found_desc')}</p>
+        ) : (
+          <Alert variant="error">
+            {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
+          </Alert>
+        )}
+        <Link
+          href={localePath('/mentors', locale)}
+          className="inline-flex items-center gap-2 py-1 text-sm font-semibold text-primary-600 hover:text-primary-700"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t('mentors.back_to_list')}
+        </Link>
+      </div>,
     );
   }
 

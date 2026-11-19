@@ -13,6 +13,10 @@ export function classifyApiError(error: unknown): ApiErrorKind {
   return 'unknown';
 }
 
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
+}
+
 export function apiErrorMessage(
   error: unknown,
   translate: (key: string) => string,

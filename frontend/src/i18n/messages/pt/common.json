@@ -217,7 +217,10 @@
     "relationship_active": "Esta mentoria está ativa.",
     "view_sessions": "Ver sessões",
     "request_error": "Não foi possível enviar a solicitação. Tente novamente.",
-    "results_count": "{count, plural, one {# mentor encontrado} other {# mentores encontrados}}"
+    "results_count": "{count, plural, one {# mentor encontrado} other {# mentores encontrados}}",
+    "not_found_title": "Não encontramos este mentor",
+    "not_found_desc": "O link pode estar incorreto ou o perfil pode não estar mais disponível.",
+    "back_to_list": "Voltar para mentores"
   },
   "company": {
     "setup_title": "Configure sua empresa",

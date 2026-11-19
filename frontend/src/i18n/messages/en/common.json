@@ -217,7 +217,10 @@
     "relationship_active": "This mentorship is active.",
     "view_sessions": "View sessions",
     "request_error": "The request could not be sent. Try again.",
-    "results_count": "{count, plural, one {# mentor found} other {# mentors found}}"
+    "results_count": "{count, plural, one {# mentor found} other {# mentors found}}",
+    "not_found_title": "We couldn't find this mentor",
+    "not_found_desc": "The link may be wrong or the profile may no longer be available.",
+    "back_to_list": "Back to mentors"
   },
   "company": {
     "setup_title": "Set up your company",

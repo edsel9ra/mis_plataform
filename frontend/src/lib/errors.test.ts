@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from './api';
-import { apiErrorMessage } from './errors';
+import { apiErrorMessage, isNotFoundError } from './errors';
 
 const translate = (key: string) => key;
 
@@ -18,5 +18,25 @@ describe('apiErrorMessage', () => {
 
   it('uses a localized generic message for unknown errors', () => {
     expect(apiErrorMessage(new Error('database connection details'), translate)).toBe('common.error');
+  });
+});
+
+describe('isNotFoundError', () => {
+  it('returns true for a 404 ApiError', () => {
+    expect(isNotFoundError(new ApiError('not found', 404))).toBe(true);
+  });
+
+  it('returns false for other ApiError statuses', () => {
+    expect(isNotFoundError(new ApiError('forbidden', 403))).toBe(false);
+    expect(isNotFoundError(new ApiError('server error', 500))).toBe(false);
+    expect(isNotFoundError(new ApiError('unprocessable', 422))).toBe(false);
+  });
+
+  it('returns false for a plain Error', () => {
+    expect(isNotFoundError(new Error('not found'))).toBe(false);
+  });
+
+  it('returns false for undefined', () => {
+    expect(isNotFoundError(undefined)).toBe(false);
   });
 });
