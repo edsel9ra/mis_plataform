@@ -133,7 +133,7 @@ test('T-011.3a · /mentors: la búsqueda conserva el foco y la región anuncia',
   await expect(status).toContainText('Sin resultados', { timeout: 15_000 });
   await expect(search, `focus left the search field (${await describeFocused(page)})`).toBeFocused();
 
-  await search.fill('Olson');
+  await search.fill(fixtures.mentorLastName);
   await expect(status).toContainText('1 mentor encontrado', { timeout: 15_000 });
   await expect(search, `focus left the search field (${await describeFocused(page)})`).toBeFocused();
 });

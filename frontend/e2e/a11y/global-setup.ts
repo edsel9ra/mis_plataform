@@ -23,6 +23,7 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
     ?? Object.keys(ACCOUNTS)) as AccountRole[];
 
   const userIds = new Map<AccountRole, string>();
+  let mentorLastName: string | undefined;
 
   for (const role of roles) {
     const email = ACCOUNTS[role];
@@ -51,18 +52,19 @@ export default async function globalSetup(config: FullConfig): Promise<void> {
         throw new Error(`Login failed for ${role} (${email}): HTTP ${login.status()} ${await login.text()}`);
       }
 
-      const body = (await login.json()) as { user?: { id?: string } };
+      const body = (await login.json()) as { user?: { id?: string; last_name?: string } };
       if (body.user?.id) userIds.set(role, body.user.id);
+      if (role === 'mentor' && body.user?.last_name) mentorLastName = body.user.last_name;
       await context.storageState({ path: storageStatePath(role) });
     } finally {
       await context.dispose();
     }
   }
 
-  await resolveFixtures(baseURL, userIds);
+  await resolveFixtures(baseURL, userIds, mentorLastName);
 }
 
-async function resolveFixtures(baseURL: string, userIds: Map<AccountRole, string>): Promise<void> {
+async function resolveFixtures(baseURL: string, userIds: Map<AccountRole, string>, mentorLastName: string | undefined): Promise<void> {
   const mentorId = userIds.get('mentor');
   const anaId = userIds.get('ana');
   const kaiId = userIds.get('kai');
@@ -100,7 +102,7 @@ async function resolveFixtures(baseURL: string, userIds: Map<AccountRole, string
     const fixturesPath = path.join(__dirname, '..', '.auth', 'fixtures.json');
     fs.mkdirSync(path.dirname(fixturesPath), { recursive: true });
     fs.writeFileSync(fixturesPath, `${JSON.stringify({
-      mentorId, anaId, kaiId, relationshipId, sessionId, evaluationOpenId, evaluationDoneId,
+      mentorId, mentorLastName, anaId, kaiId, relationshipId, sessionId, evaluationOpenId, evaluationDoneId,
     }, null, 2)}\n`);
   } finally {
     await ana.dispose();
