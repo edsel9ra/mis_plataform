@@ -79,7 +79,7 @@ export default function AdminDashboard() {
             <Card className="h-full border-0 bg-white/95 shadow-sm ring-1 ring-slate-100 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-slate-200/80">
               <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle as="h2" className="text-sm font-medium text-gray-500">{label}</CardTitle>
+                <CardTitle as="h2" className="text-sm font-medium text-gray-600">{label}</CardTitle>
                 <div className={`rounded-2xl bg-gradient-to-br ${color} p-3 shadow-lg shadow-slate-200`}>
                   <Icon className="h-5 w-5 text-white" aria-hidden="true" />
                 </div>

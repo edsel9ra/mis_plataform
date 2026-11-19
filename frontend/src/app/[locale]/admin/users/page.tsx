@@ -245,7 +245,7 @@ export default function AdminUsers() {
         <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" tabIndex={0} role="region" aria-label={t('admin.users')}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-600">
                 <th className="px-4 py-3 font-medium">{t('auth.name')}</th>
                 <th className="px-4 py-3 font-medium">{t('auth.email')}</th>
                 <th className="px-4 py-3 font-medium">{t('admin.role')}</th>
@@ -310,7 +310,7 @@ export default function AdminUsers() {
                  {isPlatformAdminRole(selectedRole) ? (
                    <div className="space-y-1">
                      <span className="block text-sm font-medium text-gray-700">{t('admin.type')}</span>
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
                       {t('common.not_applicable')}
                     </div>
                   </div>

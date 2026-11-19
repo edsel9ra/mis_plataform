@@ -188,7 +188,7 @@ export default function AdminMentors() {
               <div className="flex items-start justify-between">
                 <div>
                   <CardTitle as="h2" className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
-                  <p className="mt-1 text-sm text-gray-500">{mentor.email}</p>
+                  <p className="mt-1 text-sm text-gray-600">{mentor.email}</p>
                   <p className="text-xs text-gray-600">{t(`client_types.${mentor.client_type}`)}</p>
                 </div>
                  <Badge variant="success">{t('admin.active_mentees_count', { count: mentor.active_mentees_count })}</Badge>
@@ -197,7 +197,7 @@ export default function AdminMentors() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('sessions.title')}</span>
+                <span className="text-gray-600">{t('sessions.title')}</span>
                 <span className="font-medium text-gray-900">
                    {t('admin.active_relationships_count', { count: mentor.mentor_relationships?.filter(r => r.status === 'active').length ?? 0 })}
                 </span>

@@ -76,11 +76,11 @@ export default function HomePage() {
             <Link
               href={localePath('/', locale)}
               className="group flex items-center gap-3"
-              aria-label={t('app.name')}
+              aria-label={`M ${t('app.name')}`}
             >
-              <span className="flex h-10 w-10 items-center justify-center rounded-none border border-primary-700 bg-primary-700 font-display text-xl font-semibold text-paper-soft transition-colors group-hover:bg-primary-800">
+              <span aria-hidden="true" className="flex h-10 w-10 items-center justify-center rounded-none border border-primary-700 bg-primary-700 font-display text-xl font-semibold text-paper-soft transition-colors group-hover:bg-primary-800">
                 M
-              </span>
+              </span>{' '}
               <span className="font-display text-lg font-semibold tracking-tight">MIS</span>
             </Link>
 

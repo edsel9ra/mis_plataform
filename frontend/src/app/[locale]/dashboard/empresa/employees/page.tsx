@@ -85,7 +85,7 @@ export default function CompanyEmployeesPage() {
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <CardTitle className="text-base">
+                  <CardTitle as="h2" className="text-base">
                     {employee.user?.full_name || `${employee.user?.name ?? ''} ${employee.user?.last_name ?? ''}`.trim()}
                   </CardTitle>
                   <p className="mt-1 text-sm text-gray-500">{employee.user?.email}</p>

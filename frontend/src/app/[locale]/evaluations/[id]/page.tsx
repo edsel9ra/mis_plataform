@@ -158,7 +158,7 @@ export default function EvaluationDetailPage() {
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
                   <CardTitle as="h1" className="text-2xl">{t('evaluations.result_title')}</CardTitle>
-                  <p className="mt-1 text-sm text-slate-500">{t('evaluations.result_desc')}</p>
+                  <p className="mt-1 text-sm text-slate-600">{t('evaluations.result_desc')}</p>
                 </div>
                 <Badge variant={result.passed ? 'success' : 'warning'}>
                   {result.passed ? t('evaluations.passed') : t('evaluations.failed')}
@@ -167,12 +167,12 @@ export default function EvaluationDetailPage() {
             </CardHeader>
 
             <div className="rounded-3xl bg-gradient-to-br from-primary-50 to-slate-50 p-6 text-center">
-              <p className="text-sm font-medium text-slate-500">{localizedText(evaluation.title, locale)}</p>
+              <p className="text-sm font-medium text-slate-600">{localizedText(evaluation.title, locale)}</p>
               <p className="mt-4 text-6xl font-black tracking-tight text-slate-950">{Math.round(result.score)}%</p>
               <div className="mx-auto mt-5 h-3 max-w-md rounded-full bg-white shadow-inner" role="progressbar" aria-label={t('evaluations.score')} aria-valuenow={Math.round(Math.min(100, result.score))} aria-valuemin={0} aria-valuemax={100}>
                 <div className="h-3 rounded-full bg-primary-500" style={{ width: `${Math.min(100, result.score)}%` }} />
               </div>
-              <p className="mt-3 text-sm text-slate-500">
+              <p className="mt-3 text-sm text-slate-600">
                 {t('evaluations.passing_score')}: {evaluation.passing_score}%
               </p>
             </div>
@@ -211,7 +211,7 @@ export default function EvaluationDetailPage() {
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <CardTitle as="h1" className="text-2xl">{localizedText(evaluation.title, locale)}</CardTitle>
-                <p className="mt-2 text-sm leading-6 text-slate-500">{localizedText(evaluation.description, locale)}</p>
+                <p className="mt-2 text-sm leading-6 text-slate-600">{localizedText(evaluation.description, locale)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
                 <Badge variant="primary">
@@ -239,7 +239,7 @@ export default function EvaluationDetailPage() {
           {question ? (
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 sm:p-6">
               <h2 id={questionHeadingId} className="text-xl font-semibold text-slate-950">{question.text}</h2>
-              {question.dimension && <p className="mt-2 text-sm text-slate-500">{question.dimension}</p>}
+              {question.dimension && <p className="mt-2 text-sm text-slate-600">{question.dimension}</p>}
 
               <div ref={optionsRef} role="group" aria-labelledby={questionHeadingId} className="mt-6 space-y-3">
                 {question.options.map((option, index) => {
@@ -269,7 +269,7 @@ export default function EvaluationDetailPage() {
                 <Button type="button" variant="outline" disabled={current === 0} onClick={() => setCurrent((value) => Math.max(0, value - 1))}>
                   {t('common.previous')}
                 </Button>
-                <span className="text-sm text-slate-500">{completed} {t('evaluations.answered')}</span>
+                <span className="text-sm text-slate-600">{completed} {t('evaluations.answered')}</span>
                 <div className="flex gap-3">
                   {current < questions.length - 1 && (
                     <Button type="button" variant="outline" disabled={!currentAnswered} onClick={() => setCurrent((value) => value + 1)}>
@@ -300,7 +300,7 @@ export default function EvaluationDetailPage() {
 function ResultPill({ label, value }: { label: string; value: string }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-600">{label}</p>
       <p className="mt-1 font-semibold text-slate-950">{value}</p>
     </div>
   );

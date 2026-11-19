@@ -42,6 +42,7 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
+  const roleLabel = user?.role === 'super_admin' ? t('roles.super_admin') : t('roles.admin');
   const sidebarToggleLabel = t(isSidebarCollapsed ? 'common.show_navigation' : 'common.hide_navigation');
 
   useEffect(() => {
@@ -123,14 +124,14 @@ export default function AdminLayout({ children }: { children: ReactNode }) {
             <Link
               href={localePath('/admin', locale)}
               className={cn('flex min-w-0 items-center gap-3 transition-all duration-300', isSidebarCollapsed && 'lg:justify-center')}
-              aria-label="MIS Admin"
+              aria-label={`MIS Admin ${roleLabel}`}
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-primary-600 shadow-lg shadow-primary-950/40">
                 <ShieldCheck className="h-6 w-6 text-white" aria-hidden="true" />
               </span>
               <span className={cn('min-w-0 transition-opacity duration-200', isSidebarCollapsed && 'lg:hidden')}>
-                <span className="block text-base font-bold leading-tight">MIS Admin</span>
-                <span className="block text-xs text-slate-400">{user.role === 'super_admin' ? t('roles.super_admin') : t('roles.admin')}</span>
+                <span className="block text-base font-bold leading-tight">MIS Admin</span>{' '}
+                <span className="block text-xs text-slate-400">{roleLabel}</span>
               </span>
             </Link>
             <button
