@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -81,6 +81,7 @@ export default function AdminMentors() {
 
       return normalizePaginatedResponse(response, { page, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({

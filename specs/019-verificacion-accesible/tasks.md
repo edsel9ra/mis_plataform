@@ -121,7 +121,8 @@ Plan: `plan.md`. En orden de dependencia. Ninguna tarea toca la base de datos de
     - Helper `lib/navigation-focus.ts` (con tests) y `NavigationFocus` en `app/layout.tsx`.
     - `focus.spec` sube a 27 pruebas: la suite tiene 143 y pasa entera dos veces seguidas sin volver a sembrar (6,4 y 6,3 min). Vitest 400/400.
     - `playwright.config.ts` acepta `A11Y_EXPECT_TIMEOUT_MS` y `A11Y_TEST_TIMEOUT_MS`, para cuando el equipo local va muy cargado; sin ellas, el comportamiento es el mismo.
-    - Queda abierto PG-41: el mismo defecto latente de paginación en otros 8 consumidores.
+    - PG-41, corregido después: `keepPreviousData` en los 8 consumidores de `PaginationControls`. Vitest 400/400.
+    - Queda abierta solo por T019.10.
     - Siguen pendientes los hallazgos que salgan de T019.10.
   - Los de T019.5, T019.8 y, cuando llegue, T019.10, según RF-011.8, y la suite se amplía para cubrirlos.
   - Si hay más de lo que cabe en una tarea, o alguno pide decisiones de producto, se para y se propone una unidad aparte.

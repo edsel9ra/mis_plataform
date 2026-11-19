@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -42,6 +42,7 @@ export default function CertificatesPage() {
       return normalizePaginatedResponse(response, { page, perPage });
     },
     enabled: !!user,
+    placeholderData: keepPreviousData,
   });
 
   const certificates = data?.data ?? [];

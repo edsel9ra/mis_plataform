@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -158,6 +158,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: assessmentPage, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const { data: catalogData, isLoading: catalogLoading, isFetching: catalogFetching, error: catalogError } = useQuery<PaginatedResponse<EvaluationCatalogItem>>({
@@ -172,6 +173,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: catalogPage, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const { data: resultData, isLoading: resultsLoading, isFetching: resultsFetching, error: resultsError } = useQuery<PaginatedResponse<EvaluationResult>>({
@@ -185,6 +187,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: resultPage, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const usersQuery = useInfiniteQuery({

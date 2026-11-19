@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -113,6 +113,7 @@ export default function AdminSessions() {
 
       return normalizePaginatedResponse(response, { page, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const relationshipsQuery = useInfiniteQuery({

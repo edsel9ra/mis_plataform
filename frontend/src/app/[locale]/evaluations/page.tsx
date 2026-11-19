@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { ArrowRight, ClipboardCheck, Clock, FileQuestion, Users, type LucideIcon } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -74,6 +74,7 @@ export default function EvaluationsPage() {
       return normalizePaginatedResponse(response, { page: evaluationPage, perPage });
     },
     enabled: !!user,
+    placeholderData: keepPreviousData,
   });
 
   const { data: mentorResultData, isLoading: mentorResultsLoading, isFetching: mentorResultsFetching, error: mentorResultsError } = useQuery<PaginatedResponse<MentorEvaluationResult>>({
@@ -87,6 +88,7 @@ export default function EvaluationsPage() {
       return normalizePaginatedResponse(response, { page: mentorResultPage, perPage });
     },
     enabled: isMentor,
+    placeholderData: keepPreviousData,
   });
 
   if (isLoading || (isMentor && mentorResultsLoading)) {

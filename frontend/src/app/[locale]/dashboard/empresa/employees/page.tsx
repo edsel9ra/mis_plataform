@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -50,6 +50,7 @@ export default function CompanyEmployeesPage() {
         status_counts: response.status_counts ?? { active: 0, invited: 0, inactive: 0 },
       };
     },
+    placeholderData: keepPreviousData,
   });
 
   if (isLoading) return <PageSpinner />;
