@@ -15,6 +15,8 @@ export const ACCOUNTS = {
   empleado: 'empleado.audit@audit.mis.test',
   empresaSetup: 'empresa.setup.audit@audit.mis.test',
   mentor: 'mentor.audit@audit.mis.test',
+  relleno04: 'relleno.04.audit@audit.mis.test',
+  relleno05: 'relleno.05.audit@audit.mis.test',
 } as const;
 
 export type AccountRole = keyof typeof ACCOUNTS;

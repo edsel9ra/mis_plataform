@@ -340,3 +340,209 @@ for (const [idLabel, idPath] of [
     });
   }
 }
+
+// ———————————————————————————— T019.9 · correcciones PG-34 a PG-39
+
+test('T019.9 · PG-34 · mensajes: enviar conserva el foco en el redactor', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto(`/messages?relationship=${fixtures.relationshipId}`);
+  await waitForPage(page);
+
+  const composer = page.locator('#message-composer');
+  await composer.fill(`Mensaje de foco T019.9 ${Date.now()}`);
+  await composer.press('Enter');
+
+  await expect(composer, `composer should stay focusable while sending (got ${await describeFocused(page)})`)
+    .toBeFocused();
+  await expect(composer, 'composer should be empty after the successful send').toHaveValue('');
+  await expect(composer, `focus must stay in the composer (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-35 · admin/users: paginar anuncia la página y mueve el foco', async ({ browser }) => {
+  const page = await newPage(browser, 'admin', WIDTHS.desktop);
+  await page.goto('/admin/users');
+  await waitForPage(page);
+
+  // Filtering to the 25 "relleno" accounts keeps the count at exactly two
+  // pages even while the registration test adds users in parallel. The filter
+  // is debounced and resets the page to 1 when it lands, so wait for its
+  // response before clicking "Siguiente" or the late reset eats the click.
+  const filtered = page.waitForResponse(
+    (response) => response.url().includes('/api/v1/admin/users')
+      && response.url().includes('search=relleno'),
+  );
+  await page.getByPlaceholder('Buscar').fill('relleno');
+  await filtered;
+
+  const status = page.getByRole('status').filter({ hasText: /Página \d+ de \d+/ });
+  const next = page.getByRole('button', { name: 'Siguiente' });
+  const previous = page.getByRole('button', { name: 'Anterior' });
+
+  await expect(status).toHaveText('Página 1 de 2');
+  // Wait for the debounced search refetch to settle: while a query is in
+  // flight the buttons are aria-disabled and their click is blocked.
+  await expect(next).not.toHaveAttribute('aria-disabled', 'true');
+  await next.click();
+
+  // Reaching the last page disables "Siguiente": focus moves to "Anterior"
+  // and the status region announces the loaded page, not a stale one.
+  await expect(status, 'status region should announce the loaded page').toHaveText('Página 2 de 2');
+  await expect(next).toBeDisabled();
+  await expect(previous, `focus should move to the other button (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-36 · progreso: crear objetivo anuncia el éxito y devuelve el foco', async ({ browser }) => {
+  const page = await newPage(browser, 'mentor', WIDTHS.desktop);
+  await page.goto(`/dashboard/mentor/progress/${fixtures.anaId}?relationship_id=${fixtures.relationshipId}`);
+  await waitForPage(page);
+
+  const addButton = page.getByRole('button', { name: 'Nuevo objetivo' });
+  await addButton.click();
+  await page.getByLabel('Título').fill(`Objetivo de foco T019.9 ${Date.now()}`);
+  await page.getByLabel('Criterio de logro').fill('Completar la auditoría de accesibilidad');
+  await page.getByLabel('Fecha límite').fill('2027-12-31T10:00');
+  await page.getByRole('button', { name: 'Crear objetivo' }).click();
+
+  const status = page.locator('div[role="status"]');
+  await expect(status.filter({ hasText: 'Objetivo creado' })).toHaveCount(1);
+  await expect(addButton, `focus should return to "Nuevo objetivo" (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-37 · evaluación: el foco va al h1 del resultado', async ({ browser }) => {
+  test.slow(); // answering every question of a catalog evaluation takes a while
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto(`/evaluations/${fixtures.evaluationSubmitId}`);
+  await waitForPage(page);
+
+  const submit = page.getByRole('button', { name: 'Validar resultado' });
+  const next = page.getByRole('button', { name: 'Siguiente' });
+  // "Siguiente" is not rendered on the last question, so the loop must check
+  // the always-present submit button instead of probing for "Siguiente".
+  for (let i = 0; i < 60 && !(await submit.isEnabled()); i += 1) {
+    await page.locator('button[aria-pressed]').first().click();
+    if (!(await submit.isEnabled())) await next.click();
+  }
+  await expect(submit, 'every question should be answered before submitting').toBeEnabled();
+  await submit.click();
+
+  const heading = page.locator('#evaluation-result-heading');
+  await expect(heading).toBeVisible({ timeout: 15_000 });
+  await expect(heading, `result heading should be focused (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-37 · registro: el foco llega al h1 del onboarding', async ({ browser }) => {
+  const page = await newPage(browser, null, WIDTHS.desktop);
+  await page.goto('/register/personal');
+  await waitForPage(page);
+
+  await page.getByLabel('Nombre').fill('Auditor');
+  await page.getByLabel('Apellidos').fill('Foco');
+  await page.getByLabel('Correo electrónico').fill(`registro.t0199.${Date.now()}@audit.mis.test`);
+  await page.getByLabel('Contraseña', { exact: true }).fill('AuditFoco123');
+  await page.getByLabel('Sexo').selectOption('N');
+  await page.getByLabel('Fecha de nacimiento').fill('1990-01-15');
+  await expect(page.locator('input[type="radio"]').first(), 'plans should load').toBeAttached();
+  await page.locator('input[type="radio"]').first().check({ force: true });
+  await page.getByRole('button', { name: 'Crear Cuenta' }).click();
+
+  const heading = page.locator('main h1');
+  await expect(heading).toBeVisible({ timeout: 20_000 });
+  await expect(heading, `onboarding h1 should be focused (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-37 · perfil: cambiar el idioma mueve el foco al h1', async ({ browser }) => {
+  const page = await newPage(browser, 'relleno04', WIDTHS.desktop);
+  await page.goto('/profile');
+  await waitForPage(page);
+
+  // The page URL is the Spanish /profile, so the saved locale must differ
+  // from both the select's current value (so onChange fires) and 'es' (so the
+  // handler actually saves and navigates instead of returning early).
+  const select = page.getByLabel('Idioma');
+  const current = await select.inputValue();
+  const nextLocale = current === 'en' ? 'pt' : 'en';
+  await select.selectOption(nextLocale);
+
+  const heading = page.locator('main h1');
+  await expect(heading).toBeVisible({ timeout: 15_000 });
+  await expect(heading, `localized profile h1 should be focused (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-37 · mentoría: solicitar enfoca el aviso de pendiente', async ({ browser }) => {
+  const page = await newPage(browser, 'relleno05', WIDTHS.desktop);
+  await page.goto(`/mentors/${fixtures.mentorId}`);
+  await waitForPage(page);
+
+  // A previous suite run may have left a pending relationship; delete it so
+  // the request form is available again (idempotent across runs). The DELETE
+  // needs the Sanctum XSRF header, so it runs inside the page.
+  await page.evaluate(async (mentorId) => {
+    await fetch('/sanctum/csrf-cookie', { credentials: 'include' });
+    const xsrf = document.cookie.split('; ')
+      .find((cookie) => cookie.startsWith('XSRF-TOKEN='))?.split('=')[1];
+    const list = await fetch('/api/v1/relationships', {
+      headers: { Accept: 'application/json' },
+      credentials: 'include',
+    }).then((res) => res.json());
+    for (const rel of list.data ?? []) {
+      if (rel.mentor?.id === mentorId && rel.status === 'pending') {
+        await fetch(`/api/v1/relationships/${rel.id}`, {
+          method: 'DELETE',
+          headers: { Accept: 'application/json', 'X-XSRF-TOKEN': decodeURIComponent(xsrf ?? '') },
+          credentials: 'include',
+        });
+      }
+    }
+  }, fixtures.mentorId);
+  await page.reload();
+  await waitForPage(page);
+
+  await page.getByRole('button', { name: 'Enviar solicitud de mentoría' }).click();
+
+  const pending = page.locator('#mentorship-pending');
+  await expect(pending).toBeVisible({ timeout: 15_000 });
+  await expect(pending, `pending alert should be focused (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · asistencia: marcar un estado anuncia, conserva el foco y no usa solo color', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto(`/sessions/${fixtures.pastSessionId}`);
+  await waitForPage(page);
+
+  // ana marks her own row: "Asistió" or "No asistió", whichever is not
+  // already pressed, so the action is idempotent across suite runs.
+  const selfButtons = page.locator(`button[data-attendance-button="${fixtures.anaId}"]`);
+  const attended = selfButtons.filter({ hasText: /^Asistió$/ });
+  const absent = selfButtons.filter({ hasText: /^No asistió$/ });
+  const target = (await attended.getAttribute('aria-pressed')) === 'true' ? absent : attended;
+  const pressedText = await target.textContent();
+
+  await target.click();
+
+  await expect(page.locator('div[role="status"]').filter({ hasText: 'Asistencia registrada' }))
+    .toHaveCount(1, { timeout: 15_000 });
+  await expect(target).toHaveAttribute('aria-pressed', 'true');
+
+  // Focus stays inside the attendance panel (on the button if it persists,
+  // or on the row's name element after a refetch).
+  const focusHeld = await page.waitForFunction(
+    (uid) => {
+      const el = document.activeElement as HTMLElement | null;
+      if (!el) return false;
+      return el.dataset?.attendanceButton === uid || el.dataset?.attendanceName === uid;
+    },
+    fixtures.anaId,
+    { timeout: 15_000 },
+  ).then(() => true).catch(() => false);
+  expect(focusHeld, `attendance row should hold focus (got ${await describeFocused(page)})`).toBe(true);
+
+  // The state is also conveyed by the "Estado actual:" text, not color alone.
+  await expect(page.getByText(/Estado actual:/)).toContainText(pressedText!.trim());
+});

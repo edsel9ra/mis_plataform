@@ -81,7 +81,7 @@ async function resolveFixtures(baseURL: string, userIds: Map<AccountRole, string
     if (!relationshipId) throw new Error('No relationship found between ana and mentor.audit');
 
     const sessions = (await getJson(ana, '/api/v1/sessions', { per_page: 50 })) as {
-      data?: Array<{ id: string; scheduled_at: string }>;
+      data?: Array<{ id: string; scheduled_at: string; status?: string }>;
     };
     const now = Date.now();
     const sessionId = sessions.data
@@ -89,20 +89,32 @@ async function resolveFixtures(baseURL: string, userIds: Map<AccountRole, string
       .sort((a, b) => new Date(a.scheduled_at).getTime() - new Date(b.scheduled_at).getTime())[0]?.id;
     if (!sessionId) throw new Error('No future session found for ana');
 
+    // Most recent past session still scheduled: the attendance window is open.
+    const pastSessionId = sessions.data
+      ?.filter((session) => new Date(session.scheduled_at).getTime() < now
+        && session.status !== 'completed' && session.status !== 'canceled' && session.status !== 'not_completed')
+      .sort((a, b) => new Date(b.scheduled_at).getTime() - new Date(a.scheduled_at).getTime())[0]?.id;
+    if (!pastSessionId) throw new Error('No past attendance-window session found for ana');
+
     const evaluations = (await getJson(ana, '/api/v1/evaluations', { per_page: 100 })) as {
       data?: Array<{ id: string; user_result?: { id: string } | null }>;
     };
     const items = evaluations.data ?? [];
-    const evaluationOpenId = items.find((item) => !item.user_result)?.id;
+    const unanswered = items.filter((item) => !item.user_result).map((item) => item.id);
+    const evaluationOpenId = unanswered[0];
+    // The submit test consumes one unanswered evaluation per run: pick the
+    // last one so evaluationOpenId (used read-only by other tests) is untouched.
+    const evaluationSubmitId = unanswered[unanswered.length - 1];
     const evaluationDoneId = items.find((item) => item.user_result)?.id;
-    if (!evaluationOpenId || !evaluationDoneId) {
-      throw new Error('Expected both an answered and an unanswered evaluation for ana');
+    if (!evaluationOpenId || !evaluationDoneId || unanswered.length < 2) {
+      throw new Error('Expected an answered evaluation and at least two unanswered ones for ana');
     }
 
     const fixturesPath = path.join(__dirname, '..', '.auth', 'fixtures.json');
     fs.mkdirSync(path.dirname(fixturesPath), { recursive: true });
     fs.writeFileSync(fixturesPath, `${JSON.stringify({
-      mentorId, mentorLastName, anaId, kaiId, relationshipId, sessionId, evaluationOpenId, evaluationDoneId,
+      mentorId, mentorLastName, anaId, kaiId, relationshipId, sessionId, pastSessionId,
+      evaluationOpenId, evaluationSubmitId, evaluationDoneId,
     }, null, 2)}\n`);
   } finally {
     await ana.dispose();
