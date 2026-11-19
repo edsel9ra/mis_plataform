@@ -223,6 +223,151 @@ jobs:
         if: always()
         run: docker compose down --volumes --remove-orphans
 
+  a11y:
+    name: Accessibility regression (${{ matrix.shard }}/3)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    services:
+      postgres:
+        image: postgres:16.4-alpine
+        env:
+          POSTGRES_DB: mis_project_audit
+          POSTGRES_USER: mis_user
+          POSTGRES_PASSWORD: ci-only-postgres-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U mis_user -d mis_project_audit"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7.4-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    env:
+      APP_ENV: ci
+      APP_KEY: base64:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+      DB_CONNECTION: pgsql
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
+      DB_DATABASE: mis_project_audit
+      DB_USERNAME: mis_user
+      DB_PASSWORD: ci-only-postgres-password
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 6379
+      SCOUT_DRIVER: 'null'
+      BROADCAST_CONNECTION: log
+      QUEUE_CONNECTION: sync
+      CACHE_STORE: array
+      MAIL_MAILER: log
+      SESSION_DRIVER: file
+      SANCTUM_STATEFUL_DOMAINS: localhost:3000
+      MATCHING_SERVICE_API_KEY: ci-only-matching-key
+      REVERB_APP_ID: ci-only-reverb-app
+      REVERB_APP_KEY: ci-only-reverb-key
+      REVERB_APP_SECRET: ci-only-reverb-secret
+      API_INTERNAL_URL: http://127.0.0.1:8000
+      NEXT_TELEMETRY_DISABLED: '1'
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - uses: shivammathur/setup-php@bf6b4fbd49ca58e4608c9c89fba0b8d90bd2a39f # 2.35.5
+        with:
+          php-version: '8.4'
+          extensions: mbstring, pdo_pgsql, redis, sockets
+          coverage: none
+          tools: composer:v2
+      - uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/composer/files
+          key: composer-${{ runner.os }}-${{ hashFiles('backend/composer.lock') }}
+          restore-keys: composer-${{ runner.os }}-
+      - name: Install backend dependencies
+        working-directory: backend
+        run: composer install --prefer-dist --no-interaction --no-progress --optimize-autoloader
+      - name: Generate audit test password
+        run: echo "A11Y_PASSWORD=$(openssl rand -hex 16)" >> "$GITHUB_ENV"
+      - name: Migrate and seed audit database
+        working-directory: backend
+        run: |
+          touch .env
+          php artisan migrate --force
+          A11Y_SEED_PASSWORD="$A11Y_PASSWORD" php artisan db:seed --class=AccessibilityAuditSeeder --force
+      - name: Start backend API
+        working-directory: backend/public
+        run: |
+          php -S 127.0.0.1:8000 ../vendor/laravel/framework/src/Illuminate/Foundation/resources/server.php \
+            > /tmp/backend.log 2>&1 &
+          for _ in {1..60}; do
+            curl -sf http://127.0.0.1:8000/up && exit 0
+            sleep 1
+          done
+          cat /tmp/backend.log
+          exit 1
+      - uses: pnpm/action-setup@7088e561eb65bb68695d245aa206f005ef30921d # v4.1.0
+        with:
+          version: 9.15.0
+          run_install: false
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: frontend/pnpm-lock.yaml
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: pnpm install --frozen-lockfile
+      - name: Build frontend
+        working-directory: frontend
+        run: pnpm build
+      - name: Start frontend
+        working-directory: frontend
+        run: |
+          pnpm start -p 3000 > /tmp/frontend.log 2>&1 &
+          for _ in {1..60}; do
+            curl -sf -o /dev/null http://localhost:3000/login && exit 0
+            sleep 1
+          done
+          cat /tmp/frontend.log
+          exit 1
+      - name: Resolve Playwright version
+        id: playwright-version
+        working-directory: frontend
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Cache Playwright browsers
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4.2.3
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright-version.outputs.version }}
+      - name: Install Playwright Chromium
+        working-directory: frontend
+        run: pnpm exec playwright install --with-deps chromium
+      - name: Run accessibility suite
+        working-directory: frontend
+        env:
+          CI: 'true'
+          A11Y_BASE_URL: http://localhost:3000
+        run: pnpm test:a11y --shard=${{ matrix.shard }}/3
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: a11y-artifacts-${{ matrix.shard }}
+          path: |
+            frontend/playwright-report/
+            frontend/test-results/
+            /tmp/backend.log
+            /tmp/frontend.log
+          if-no-files-found: warn
+
   static-audit:
     name: Static Docker and workflow audit
     runs-on: ubuntu-latest
