@@ -2,9 +2,11 @@
 
 namespace App\Actions;
 
+use App\Models\MediaAsset;
 use App\Models\Objective;
 use App\Models\ObjectiveEvidence;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class AttachObjectiveEvidenceAction
 {
@@ -15,11 +17,21 @@ class AttachObjectiveEvidenceAction
      */
     public function execute(User $actor, Objective $objective, array $data): ObjectiveEvidence
     {
-        return ObjectiveEvidence::create([
-            'objective_id' => $objective->id,
-            'user_id' => $actor->id,
-            'note' => $data['note'] ?? null,
-            'media_asset_id' => $data['media_asset_id'] ?? null,
-        ]);
+        return DB::transaction(function () use ($actor, $objective, $data) {
+            $evidence = ObjectiveEvidence::create([
+                'objective_id' => $objective->id,
+                'user_id' => $actor->id,
+                'note' => $data['note'] ?? null,
+                'media_asset_id' => $data['media_asset_id'] ?? null,
+            ]);
+
+            if (!empty($data['media_asset_id'])) {
+                $asset = MediaAsset::findOrFail($data['media_asset_id']);
+                $asset->mediaable()->associate($evidence);
+                $asset->save();
+            }
+
+            return $evidence;
+        });
     }
 }

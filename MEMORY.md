@@ -298,3 +298,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - Suite de 143 pruebas, en verde dos veces seguidas. Vitest 400.
   - **PG-41 abierto:** otros 8 consumidores de la paginación desmontan los controles al recargar.
   - Entorno: con todo el stack de desarrollo arrancado, el portátil llega a una carga de 40; durante la suite hay que parar scheduler, matching, queue-worker, frontend, meilisearch, reverb y mailpit.
+- **PG-41 corregido y T020.1 hecha (2026-11-19)**:
+  - PG-41: `keepPreviousData` en todas las listas paginadas.
+  - T020.1: `POST /objectives/{o}/media` (`MediaUploadRules` compartido); `MediaAssetPolicy` delega en `ObjectivePolicy::view` cuando el propósito es `objective_evidence`; el asset se reasigna a la evidencia dentro de una transacción. 16 tests y suite del backend 1191/1191.

@@ -53,6 +53,7 @@ return [
 
     'messages' => [
         'access_denied' => 'You do not have access to this progress panel.',
+        'invalid_media_asset' => 'The selected file is not valid for this evidence.',
         'not_visible' => 'The requested resource is not available.',
         'workspace_locked' => "The mentee's plan does not include the mentor workspace.",
         'entitlement_missing' => 'The plan does not include the personality assessment.',

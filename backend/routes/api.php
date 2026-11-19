@@ -178,6 +178,7 @@ Route::prefix('v1')->group(function () {
         Route::put('/objectives/{objective}', [ObjectiveController::class, 'update']);
         Route::post('/objectives/{objective}/status', [ObjectiveController::class, 'status']);
         Route::post('/objectives/{objective}/evidences', [ObjectiveController::class, 'evidences']);
+        Route::post('/objectives/{objective}/media', [ObjectiveController::class, 'media']);
 
         // Progress panel and collective aggregate (RF-3..RF-12)
         Route::get('/progress/panel', [ProgressPanelController::class, 'show']);

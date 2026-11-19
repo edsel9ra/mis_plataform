@@ -1,10 +1,17 @@
 # Tareas — Spec 020, funciones de interfaz pendientes
 
-Estado: borrador
+Estado: aprobado
 
 Plan: `plan.md`. En orden de dependencia.
 
-- [ ] **T020.1. Endpoint de subida de ficheros de evidencia, con su autorización.** RF-020.7, RF-020.9
+- [x] **T020.1. Endpoint de subida de ficheros de evidencia, con su autorización.** RF-020.7, RF-020.9
+  - Resultado (2026-11-19):
+    - `POST /objectives/{objective}/media`, con `UploadObjectiveEvidenceMediaRequest` (`can('addEvidence')`) y `StoreObjectiveEvidenceMediaAction`, que guarda en el disco `local` (`objectives/{id}/{uuid}.ext`) con `mediaable=Objective`.
+    - Las reglas de fichero se comparten en `App\Support\MediaUploadRules`, y `ValidatesMentorFiles` delega en ella sin cambiar ningún valor.
+    - `StoreObjectiveEvidenceRequest` exige que el asset sea de ese objetivo, de propósito `objective_evidence`, subido por quien crea la evidencia y sin enlazar todavía. `AttachObjectiveEvidenceAction` reasigna el asset a la evidencia dentro de una transacción.
+    - `MediaAssetPolicy::view` tiene una rama al principio que delega en `ObjectivePolicy::view`; si la evidencia ya no existe, deniega. `MediaAssetController::show` descarga el fichero como adjunto, con el MIME guardado.
+    - Tests: `ObjectiveEvidenceMediaTest`, 16 en rojo primero (15 fallaban) y después en verde. Suite del backend 1191/1191.
+    - Riesgo aceptado: no hay restricción única en `objective_evidences.media_asset_id`, así que dos peticiones simultáneas con el mismo asset podrían enlazarlo dos veces. Solo podría hacerlo la misma persona que lo subió y no expone nada a terceros.
   - Request, Action, ruta, rama de `MediaAssetPolicy` y validación de `media_asset_id` en `evidences`, con los tests de autorización en rojo primero.
   - Hecho cuando: pasan los tests del plan (subida, validación del asset y `GET /media`), y también la suite de progreso y la de media existentes.
 

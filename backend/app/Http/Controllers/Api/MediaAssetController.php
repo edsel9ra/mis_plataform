@@ -23,6 +23,16 @@ class MediaAssetController
         $media->load(['relationship', 'mediaable']);
         Gate::authorize('view', $media);
 
+        if ($media->purpose === 'objective_evidence') {
+            abort_unless(Storage::disk($media->disk)->exists($media->path), 404);
+
+            return Storage::disk($media->disk)->download(
+                $media->path,
+                $media->original_name,
+                ['Content-Type' => $media->mime_type],
+            );
+        }
+
         if ($media->relationship) {
             abort_unless(
                 MentorshipRelationship::canonicalSourceType($media->relationship->source_type) === 'user',
