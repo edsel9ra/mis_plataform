@@ -2,7 +2,7 @@
 
 ## Estado
 
-Inventario de rutas (T-011.1) y resultados de la auditoría (T-011.2 a T-011.7), consolidados en §T-011.8. Quedan 8 hallazgos abiertos, 2 de ellos de prioridad alta, y lagunas de verificación; las propuestas de corrección están pendientes de aprobación.
+Inventario de rutas (T-011.1) y resultados de la auditoría (T-011.2 a T-011.7), consolidados en §T-011.8. Con T-011.7a ya no quedan hallazgos abiertos; solo PG-09, pendiente de decisión de producto (D-2 de la spec 019). Las lagunas de verificación pasan a la spec 019.
 
 ## Cobertura general
 
@@ -431,3 +431,5 @@ Sería una spec nueva; su borrador completo (spec, plan y tareas) se redactaría
 - Se estima en 6 a 8 tareas, dentro del límite de 10.
 
 **Criterio para cerrar la spec 011:** con T-011.7a hecha, no quedaría ninguna barrera alta conocida. Aun así, «implementada» solo se puede declarar cuando la spec 019 cubra las lagunas de verificación, o cuando el usuario apruebe de forma explícita dejarlas como exclusiones.
+
+**Corrección aplicada (T-011.7a, 2026-11-17):** PG-01, PG-04, SH-12, PG-27, SH-07, PG-25, PG-26 y PG-28 están corregidas y verificadas; ver `tasks.md` T-011.7a. Con esto, de los 39 IDs quedan **37 corregidos**, 1 observación (PG-09, que pasa a la spec 019, D-2) y 1 sin hallazgo. **No queda ninguna barrera de prioridad alta conocida.** La spec 011 sigue «aprobada» hasta que la spec 019 cierre las lagunas de verificación.

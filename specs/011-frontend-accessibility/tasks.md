@@ -181,6 +181,48 @@ Estado: aprobado (2026-10-12, confirmado por el usuario el 2026-11-14). Estas ta
   - Inspeccionar formularios, diálogo/subida de archivos, acciones, mensajes asíncronos y navegación entre secciones.
   - **Hecho cuando:** cada ruta/rol de este grupo tiene resultado reproducible o una limitación de acceso/datos documentada.
 
+- [x] **T-011.7a. Corregir los hallazgos abiertos de T-011.7 (A11Y-PG-01, PG-04, SH-12, PG-27, SH-07, PG-25, PG-26 y PG-28).** RF-011.1–RF-011.3, RF-011.8, RNF-011.4
+  - Aprobada por el usuario el 2026-11-17, junto con la propuesta de la spec 019 (`audit.md` §T-011.8, propuesta 1).
+  - Resultado (2026-11-17):
+    - Código: `lib/tabs.ts` (`nextTabIndex`) con 5 tests en `tabs.test.ts`; `tabs.tsx` con Inicio y Fin, `aria-controls` solo en la pestaña seleccionada y la pestaña inactiva en `gray-600`.
+    - `mentor-workspace.ts` con 10 claves `mentor_workspace.validation.*`, que los 3 formularios traducen; 3 tests en `mentor-workspace.test.ts`.
+    - PG-01 se resolvió con claves existentes (`admin.role` y `admin.client_type`).
+    - PG-04: regiones enfocables en `/admin/users` y `/admin/sessions`, las únicas tablas desplazables.
+    - PG-27: los 48 nodos eran `text-slate-400` en `ObjectiveStatusControl` y pasan a `slate-600`.
+    - PG-25: al quitar el h1 del shell, retos, feedback y el estado de error del perfil de mentee recibieron su propio h1.
+    - PG-26: `CardTitle as="h2"` también en `SkillTagCatalogManager`, feedback y `MentorUserProfileTabs`.
+    - Vitest 386/386; typecheck y lint limpios.
+    - Playwright sobre el build de producción (`/tmp/a11y-011/T-011.7a/`):
+      - axe sin violaciones en 26 combinaciones, las 13 rutas de T-011.7 a 1280 y 320 px;
+      - Inicio y Fin funcionan en las dos listas de pestañas;
+      - a 320 px, Tab llega a la tabla de usuarios y las flechas la desplazan;
+      - los errores de retos salen en español o en inglés según el idioma;
+      - ningún enlace de menos de 24 px.
+    - BD sin cambios.
+  - Alcance:
+    - **PG-01:** los 4 selectores de filtro de `/admin/users`, `/admin/mentors` y `/admin/evaluations` reciben un `aria-label` con una clave i18n que nombre lo que se filtra. Se reutiliza una clave existente que nombre el campo si la hay; si no, se añaden claves `admin.filter_*` en es/en/pt.
+    - **PG-04:** cada contenedor `overflow-x-auto` de una tabla del admin es enfocable (`tabIndex={0}`), es un `role="region"`, tiene un nombre (el título de la tabla o de la página) y muestra un anillo de foco.
+    - **SH-12:** en `lib/schemas/mentor-workspace.ts`, cada regla con un mensaje visible devuelve una clave `mentor_workspace.validation.*`, y sus 3 formularios la traducen con `validationMessage`. No cambia qué se valida.
+    - **PG-27:**
+      - los estados de `/dashboard/mentor/progress/[id]` y los metadatos de `/admin/mentors` y `/admin/evaluations` usan tonos con un contraste de al menos 4,5:1, medido con axe;
+      - la pestaña inactiva de `ui/tabs.tsx` pasa de `text-gray-500` a `text-gray-600`.
+    - **SH-07:**
+      - el teclado de `ui/tabs.tsx` se resuelve con un helper puro `nextTabIndex(key, current, count)`, que devuelve el índice destino o `null`. Las flechas recorren las pestañas en círculo, Inicio va a la primera y Fin a la última;
+      - `aria-controls` solo se pone si el panel está en el DOM.
+    - **PG-25:** el título del shell del espacio del mentor deja de ser un `h1` (pasa a `p` con las mismas clases).
+    - **PG-26:** `CardTitle as="h2"` en `admin/page.tsx`, `admin/mentors` y `dashboard/mentor/challenges`, con los niveles anidados ajustados.
+    - **PG-28:** «Volver a la cartera» y «Ver historial» de `/dashboard/mentor/progress/[id]` miden al menos 24 px de alto.
+  - No cambian rutas, permisos, reglas de validación ni contratos de API. Los textos nuevos son solo las claves `mentor_workspace.validation.*` y, si hacen falta, `admin.filter_*`.
+  - **Hecho cuando:**
+    - Vitest cubre `nextTabIndex` (flechas en los dos sentidos y en círculo, Inicio, Fin y otra tecla) y los mensajes de los esquemas del espacio del mentor: con entradas inválidas, todos son claves `mentor_workspace.validation.*` presentes en los 3 catálogos.
+    - typecheck, lint y Vitest pasan.
+    - Con Playwright sobre un build de producción, sin guardar nada:
+      - a 320 px, Tab llega a la tabla de `/admin/users` y las flechas la desplazan;
+      - Inicio y Fin funcionan en las pestañas de `/dashboard/mentor/users/[id]` y `/admin/evaluations`;
+      - los errores del formulario de retos salen en es y en en según el idioma.
+    - axe, en es a 1280 y 320 px, sin ninguna violación en las 13 rutas de T-011.7. Los enlaces de PG-28 miden 24 px o más.
+    - BD sin cambios.
+
 - [x] **T-011.8. Consolidar hallazgos y definir las unidades de corrección.** RF-011.8, RNF-011.1–RNF-011.3
   - Resultado (2026-11-17): `audit.md` §T-011.8. Hay 39 IDs clasificados (PG-07 no se usó): 29 corregidos y verificados, 8 abiertos, 1 observación de producto y 1 sin hallazgo. Las dos barreras altas que siguen abiertas, PG-01 y PG-04, están priorizadas. Se proponen la unidad T-011.7a, dentro de esta spec, para todo lo abierto, y la spec hija 019, para verificar los estados bloqueados por datos, hacer la prueba con lector de pantalla y decidir la regresión automatizada. Ambas quedan **pendientes de aprobación**.
   - Completar `specs/011-frontend-accessibility/audit.md` con criterio WCAG, ruta/estado, evidencia, severidad/prioridad, componente compartido afectado y método de regresión.

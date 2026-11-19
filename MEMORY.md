@@ -236,3 +236,14 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - T-011.8 (`audit.md` §T-011.8): 39 IDs, 29 corregidos, 8 abiertos.
   - **Propuestas pendientes de aprobación:** T-011.7a, para corregir todo lo abierto dentro de la spec 011, y la spec hija **019**: datos de auditoría desechables, pasada con lector de pantalla hecha por una persona, decidir si Playwright y axe pasan al CI (sería una dependencia nueva) y decidir PG-09.
   - La spec 011 sigue «aprobada»; no se puede pasar a «implementada» con las lagunas de verificación abiertas.
+- **Spec 011 — T-011.7a hecha (2026-11-17, sin commit, en la rama `feat/011-accesibilidad-auditoria` del PR #8)**: ya no queda ninguna barrera alta conocida; 37 de los 39 IDs están corregidos.
+  - `lib/tabs.ts` (`nextTabIndex`, con Inicio y Fin).
+  - Claves `mentor_workspace.validation.*`.
+  - Regiones de tabla del admin enfocables.
+  - El título del shell del mentor pasa a ser un `p`, y cada página del mentor tiene su propio h1.
+  - Vitest 386.
+  - Build desechable: hay que montar el volumen anónimo de `node_modules` del contenedor de desarrollo, porque el bind mount del host lo pisa y falla `laravel-echo`.
+- **Spec 019, borrador de spec.md (2026-11-17)**: `specs/019-verificacion-accesible/spec.md`. Decisiones del usuario: D-1, Playwright y axe en el CI (nuevas dependencias de desarrollo, en vez de la decisión 3 de la 011); D-2, estado «no encontrado» para el mentor; D-3, la prueba con lector de pantalla la hace otra persona del equipo con un guion. Pendiente de aprobar la spec.
+  - D-1: Playwright y axe en el CI, o el arnés manual versionado;
+  - D-2: estado «no encontrado» del mentor (PG-09);
+  - D-3: quién ejecuta las pruebas con NVDA y VoiceOver.
