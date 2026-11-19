@@ -276,3 +276,25 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - También corregidos PG-30 a PG-33, dentro de T019.9; PG-33 era de contraste, y los cambios en `Badge` success y `Button` danger son globales. Se quitó `scroll-behavior: smooth`.
   - La suite completa pasa: 135/135.
   - Notas de configuración: hace falta `fullyParallel: true` para repartir por prueba. Los nombres del seeder son de faker, así que la suite toma los datos dinámicos del login o del API.
+- **Spec 019 — T019.8 hecha (2026-11-19, sin commit)**: re-auditoría con datos de auditoría (`audit.md`, sección de la 019).
+  - Hallazgos nuevos: **PG-34 (alta)**, el campo de mensajes queda `disabled` mientras `isPending` y el foco cae a `body`. Media: PG-35 (paginación del admin sin anuncio ni foco), PG-36 (los éxitos de objetivos y evidencias desmontan el formulario y no anuncian nada), PG-37 (tras los éxitos con redirección, el foco queda en `body`), PG-38 (contraste en el tipo de conversación) y PG-39 (el 429 se clasifica como `unknown`).
+  - Asistencia no probada: los asistentes del seeder están en `not_registered`, hay que ajustar los fixtures.
+  - En la interfaz no existen: invitar empleados, el check-in del mentee, adjuntar ficheros a una evidencia y editar los datos personales.
+  - Con `CACHE_STORE=array`, el rate limiter no acumula intentos.
+  - El `node_modules` del host estaba desactualizado; se reinstaló con `--frozen-lockfile`.
+- **Spec 020, borrador (2026-11-19)**: `specs/020-funciones-interfaz-pendientes/spec.md`, con las 4 funciones que faltan.
+  - Gestión de empleados (los endpoints ya existen) y check-in emocional del mentee (existen `/relationships/{id}/emotional-check-ins` y el entitlement `emotional_check_ins`).
+  - Fichero en una evidencia: necesita un endpoint nuevo de subida para el mentee, porque `/mentor/media` es solo del mentor y de relaciones personales.
+  - Perfil: existen `PUT /profile` (name, last_name, timezone) y `PUT /profile/avatar`.
+  - Dudas pendientes: D-1 a D-4. Mientras tanto, T019.9 está en curso.
+- **Spec 020 aprobada (2026-11-19); plan y tareas en borrador (9 tareas)**:
+  - D-1 a D-4 resueltas: gestión completa de empleados; tarjeta de check-in en el panel; ficheros de evidencia con la misma visibilidad que `ObjectivePolicy::view`, hasta 25 MB e incluidos los colectivos; el avatar solo se puede cambiar.
+  - Hechos: **no existe borrado de evidencias ni de objetivos por API** (solo la cascada al eliminar una cuenta). `RelationshipResource` no expone los entitlements.
+  - Plan: `POST /objectives/{o}/media` y luego `media_asset_id`; una rama de `MediaAssetPolicy` que delega en `ObjectivePolicy::view`; una purga diaria de huérfanos; `features.emotional_check_ins` en `RelationshipResource`.
+- **Spec 019 — T019.9, casi cerrada (2026-11-19)**:
+  - Corregidos PG-34 a PG-40.
+  - `NavigationFocus` y `requestFocusAfterNavigation()` llevan el foco al h1 tras navegar después de un éxito.
+  - `PaginationControls` tiene ahora una región `status` y mueve el foco al botón hermano en los extremos; `/admin/users` usa `keepPreviousData`.
+  - Suite de 143 pruebas, en verde dos veces seguidas. Vitest 400.
+  - **PG-41 abierto:** otros 8 consumidores de la paginación desmontan los controles al recargar.
+  - Entorno: con todo el stack de desarrollo arrancado, el portátil llega a una carga de 40; durante la suite hay que parar scheduler, matching, queue-worker, frontend, meilisearch, reverb y mailpit.

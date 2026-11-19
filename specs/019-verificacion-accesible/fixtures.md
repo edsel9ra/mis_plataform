@@ -16,7 +16,7 @@ Los crea `database/seeders/AccessibilityAuditSeeder.php`, que solo corre contra 
 | `empleado2.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Segundo empleado de la lista |
 | `empresa.setup.audit@audit.mis.test` | `company_admin` `empresa` | — (sin compañía) | Estado «configura tu empresa» (h1 y formulario de setup) |
 | `mentor.audit@audit.mis.test` | `mentor` | — | Espacio del mentor; skills `expert` (3 etiquetas) |
-| `relleno.NN.audit@audit.mis.test` (NN=01–25) | mentee `personal` | — | Relleno para que `/admin/users` supere el `per_page` de 20 |
+| `relleno.NN.audit@audit.mis.test` (NN=01–25) | mentee `personal` | — | Relleno para que `/admin/users` supere el `per_page` de 20; `relleno.04` cambia de idioma en `/profile` y `relleno.05` solicita mentoría (T019.9) |
 
 Además, `AdminUserSeeder` crea `admin@mis.com` (super_admin) con la contraseña por defecto del seeder base.
 
@@ -25,13 +25,13 @@ Además, `AdminUserSeeder` crea `admin@mis.com` (super_admin) con la contraseña
 | Recurso | Detalle |
 |---|---|
 | Relaciones | `ana`→`mentor.audit` (personal), `kai`→`mentor.audit` (personal), `Familia Audit`→`mentor.audit` (familiar). Las 3 `active` |
-| Sesiones de ana | Futura programada; **pasada con la ventana de asistencia abierta** (fin ≈ `now − 3 h`, dentro de las 48 h de `attendance_window_hours`); **pasada sin completar** (fin ≈ `now − 25 h`, aún completable dentro de `not_completed_after_hours`); completada (hace 7 días). Todas con asistentes ana + mentor |
+| Sesiones de ana | Futura programada; **pasada con la ventana de asistencia abierta** (fin ≈ `now − 3 h`, dentro de las 48 h de `attendance_window_hours`; los asistentes quedan con `created_at` anterior a la sesión, como si se hubieran registrado al reservar, para que `AttendanceRules` los considere marcables — la suite la resuelve como `pastSessionId` y ana marca su propia fila); **pasada sin completar** (fin ≈ `now − 25 h`, aún completable dentro de `not_completed_after_hours`); completada (hace 7 días). Todas con asistentes ana + mentor |
 | Mensajes | 6 mensajes alternados ana↔mentor en la relación, algunos leídos |
 | Reto + entrega + feedback | Reto `in_progress` de `mentor.audit`; entrega `submitted` de ana; hilo de feedback con 1 entrada del mentor y un `MediaAsset` (`purpose=mentor_feedback`, fichero de texto pequeño en disco `local`) |
 | Workspace de ana | 1 observación neurocognitiva, 1 check-in emocional, 1 mapa sistémico (2 nodos + 1 arista) |
 | Objetivos de ana | 1 `in_progress` con evidencia; 1 con historial de estados (`not_started`→`in_progress`→`achieved`) |
 | Competencia | 1 `CompetencyAssessmentLink` OCEAN (factor O) sobre la personalidad de ana |
-| Evaluaciones | Catálogo real (`EvaluationCatalogSeeder`); ana tiene 1 resultado registrado y el resto del catálogo disponible sin responder |
+| Evaluaciones | Catálogo real (`EvaluationCatalogSeeder`); ana tiene 1 resultado registrado y 3 sin responder (la primera sin responder se resuelve como `evaluationOpenId`, de solo lectura; la última como `evaluationSubmitId`, que la prueba de envío de T019.9 consume una por ejecución de la suite) |
 | Colectivos | `Familia Audit` (+miembro), `Cohorte Audit` (+miembro), `Audit Corp` (+2 empleados `active`) |
 | Planes | Los reales de `PlanSeeder` + `audit_personal_locked` (`entitlements.mentor_workspace=false`) |
 

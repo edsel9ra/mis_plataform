@@ -445,3 +445,48 @@ Hallazgos nuevos que aparecen durante la spec 019 (RF-019.5). Se clasifican con 
 | A11Y-PG-31 | `app/[locale]/dashboard/empresa/employees/page.tsx:88` | 1.3.1 (best-practice) | Baja | axe `heading-order` a 1280 y 320 px: del h1 «Gestiona empleados» se salta a un h3 con el nombre de cada empleado (`CardTitle` por defecto). Solo se ve con datos, porque en la 011 no había empleados. | Corregido (T019.9): `CardTitle as="h2"` |
 | A11Y-PG-32 | `/dashboard/personal` a 375 px, durante la carga | 2.4.7, 2.4.3 | Baja | Si se tabula mientras la página carga, el foco llega al enlace «Recomendaciones» (`page.tsx:325-331`). Mientras el navegador lo desplaza hasta la vista (con `scroll-behavior: smooth` en `globals.css:86`), terminan de cargarse los bloques de planes y sesiones de arriba, que no tienen la altura reservada, y añaden unos 1680 px. El elemento enfocado queda 2655 px por debajo del borde de la pantalla. Se reprodujo con una traza de `rect.top` y `scrollY` (`/tmp/a11y-019/T019.6/`). Solo pasa durante la carga. | Corregido (T019.9): se quita `scroll-behavior: smooth` del `html` (los skip links saltan al instante). La prueba pasó 3 de 3 veces. |
 | A11Y-PG-33 | Contraste en `admin/{page,mentors,sessions,users,evaluations}`, `evaluations/[id]`, `SkillTagCatalogManager`, `ui/badge.tsx` (success) y `ui/button.tsx` (danger) | 1.4.3 | Media | La suite completa (axe 4.14 y datos de auditoría) encontró `color-contrast` en textos `gray-500`/`slate-500`, en la insignia success (`green-700`) y en el botón danger (`red-600`). Algunos nodos solo aparecen con datos o cuando termina una carga asíncrona. | Corregido (T019.9): `-500` → `-600`, success `green-800` y danger `red-700` (hover `red-800`). Afecta a todos los consumidores de `Badge` y `Button`. |
+| A11Y-PG-34 | `messages/page.tsx` (~L250), el campo para escribir | 2.4.3 | **Alta** | T019.8: al enviar con Enter, el campo queda `disabled` mientras `isPending`, el foco cae a `body` y no vuelve. Pasa en cada mensaje, que es la tarea principal de la página. | Corregido (T019.9): el campo ya no se deshabilita, el envío ignora otro en curso y el foco se queda en el campo |
+| A11Y-PG-35 | `admin/users/page.tsx` y `ui/pagination.tsx` | 4.1.3, 2.4.3 | Media | T019.8: con Enter en «Siguiente» la página cambia, pero el foco cae a `body` y no se anuncia nada. La URL tampoco cambia. | Corregido (T019.9): `keepPreviousData` en `/admin/users`, porque el `PageSpinner` de página entera desmontaba la paginación; región `status` «Página N de M»; el foco pasa al botón hermano en los extremos |
+| A11Y-PG-36 | `components/progress/ObjectiveForm.tsx`, `ObjectiveEvidenceForm.tsx` y `ObjectiveStatusControl.tsx` | 4.1.3, 2.4.3 | Media | T019.8: al crear un objetivo, añadir una evidencia o cambiar un estado, el formulario se desmonta, el foco cae a `body` y la región viva queda vacía. El éxito no se comunica. | Corregido (T019.9): región `status` persistente con el resultado y el foco vuelve al botón que abrió el formulario |
+| A11Y-PG-37 | Transversal: registro → onboarding, reset → login, envío de evaluación → resultado, solicitud de mentoría y cambio de idioma en el perfil | 2.4.3, 4.1.3 | Media | T019.8: tras un éxito que cambia o sustituye la vista, el foco queda en `body`. Solo la solicitud de mentoría anuncia el resultado; el resto, nada. La reserva y completar la sesión sí lo hacen bien: llevan el foco al mensaje y lo anuncian. | Corregido (T019.9): el foco va al h1 o al aviso en los cambios de la misma página; `NavigationFocus` y `requestFocusAfterNavigation()` llevan el foco al h1 de destino en las navegaciones |
+| A11Y-PG-38 | `messages/page.tsx` (~L162), etiqueta del tipo de conversación | 1.4.3 | Media | T019.8: axe `color-contrast` (*serious*) en «Personal» (`text-gray-500`), visible solo cuando hay conversaciones. | Corregido (T019.9): `text-gray-600` |
+| A11Y-PG-39 | `lib/errors.ts` (`classifyApiError`: 429 → `unknown`) | 3.3.1, 3.3.3 | Media | T019.8: al sexto login fallido, el 429 se anuncia (`role=alert`, y el foco se queda en el botón) como «Ha ocurrido un error», sin decir que hay un límite de intentos ni cuánto esperar. | Corregido (T019.9): el 429 pasa a `rate_limited` y muestra `common.rate_limited`, sin reintentos |
+| A11Y-PG-40 | `sessions/[id]/page.tsx` | 2.4.3 | Media | T019.9: la página llevaba el foco a `#session-status` con **cualquier** anuncio, incluido el de asistencia, y le quitaba el foco al botón de asistencia que se acababa de pulsar. | Corregido (T019.9): solo los anuncios de acciones de la sesión mueven el foco (`focusStatusRef`) |
+| A11Y-PG-41 | Los otros 8 consumidores de `PaginationControls` | 2.4.3, 4.1.3 | Media | T019.9, por revisión del código: siguen el mismo patrón `isLoading` → `PageSpinner` de página entera que PG-35, así que al cambiar de página se desmontan los controles y el foco cae a `body`. No se ha probado en el navegador porque esas listas no tienen datos para más de una página. | Abierto: aplicar `keepPreviousData` como en `/admin/users` |
+
+### Re-auditoría de los estados bloqueados por datos (T019.8)
+
+- **Cómo se verificó:** el 2026-11-19, con Playwright y axe 4.14, sobre un build de producción contra `mis_project_audit`.
+- **Evidencia:** 25 ficheros y `report.md` en `/tmp/a11y-019/T019.8/` (ubicación efímera).
+- **Datos:** se permitieron envíos solo en la base de auditoría, que al terminar se volvió a sembrar desde cero. `mis_project` quedó idéntica.
+
+| Estado | Resultado | Observación |
+|---|---|---|
+| Registro con éxito | Cumple en parte | Redirige al test, con su h1 y axe sin violaciones. PG-37. |
+| Rate limit del login | Cumple en parte | El 429 se anuncia y el foco se queda en el botón. PG-39. |
+| Restablecer la contraseña con token válido | Cumple en parte | La validación se anuncia y el foco va al campo inválido. Al terminar, redirige a `/login` y el login con la contraseña nueva funciona. PG-37: el foco queda en `body`. |
+| Perfil, cambio de idioma | Cumple en parte | `lang` y la interfaz cambian de idioma. PG-37. El perfil no tiene datos personales editables, solo el idioma y las skills del mentor. |
+| Test de personalidad completo y estado «ya tiene evaluación» | Cumple | Al terminar, el foco va al h1 «Tus Resultados». El envío lleva al panel, y volver a entrar redirige. |
+| Solicitar una mentoría | Cumple en parte | El envío se anuncia («pendiente de revisión»). PG-37. |
+| Reserva confirmada | Cumple | El foco va a `h2#booking-success` y la reserva se anuncia. |
+| Completar la sesión (mentor) | Cumple | Diálogo con foco inicial, contención y Escape con retorno del foco. El éxito se anuncia y el foco va a `#session-status`. |
+| Asistencia | No probado | Los asistentes de las sesiones pasadas del seeder están en `not_registered`, así que no hay ninguna acción posible. Hay que ajustar los fixtures (T019.9). |
+| Envío de evaluación y «Volver a hacerla» | Cumple en parte | Se muestra el resultado (h1), pero el foco queda en `body` y no se anuncia nada (PG-37). Al volver a hacerla, el foco va a la primera opción. |
+| Mensajes con datos | Cumple en parte | El `role=log` anuncia el mensaje enviado. PG-34 y PG-38. No hay «cargar anteriores», porque solo hay 6 mensajes. La llegada en vivo no se puede probar con `BROADCAST_CONNECTION=log` (límite). |
+| Panel de empresa (`company_admin`) y panel de empleado | Cumple | Métricas reales y lista de empleados; axe sin violaciones a 1280 y 320 px. |
+| Crear un objetivo, añadir una evidencia y cambiar el estado (mentor) | Cumple en parte | Todo se guarda (comprobado en la BD). PG-36. |
+| Paginación de `/admin/users` | Cumple en parte | Enter cambia de página. PG-35. |
+| Bloqueo por plan (mapa e historial de `kai`) | Cumple | El texto explica el motivo; axe sin violaciones. |
+| Paneles del mentee con datos (5 pestañas) | Cumple | axe sin violaciones. |
+| Observación, feedback con un `.wav` y reto con fichero | Cumple | El éxito se anuncia y el foco se mantiene. Un fichero no admitido se rechaza con `role=alert`. |
+
+**No son defectos de accesibilidad, sino funciones que no existen en la interfaz** (registrado sin simular, RNF-011.3):
+- invitar empleados: existe `POST /companies/{id}/employees`, pero el frontend no lo usa;
+- el check-in del mentee: solo hay vistas de lectura para el mentor;
+- adjuntar un fichero a una evidencia: el formulario solo admite una nota, y el código indica que falta el endpoint de subida;
+- editar los datos personales en el perfil.
+
+**Límites que siguen abiertos:**
+- OAuth con un proveedor real;
+- la llegada de mensajes y recordatorios en vivo por Reverb;
+- el rate limit en el CI, porque con `CACHE_STORE=array` el limitador no acumula intentos. En local se probó con `CACHE_STORE=file`.

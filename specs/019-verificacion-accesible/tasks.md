@@ -102,7 +102,12 @@ Plan: `plan.md`. En orden de dependencia. Ninguna tarea toca la base de datos de
     - se anota su duración;
     - en una rama temporal, un cambio que reintroduce una violación hace fallar el job. Después se borra la rama, previa confirmación del usuario.
 
-- [ ] **T019.8. Re-auditoría de los estados bloqueados por datos.** RF-019.3
+- [x] **T019.8. Re-auditoría de los estados bloqueados por datos.** RF-019.3
+  - Resultado (2026-11-19): registrado en `audit.md`, sección de la spec 019.
+    - Cumplen o cumplen en parte 17 estados; queda sin probar la asistencia, porque los fixtures no la permiten.
+    - Hallazgos nuevos para T019.9: PG-34 (alta: el campo de mensajes pierde el foco al enviar) y, de prioridad media, PG-35 a PG-39 (paginación silenciosa, éxitos de progreso y de redirección sin foco ni anuncio, contraste en mensajes y 429 sin explicación).
+    - Hay 4 funciones que no existen en la interfaz y no son defectos de accesibilidad: invitar empleados, el check-in del mentee, adjuntar ficheros a una evidencia y editar los datos personales.
+    - `mis_project` quedó idéntica. `mis_project_audit` se volvió a sembrar limpia.
   - Con el entorno de auditoría local y Playwright, recorrer cada estado marcado como límite o «sin probar» en `audit.md` §T-011.4 a §T-011.7, incluidas las respuestas de éxito.
   - Hecho cuando: cada estado tiene un resultado registrado en `audit.md` (sección de la 019) o un motivo concreto por el que no se pudo probar, y los hallazgos nuevos tienen ID, prioridad y corrección propuesta.
 
@@ -111,7 +116,13 @@ Plan: `plan.md`. En orden de dependencia. Ninguna tarea toca la base de datos de
     - Corregidos PG-30, PG-31, PG-32 y PG-33, este último encontrado al ejecutar la suite completa.
     - Para evitar falsos positivos de contraste a mitad de `animate-fade-in`, `axe.spec.ts` espera ahora a que terminen las animaciones no infinitas. Es un cambio solo de la prueba.
     - Vitest 394/394. La suite completa pasa 135/135 (2 ejecuciones, 7,4 min). BD sin cambios.
-    - Siguen pendientes los hallazgos que salgan de T019.8 y T019.10.
+    - Corregidos también PG-34 a PG-39 y PG-40, este último encontrado durante la tarea.
+    - El seeder permite ahora marcar la asistencia (las altas se fechan antes de `end_at`) y crea 4 evaluaciones (1 respondida y 3 sin responder).
+    - Helper `lib/navigation-focus.ts` (con tests) y `NavigationFocus` en `app/layout.tsx`.
+    - `focus.spec` sube a 27 pruebas: la suite tiene 143 y pasa entera dos veces seguidas sin volver a sembrar (6,4 y 6,3 min). Vitest 400/400.
+    - `playwright.config.ts` acepta `A11Y_EXPECT_TIMEOUT_MS` y `A11Y_TEST_TIMEOUT_MS`, para cuando el equipo local va muy cargado; sin ellas, el comportamiento es el mismo.
+    - Queda abierto PG-41: el mismo defecto latente de paginación en otros 8 consumidores.
+    - Siguen pendientes los hallazgos que salgan de T019.10.
   - Los de T019.5, T019.8 y, cuando llegue, T019.10, según RF-011.8, y la suite se amplía para cubrirlos.
   - Si hay más de lo que cabe en una tarea, o alguno pide decisiones de producto, se para y se propone una unidad aparte.
   - Hecho cuando: no queda ninguna barrera alta abierta y la suite y el CI pasan.
