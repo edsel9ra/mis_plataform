@@ -301,3 +301,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **PG-41 corregido y T020.1 hecha (2026-11-19)**:
   - PG-41: `keepPreviousData` en todas las listas paginadas.
   - T020.1: `POST /objectives/{o}/media` (`MediaUploadRules` compartido); `MediaAssetPolicy` delega en `ObjectivePolicy::view` cuando el propósito es `objective_evidence`; el asset se reasigna a la evidencia dentro de una transacción. 16 tests y suite del backend 1191/1191.
+- **Spec 020 — T020.2 hecha (2026-11-19)**:
+  - `media:purge-orphan-evidence`, diario; suite del backend 1197.
+  - **Limitación conocida:** `media_assets.uploaded_by` y `relationship_id` tienen `cascadeOnDelete`, así que un hard delete deja ficheros en el disco sin su fila. Pasa también con los ficheros del mentor y no está cubierto.

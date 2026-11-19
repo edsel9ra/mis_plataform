@@ -15,7 +15,16 @@ Plan: `plan.md`. En orden de dependencia.
   - Request, Action, ruta, rama de `MediaAssetPolicy` y validación de `media_asset_id` en `evidences`, con los tests de autorización en rojo primero.
   - Hecho cuando: pasan los tests del plan (subida, validación del asset y `GET /media`), y también la suite de progreso y la de media existentes.
 
-- [ ] **T020.2. Purga de ficheros de evidencia huérfanos.** RF-020.10
+- [x] **T020.2. Purga de ficheros de evidencia huérfanos.** RF-020.10
+  - Resultado (2026-11-19):
+    - Comando `media:purge-orphan-evidence {--hours=24} {--dry-run}`, que se ejecuta cada día (`withoutOverlapping`).
+    - La consulta es única y va por lotes (`chunkById`). Borra el fichero y luego la fila. En el log solo deja el recuento y los ids, sin `activity()`.
+    - Hechos comprobados en el esquema:
+      - `User` y `Objective` usan SoftDeletes, así que borrar una cuenta desde la app no borra las evidencias;
+      - `MediaAsset` y `ObjectiveEvidence` no usan SoftDeletes;
+      - `objective_evidences.media_asset_id` tiene `nullOnDelete`.
+    - Tests: `PurgeOrphanEvidenceMediaTest`, 6 en rojo primero y después en verde. Cubren los casos (a) a (g), incluida la cascada (403 y luego la purga) y que no cambian los recuentos de `evidence_deletion_events` ni de `activity_log`. Suite del backend 1197/1197.
+    - **Limitación previa a esta spec, fuera de alcance:** `media_assets.uploaded_by` y `relationship_id` tienen `cascadeOnDelete`. Si una cuenta o una relación se borra de verdad (hard delete), desaparece la fila del asset, pero el fichero se queda en el disco y la purga no lo ve. Afecta también a los ficheros del mentor. Habría que hacer un barrido del disco aparte.
   - Comando y programación en `routes/console.php`.
   - Hecho cuando:
     - los tests de la purga pasan;
