@@ -1,6 +1,6 @@
 # Spec 019 — Verificación accesible con datos de auditoría y tecnologías de asistencia
 
-Estado: borrador
+Estado: aprobada
 
 **Spec padre:** `specs/011-frontend-accessibility/spec.md`, aprobada. Cubre las lagunas de verificación que recoge `specs/011-frontend-accessibility/audit.md` §T-011.8. El usuario aprobó la propuesta el 2026-11-17.
 **Origen:** la auditoría de la 011 no pudo probar varios estados por falta de datos en desarrollo, no incluyó pruebas con un lector de pantalla real (RNF-011.2) y sus comprobaciones de navegador no forman parte del repositorio.

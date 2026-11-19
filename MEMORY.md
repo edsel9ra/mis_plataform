@@ -247,3 +247,26 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - D-1: Playwright y axe en el CI, o el arnés manual versionado;
   - D-2: estado «no encontrado» del mentor (PG-09);
   - D-3: quién ejecuta las pruebas con NVDA y VoiceOver.
+- **Spec 019, aprobada (2026-11-17); plan y tareas en borrador**: `plan.md` y `tasks.md` (10 tareas).
+  - Seeder `AccessibilityAuditSeeder`, con la guarda pura `AuditTargetGuard`: exige `_audit`, base vacía y que no sea producción.
+  - Suite `frontend/e2e/a11y`: `@playwright/test` **1.65.0** y `@axe-core/playwright` **4.14.0**, con versión exacta (≥7 días el 2026-11-19), axe con WCAG y best-practice, y `focus.spec` por cada unidad T-011.xa.
+  - Job de CI `a11y`: postgres, `artisan serve` y `next start`.
+  - Estado «no encontrado» del mentor (el API da 404 tanto con un id inexistente como con uno mal formado).
+  - T019.10 queda bloqueada hasta que la persona del equipo entregue los resultados con NVDA y VoiceOver.
+- **Spec 019 — T019.1 hecha (2026-11-19, sin commit)**:
+  - `AuditTargetGuard` y `AccessibilityAuditSeeder`; `mis_project_audit` queda creada y sembrada en el Postgres de Compose para las tareas siguientes (procedimiento en `fixtures.md`). Cuentas `*@audit.mis.test`.
+  - `ana.audit`, `kai.audit` (plan sin espacio del mentor y sin test de personalidad), `mentor.audit`, `empresa.admin.audit`, `empleado.audit`, `empresa.setup.audit`, `admin.audit` y 25 de relleno.
+  - **Inestable:** `ProgressHistoryIndexesTest` (EXPLAIN de `challenges_mentee_id_index`) puede fallar en la suite completa por las estadísticas del planificador; si se ejecuta solo, pasa.
+  - `app/Support` es propiedad de root en el host: para escribir ahí hay que usar `docker cp` o el contenedor.
+- **Spec 019 — T019.2 hecha (2026-11-19)**: `guion-lector-pantalla.md` v1.0. Falta que el usuario lo entregue a la persona del equipo, con la URL del entorno de auditoría y la contraseña de prueba (todavía no hay un entorno de auditoría al que pueda acceder esa persona). En la combinación A no se envía el test de `kai`.
+- **Spec 019 — T019.3 hecha (2026-11-19, sin commit)**: estado «no encontrado» en `/mentors/[id]` (`isNotFoundError`, claves `mentors.not_found_*` y `back_to_list`). Vitest 390. El usuario decidió que la persona del lector de pantalla monte el entorno de auditoría en su propio equipo: `fixtures.md` tendrá el procedimiento completo en T019.4.
+- **Spec 019 — T019.4 hecha (2026-11-19, sin commit)**:
+  - Suite `frontend/e2e/a11y` con `pnpm test:a11y` (smoke 3/3).
+  - Runner local: la imagen de Playwright (glibc), porque `mis-frontend:dev` es Alpine y no puede ejecutar Chromium.
+  - Backend de auditoría con `php -S` y el router de Laravel: `artisan serve` no propaga las variables de `docker exec -e`.
+  - Contraseña de prueba de las cuentas `@audit.mis.test`: la fijó el agente en la base desechable y no está en el repo. Para volver a sembrar, `A11Y_SEED_PASSWORD`.
+  - Login: 5 intentos por minuto por IP y email.
+  - Hallazgo nuevo de axe 4.14: PG-29 (logo de la portada), ya corregido.
+  - Vitest 394.
+- **Spec 019 — T019.5 hecha (2026-11-19, sin commit)**: 116 pruebas de axe (58 rutas a 1280 y 320 px). Pasan 109 y tardan 18,2 min. Los fallos son 2 hallazgos nuevos para T019.9: PG-30 (enlace del logo del admin, `label-content-name-mismatch`) y PG-31 (`heading-order` en la lista de empleados). Contexto de Playwright con `locale: 'es'`, porque si no el middleware redirige a `/en`. En el CI hará falta `--shard`.
+- **Spec 019 — T019.6 hecha (2026-11-19, sin commit)**: `focus.spec.ts` con 19 pruebas (pasan 18). Defecto real **PG-32**: en `/dashboard/personal` a 375 px, los bloques que cargan después no tienen altura reservada y, con `scroll-behavior: smooth`, el elemento enfocado se queda fuera de la pantalla si se tabula durante la carga. Quedó demostrado que la suite falla al deshacer correcciones (`select-name` y el `disabled` de `Button`) y que vuelve a pasar al restaurarlas.
