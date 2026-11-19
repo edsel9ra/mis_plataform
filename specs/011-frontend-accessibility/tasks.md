@@ -6,38 +6,183 @@ Estado: aprobado (2026-10-12, confirmado por el usuario el 2026-11-14). Estas ta
   - Enumerar las 34 páginas de `frontend/src/app/[locale]/**/page.tsx` y agruparlas por superficie: shell, pública, cuenta/onboarding, participante/progreso, mentor/administración y módulos funcionales.
   - Registrar locales, necesidad de autenticación, roles/estados de prueba disponibles y flujos principales por ruta; anotar qué rutas dinámicas no pueden abrirse sin datos.
   - **Hecho cuando:** existe una entrada para cada page route, las áreas y estados están clasificados y las brechas de acceso/datos quedan explícitas.
+  - Actualización (2026-11-17, aprobada por el usuario): las rutas pasan de 34 a 44. Las 10 nuevas (filas 35–44 de `audit.md`) se reparten entre T-011.4–T-011.7 y se vuelven a verificar en su grupo. La revisión previa de su spec se cita solo como referencia. Herramienta: Playwright y axe desechables (plan, «Procedimiento de auditoría»).
 
-- [ ] **T-011.2. Auditar fundamentos y componentes compartidos.** RF-011.1–RF-011.7, RNF-011.2
+- [x] **T-011.2. Auditar fundamentos y componentes compartidos.** RF-011.1–RF-011.7, RNF-011.2
+  - Resultado (2026-11-17): `audit.md` §T-011.2. Verificado con Playwright y axe 4.10.3 sobre un build de producción, con revisión del código. Barreras altas en los shells: A11Y-SH-01 (menú cerrado con 15 paradas de foco invisibles y fondo del admin enfocable) y A11Y-SH-04 (menú abierto sin trampa de foco, sin Escape y sin devolver el foco). Prioridad media: SH-05 (sin skip link en el admin), SH-06 (`Button` con `loading` pierde el foco) y SH-08 (contraste de 4,34 a 4,41). Baja: SH-07 (pestañas). Sin hallazgo: SH-02 (`DialogTrigger` sin uso). Observación: SH-03. Hallazgos de páginas asignados a su grupo: PG-01 (alta, T-011.7), PG-02 (T-011.4) y PG-03 (T-011.6). La paginación queda bloqueada por falta de datos y pasa a T-011.7.
   - Revisar `globals.css`, `layout.tsx`, `AppShell.tsx` y `components/ui/*`, incluyendo foco, skip link, landmarks, nombres/estados, formularios, mensajes, diálogo y tabs.
   - Comprobar al menos un flujo de navegación móvil y desktop, teclado y árbol accesible; conservar las mejoras actuales y los cambios locales del usuario.
   - **Hecho cuando:** los componentes compartidos tienen hallazgos reproducibles vinculados a WCAG o quedan documentados como revisados, junto con evidencia y estados no verificables.
 
-- [ ] **T-011.3. Auditar páginas públicas y descubrimiento.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+- [x] **T-011.2a. Corregir los shells accesibles (A11Y-SH-01, SH-04 y SH-05).** RF-011.1, RF-011.2, RF-011.8
+  - Resultado (2026-11-17):
+    - Código: `lib/focus-trap.ts` (helper puro `trapFocusTarget`, 7 tests) y `hooks/use-mobile-nav.ts`, compartido por `AppShell` y `admin/layout.tsx`.
+    - Verificado con Playwright sobre el build de producción (`/tmp/a11y-011/T-011.2a/`), en los dos shells a 375, 320 y 640×400 px:
+      - con el menú cerrado, 0 paradas de foco ocultas;
+      - con el menú abierto, foco en «Cerrar», 20 Tab y 20 Shift+Tab sin salir del lateral, y header y main inertes;
+      - al cerrar con Escape, la X o el fondo, el foco vuelve a «Abrir menú»; al cerrar por navegación, va a `main`;
+      - si el viewport crece a 1280 px con el menú abierto, el menú se cierra y `main` deja de ser inerte.
+    - El skip link del admin funciona (3 de 3 corridas). El escritorio a 1280 px conserva el mismo orden de foco y el plegado del lateral funciona con teclado. El movimiento reducido no afecta.
+    - axe: ninguna violación nueva. En `/admin/users` siguen las previas (PG-01 y contraste) y aparece `scrollable-region-focusable` a 320 px, ajena al shell (A11Y-PG-04, va a T-011.7).
+    - Vitest 359/359; typecheck y lint limpios.
+  - El usuario aprobó el 2026-11-17 adelantar esta unidad de corrección a T-011.8, porque afecta a todas las rutas autenticadas en móvil y con zoom.
+  - Alcance: `AppShell` y `admin/layout.tsx`.
+    - Con el menú cerrado por debajo de `lg`, el lateral y el fondo salen del orden de foco y del árbol accesible.
+    - Al abrir el menú, el foco va al botón de cerrar; queda contenido en el lateral y el resto se vuelve inerte.
+    - Escape cierra el menú. Al cerrarlo con Escape, la X o el fondo, el foco vuelve a «Abrir menú». Al cerrarlo por navegación, el foco va a `main`.
+    - El admin tiene skip link a `main#app-content`.
+  - En escritorio no cambia nada. Tampoco cambian textos, rutas ni permisos.
+  - **Hecho cuando:**
+    - Vitest cubre el helper puro de contención de foco.
+    - typecheck, lint y Vitest pasan.
+    - Playwright, en ambos shells a 375, 320 y 640×400 px (zoom 200 %), confirma: 0 paradas de foco ocultas con el menú cerrado; con el menú abierto, foco al abrir, contención, Escape y retorno del foco.
+    - El skip link del admin funciona y a 1280 px el escritorio sigue igual.
+    - axe no encuentra violaciones nuevas.
+
+- [x] **T-011.3. Auditar páginas públicas y descubrimiento.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+  - Resultado (2026-11-17): `audit.md` §T-011.3. `/` y `/certificates` sin violaciones de axe. Barrera alta: A11Y-PG-05 (en `/mentors`, cada búsqueda desmonta la página y el campo pierde el foco; el resultado no se anuncia). Prioridad media: PG-06 (descubrimiento sin landmarks ni h1) y SH-08 ampliado a `gray-400`. Baja: SH-09 (`CardTitle` siempre es `h3`, causa de los `heading-order`), PG-08 (`main` anidado, por confirmar) y una instancia de SH-03. Observación: PG-09 (id inexistente sin estado «no encontrado»). Bloqueado por datos: el formulario «Solicitar mentoría», revisado solo en el código.
   - Revisar home, catálogo/detalle de mentores, rutas de aprendizaje, certificados y recomendaciones en estados accesibles sin sesión cuando corresponda.
   - Inspeccionar alternativa textual, jerarquía, contraste visible, operación por teclado y reflow en las tareas principales.
   - **Hecho cuando:** todas las páginas de este grupo tienen resultado y evidencia registrada o una limitación de acceso concreta.
 
-- [ ] **T-011.4. Auditar acceso, perfil y onboarding.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+- [x] **T-011.3a. Corregir los hallazgos de T-011.3 (A11Y-PG-05, PG-06, PG-08, SH-08, SH-09 y SH-03).** RF-011.1–RF-011.3, RF-011.8
+  - El usuario aprobó el 2026-11-17 adelantar esta unidad de corrección a T-011.8.
+  - Resultado (2026-11-17):
+    - Código: `Alert` (rol por variante) y `CardTitle` (`as`), con 9 tests nuevos (`alert.test.ts`, `card.test.ts`; `vitest.config.mts` activa JSX automático para importar `.tsx` en el entorno `node`). Además, las páginas de mentores, rutas, certificados y recomendaciones y las clases de color de SH-08.
+    - Los 9 `role="alert"` explícitos de otros consumidores se conservan. Ningún consumidor dependía de que info/success/warning se anunciaran como `alert`.
+    - Vitest 368/368; typecheck y lint limpios.
+    - Playwright sobre el build de producción (`/tmp/a11y-011/T-011.3a/`): en `/mentors`, sin sesión y con `ana`, el foco sigue en el campo tras buscar y la región `status` anuncia «Sin resultados» y «1 mentor encontrado».
+    - axe, con las 7 reglas del criterio: 0 violaciones en 10 corridas (`/mentors` y `/mentors/[id]` sin sesión y con sesión, `/learning-paths`, `/certificates`, `/recommendations`, `/admin/users`, `/dashboard/mentor` y `/dashboard/personal`). En todas las rutas hay un solo `main` y un solo h1.
+    - Sin scroll horizontal a 320 px.
+    - Siguen abiertos, fuera de alcance: PG-09, PG-01 (`select-name` en `/admin/users`) y PG-02 (`/login`).
+  - Alcance:
+    - **PG-05:** en `/mentors`, el título y el buscador no se desmontan nunca. El spinner solo ocupa la zona de resultados en la primera carga, y al buscar se mantienen los resultados anteriores (`placeholderData`) hasta que llegan los nuevos. Una región `status`, siempre montada, anuncia el número de resultados o «Sin resultados» (clave nueva `mentors.results_count`, con plural ICU, en es/en/pt).
+    - **PG-06 y PG-08:** sin sesión, `/mentors` y `/mentors/[id]` (también en carga y error) se envuelven en `main`; con sesión usan el `main` de `AppShell` y no añaden otro.
+    - **SH-09:** `CardTitle` acepta `as` (`h1`–`h4`, por defecto `h3`, así que el resto de consumidores no cambia). Niveles: el nombre del mentor en la ficha es `h1` y su título «Habilidades» pasa a `h2`; las tarjetas de `/mentors`, `/learning-paths` y `/certificates` y el perfil OCEAN de `/recommendations` usan `h2`.
+    - **SH-08:** texto en `text-gray-400` pasa a `text-gray-600`, salvo los placeholders. La X del diálogo pasa a `text-gray-500` (contraste de componente, 1.4.11). Las instancias confirmadas por axe en T-011.2 pasan a `-600`: «Total» en `/admin/users` y `/admin/mentors`, el filtro de `/dashboard/mentor` y los filtros de `PersonalPlansSection`. El resto de combinaciones `-500` sobre `slate-50`/`slate-100` las confirma cada grupo.
+    - **SH-03:** `Alert` usa `role="alert"` solo en la variante `error`; `info`, `success` y `warning` usan `role="status"`. Un `role` explícito sigue teniendo prioridad.
+  - Fuera de alcance: PG-09 (estado «no encontrado», decisión de producto en T-011.8) y SH-06. No cambian textos visibles, rutas, permisos ni el aspecto, salvo el color de los textos corregidos.
+  - **Hecho cuando:**
+    - Vitest cubre el `role` de `Alert` por variante y el nivel de `CardTitle`.
+    - typecheck, lint y Vitest pasan.
+    - Con Playwright sobre un build de producción, en `/mentors` sin sesión y con sesión: tras escribir y esperar la búsqueda, el foco sigue en el campo y la región `status` anuncia el resultado.
+    - axe, sin sesión y con sesión, no encuentra `landmark-one-main`, `region`, `heading-order`, `page-has-heading-one`, `landmark-no-duplicate-main`, `landmark-main-is-top-level` ni `color-contrast` en `/mentors`, `/mentors/[id]`, `/learning-paths`, `/certificates` y `/recommendations`, ni `color-contrast` en `/admin/users`, `/dashboard/mentor` y `/dashboard/personal`.
+    - Sin scroll horizontal a 320 px.
+
+- [x] **T-011.4. Auditar acceso, perfil y onboarding.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+  - Resultado (2026-11-17): `audit.md` §T-011.4. `/profile` cumple. Barreras altas: A11Y-PG-15 (el test de personalidad avanza al seleccionar, así que con el teclado solo se puede elegir la primera o la última opción) y PG-12 (foco invisible en los planes del registro). Prioridad media: PG-13 (test sin `main` ni h1), PG-14 (2 claves i18n inexistentes como nombre accesible), PG-10 (auth sin landmarks, junto con PG-02), PG-11 (error de OAuth o tipo inválido sin salida), SH-06 (confirmado en 4 flujos) y SH-08 (4,41:1). Baja: SH-09 y PG-16 (`autocomplete` de sexo y fecha). Sin probar, para no causar efectos: los éxitos de registro, login y restablecimiento, OAuth real y el envío del test.
   - Revisar login, registro y variante por tipo, callback OAuth, perfil y test de personalidad en estados de carga, validación, error y éxito que puedan reproducirse.
   - Revisar etiquetado, errores anunciables, controles de preguntas, progreso y conservación del foco.
   - **Hecho cuando:** los flujos del grupo están documentados, se recorrieron con teclado y cada estado no disponible quedó identificado sin simular resultados.
 
-- [ ] **T-011.5. Auditar agenda, evaluaciones y comunicación.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+- [x] **T-011.4a. Corregir los hallazgos de T-011.4 (A11Y-PG-02, PG-10–PG-16, SH-06, SH-08 y SH-09).** RF-011.1–RF-011.4, RF-011.8
+  - El usuario aprobó el 2026-11-17 adelantar esta unidad de corrección a T-011.8.
+  - Resultado (2026-11-17):
+    - Código: `Button` (`aria-disabled` y clic cancelado mientras carga, con 5 tests en `button.test.ts`), las 6 páginas de auth y el test de personalidad.
+    - Ningún consumidor ni test dependía de que `loading` implicara `disabled`, y los formularios de auth solo pasaban `loading`. Unos 35 ficheros con `loading=` conservan ahora el foco mientras cargan.
+    - Añadido en la revisión: al pulsar «Siguiente» en la última pregunta, el foco va al h1 de la pantalla de finalización. Solo se comprobó en el código, typecheck y lint, no en el navegador.
+    - Vitest 373/373; typecheck y lint limpios.
+    - Playwright sobre el build de producción (`/tmp/a11y-011/T-011.4a/`, 104 ficheros):
+      - tras un error del servidor en login, registro y forgot, el foco sigue en el botón de envío. El registro dio timeout de API por la carga del host en lugar del 422, pero el foco se comprobó por la misma vía;
+      - en el test, las flechas cambian la respuesta sin avanzar, la opción 3 se elige con el teclado y «Siguiente»/«Anterior» llevan el foco al radio. Se recorrieron las 120 preguntas: la pantalla de finalización solo aparece al pulsar «Siguiente» en la última. No se envió;
+      - el anillo de foco y el check se ven en las tarjetas de plan;
+      - los enlaces de salida de PG-11 se pueden enfocar;
+      - `autocomplete` `sex` y `bday` presentes.
+    - axe: 0 violaciones en las 7 rutas (es a 1280 y 320 px; en/pt en login y test), con un `main` y un h1 cada una.
+    - Sin scroll horizontal a 320 px. Datos de desarrollo sin cambios.
+    - Contrapartida de PG-15: quien usa ratón hace ahora un clic más por pregunta, en «Siguiente».
+  - Alcance:
+    - **SH-06 (`Button`):** mientras `loading`, el botón **no** se deshabilita: lleva `aria-disabled="true"` y `aria-busy="true"`, y su `onClick` cancela el evento (`preventDefault`) sin llamar al del consumidor. Así tampoco se puede enviar el formulario con Enter. Tiene la misma apariencia atenuada (`aria-disabled:`). Un `disabled` explícito sigue deshabilitándolo de verdad. En los formularios de login, registro, forgot y reset se quita el `disabled` que solo repetía el estado de carga. El resto de consumidores lo confirma cada grupo.
+    - **PG-15 (test de personalidad):** elegir una respuesta ya no avanza. Un botón «Siguiente» (`common.next`), deshabilitado hasta responder, pasa a la pregunta siguiente; en la última, lleva a la pantalla de finalización. Al cambiar de pregunta con «Siguiente» o «Anterior», el foco va a la opción marcada o a la primera de la pregunta nueva.
+    - **PG-13 y PG-14 (test):** la página se envuelve en `main` y tiene un h1 (`personality.test_title`); en la pantalla de finalización, el h1 es `personality.results`. La `legend` de cada pregunta es el texto de la pregunta (`legend` con un `h2`), así que `personality.select_answer` deja de usarse. Se añade `personality.progress_label` en es/en/pt («Progreso del test», «Test progress», «Progresso do teste»). El botón «Ver mis resultados» pasa a `Button loading`.
+    - **PG-02 y PG-10 (`/login`, `/register`, `/register/[type]`, `/forgot-password`, `/reset-password`, `/oauth/callback`):** todo el contenido queda dentro de un `main`, con un solo h1 visible en cualquier anchura y sin saltos de nivel. En `/login`, el título de la tarjeta pasa a ser el h1 y el eslogan del lateral, a `p`, con las mismas clases. Si una página ya tiene un h1 visible en todas las anchuras, su `CardTitle` pasa a `h2` (SH-09).
+    - **PG-11:** el error de `/oauth/callback` lleva un enlace a `/login` (`auth.back_to_login`) y el tipo de registro inválido, un enlace a `/register` (`auth.register_title`), ambos con `localePath()`.
+    - **PG-12:** la tarjeta de plan muestra un anillo de foco cuando su radio tiene `:focus-visible`, y la seleccionada lleva además un icono decorativo de check, para que el estado no dependa solo del color.
+    - **PG-16:** `autoComplete="sex"` en sexo y `autoComplete="bday"` en la fecha de nacimiento.
+    - **SH-08:** `register/[type]/page.tsx:284`, de `text-gray-500` a `text-gray-600`.
+  - No cambian rutas, permisos, validaciones ni contratos de API. Los textos nuevos son solo `personality.progress_label`.
+  - **Hecho cuando:**
+    - Vitest cubre el `Button` en carga (sin `disabled`, con `aria-disabled` y `aria-busy`, `onClick` cancelado sin llamar al del consumidor) y con `disabled` explícito.
+    - typecheck, lint y Vitest pasan; el test de paridad i18n sigue en verde.
+    - Con Playwright sobre un build de producción:
+      - tras un error del servidor en login, registro y forgot, el foco sigue en el botón de envío;
+      - en el test, las flechas cambian la respuesta sin avanzar, «Siguiente» y «Anterior» llevan el foco a la pregunta nueva y la opción 3 se puede elegir con el teclado. Sin enviar el test;
+      - el foco es visible en las tarjetas de plan.
+    - axe, en es a 1280 y 320 px (y en/pt en login y test), sin `landmark-one-main`, `region`, `page-has-heading-one`, `heading-order`, `color-contrast` ni `aria-*` en las 7 rutas del grupo.
+    - Sin scroll horizontal a 320 px.
+
+- [x] **T-011.5. Auditar agenda, evaluaciones y comunicación.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+  - Resultado (2026-11-17): `audit.md` §T-011.5. Cumplen `/sessions`, `/sessions/[id]`, `/availability` y `/messages`; `/sessions/new` cumple en parte. Todos los hallazgos son globales; los requisitos comprobables de las specs 010, 016 y 017 se cumplen. Altas: A11Y-PG-20 (la evaluación avanza al responder y el foco cae a `body`) y PG-19 (barra de progreso sin nombre). Media: PG-21 (opciones sin agrupar) y PG-17 (sin h1 en los estados de error y en la vista de preguntas). Baja: PG-18 (`heading-order`) y SH-10 (`disabled` redundante con `loading`). Sin probar por falta de datos o para no crearlos: asistencia, completar sesión, confirmar la reserva, enviar la evaluación y los mensajes reales.
   - Revisar sesiones, evaluaciones/listado/detalle y mensajes; considerar la spec 010 para requisitos específicos de agenda sin redefinir su comportamiento.
   - Probar estados dinámicos y formularios principales, nombre/estado de controles y operación por teclado.
   - **Hecho cuando:** cada ruta y flujo del grupo tiene registro de revisión y los hallazgos están separados entre requisitos globales y específicos de la spec 010.
 
-- [ ] **T-011.6. Auditar dashboards de participantes y progreso.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+- [x] **T-011.5a. Corregir los hallazgos de T-011.5 (A11Y-PG-17–PG-21 y SH-10).** RF-011.1–RF-011.4, RF-011.8
+  - El usuario aprobó el 2026-11-17 adelantar esta unidad de corrección a T-011.8.
+  - Estado (2026-11-17): **hecha.** La verificación en el navegador se completó después de reiniciar Docker (ver abajo).
+    - Código: los cambios de `/evaluations/[id]`, `/evaluations` y `/sessions/[id]`. Los hooks nuevos van antes de los retornos anticipados, y el foco solo se mueve cuando `current` cambia, así que al repetir la evaluación no se fuerza.
+    - SH-10: el barrido encontró un solo caso, `sessions/new` (`disabled={bookSession.isPending}`), y se quitó. Se conservan los `disabled` con otra condición, entre ellos `AttendancePanel`, cuyo `disabled={pending !== null}` impide confirmar varias filas a la vez.
+    - typecheck, lint y Vitest 373/373 en verde.
+    - Playwright y axe quedan bloqueados por el entorno: el host llegó a una carga de 330, con la memoria y el swap llenos, y el daemon de Docker no puede parar contenedores. Hay que repetir la verificación cuando se reinicie Docker; el script está en `/tmp/a11y-011/harness/t5a-verify.mjs`.
+    - Verificación en el navegador, tras reiniciar Docker (`/tmp/a11y-011/T-011.5a/`):
+      - en `/evaluations/[id]`, Enter y Espacio marcan la opción sin avanzar y el foco se queda en ella;
+      - «Siguiente» está deshabilitado hasta responder, y «Siguiente» y «Anterior» llevan el foco a la opción marcada o a la primera;
+      - el grupo tiene el nombre de la pregunta y la barra, «Pregunta 1 de 5».
+      - axe, a 1280 y 320 px: 0 violaciones en las 8 corridas de `/evaluations`, `/evaluations/[id]` (válido e inválido) y `/sessions/[id]` (válido e inválido), sin scroll horizontal.
+      - En `/sessions/new`, si se envía con errores, el foco va al campo inválido (`#booking-title`).
+      - BD sin cambios.
+  - Alcance:
+    - **PG-20 (`/evaluations/[id]`):** al responder no se avanza. Si la pregunta no es la última, un botón «Siguiente» (`common.next`), deshabilitado hasta responderla, pasa a la siguiente; «Enviar» sigue como ahora. Al cambiar de pregunta con «Siguiente» o «Anterior», el foco va a la opción marcada o a la primera de la pregunta nueva.
+    - **PG-21:** las opciones van en un `role="group"` con `aria-labelledby` al h2 de la pregunta, y siguen siendo `button aria-pressed`.
+    - **PG-19:** la barra de progreso de las preguntas usa `aria-labelledby` al texto visible «Pregunta X de N», y la del resultado, `aria-label={t('evaluations.score')}`.
+    - **PG-17:** en `/evaluations/[id]`, el título de la evaluación y el del resultado pasan a `CardTitle as="h1"`. Los estados de error de `/evaluations/[id]` y `/sessions/[id]` (id inválido y error de carga) tienen un h1 visible con el nombre de la sección (`nav.evaluations` / `nav.sessions`), encima del `Alert` y del botón de volver que ya existe. En `/evaluations/[id]` se añade ese enlace de vuelta (`evaluations.back`).
+    - **PG-18:** el `CardTitle` de las tarjetas de `/evaluations` pasa a `as="h2"`.
+    - **SH-10:** en todos los `Button` que tienen `loading={E}`, se quita `E` de su `disabled`. Si `disabled` era solo `E`, desaparece; si combinaba más condiciones, se conservan las demás. No se tocan los `button` nativos.
+  - No cambian textos (no hay claves nuevas), rutas, permisos ni contratos de API.
+  - **Hecho cuando:**
+    - typecheck, lint y Vitest pasan.
+    - No queda ningún `Button` con `loading={E}` y `E` dentro de `disabled` (comprobado con grep y listado de los ficheros tocados).
+    - Con Playwright sobre un build de producción, en `/evaluations/[id]` con `ana` y sin enviar: Enter o Espacio sobre una opción la marca sin avanzar y el foco se queda en ella; «Siguiente» y «Anterior» llevan el foco a la pregunta nueva.
+    - axe, en es a 1280 y 320 px, sin `page-has-heading-one`, `heading-order`, `aria-progressbar-name` ni otras violaciones en `/evaluations`, `/evaluations/[id]` (válido e inválido) y `/sessions/[id]` (válido e inválido). En `/sessions/new`, el foco se mantiene en «Reservar» si el envío falla por validación.
+    - Sin scroll horizontal a 320 px. Datos de desarrollo sin cambios.
+
+- [x] **T-011.6. Auditar dashboards de participantes y progreso.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+  - Resultado (2026-11-17): `audit.md` §T-011.6. `/dashboard` redirige bien según el rol. Cumplen `/challenges` y `/dashboard/progreso/historial`. No hay barreras altas. Prioridad media: SH-11 (errores de validación de los formularios de objetivos y evidencias en inglés) y PG-23 (empresa sin h1 en la configuración y sin compañía). Baja: PG-03 (reconfirmado), PG-22 (`heading-order` en familiar, grupal, progreso y mapa) y PG-24 (enlaces de 20 px de alto). Límite de datos: no hay ninguna cuenta `company_admin` ni `employee`, así que el panel real de empresa y la invitación de empleados no se pudieron probar.
   - Revisar dashboards personal, familiar, grupal, empresa y progreso con sus variantes de estado/rol disponibles.
   - Inspeccionar si métricas, ausencia de datos, restricciones y estados se comprenden sin depender del color; comprobar zoom/reflow y uso por teclado.
   - **Hecho cuando:** rutas/roles del grupo están documentados y los límites por datos o permisos se anotaron como tales, no como defectos visuales.
 
-- [ ] **T-011.7. Auditar espacio de mentor y administración.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+- [x] **T-011.6a. Corregir los hallazgos de T-011.6 (A11Y-SH-11, PG-03 y PG-22–PG-24).** RF-011.3, RF-011.8, RNF-011.4
+  - El usuario aprobó el 2026-11-17 adelantar esta unidad de corrección a T-011.8.
+  - Resultado (2026-11-17):
+    - Código: `lib/validation-message.ts` y `objective.ts` con 13 claves `progress.validation.*` (las 12 previstas más `invalid_id`). Los 3 formularios de objetivo y evidencia (11 puntos) traducen el error. `ObjectiveStatusControl` no muestra errores de campo.
+    - Niveles de encabezado: `ProgressCard` pasa a `h2` por defecto (todos sus consumidores cuelgan del h1, sin prop), con los niveles anidados de `CompetenciesCard` y `ObjectiveStatusControl` ajustados. También familiar y grupal, empresa (configuración y empleados, incluido su estado de error) y el `aside` de personal.
+    - 6 enlaces pasan a 28 px de alto.
+    - Tests: `objective.test.ts` (5, en rojo primero) y `schemas-v4.test.ts` actualizado. Vitest 378/378; typecheck y lint limpios.
+    - Playwright sobre el build de producción (`/tmp/a11y-011/T-011.6a/`): los errores de «Proponer objetivo» y de evidencia salen en español y en inglés según el idioma, y el foco va al campo inválido.
+    - axe: 0 violaciones en 18 combinaciones. Los 4 enlaces miden 28 px. BD sin cambios.
+  - Alcance:
+    - **SH-11:** en `lib/schemas/objective.ts`, cada regla con un mensaje visible (mínimo, máximo, obligatorio, fecha, titular, colectivo, «nada que actualizar», evidencia y estado) lleva una clave i18n `progress.validation.*` en lugar de un texto en inglés, de modo que no pueda llegar a la interfaz ningún mensaje por defecto de Zod. Las claves nuevas se añaden en es/en/pt. Los formularios de `components/progress/*` que usan estos esquemas traducen el error con un helper compartido, `lib/validation-message.ts` (`validationMessage(message, t)`). No cambia qué se valida, solo el texto que se muestra.
+    - **PG-23:** en `/dashboard/empresa`, el título del formulario de configuración pasa a `h1`; en `/dashboard/empresa/employees` sin compañía, un h1 visible con el título que ya usa la página.
+    - **PG-03:** el `aside` secundario de `/dashboard/personal` se nombra con `aria-labelledby` a su título visible o, si no lo tiene, con un `aria-label` de una clave existente.
+    - **PG-22:** sin saltos de nivel en `/dashboard/familiar`, `/dashboard/grupal`, `/dashboard/progreso` y en los dos mapas, el del titular y el del mentor (`CardTitle as="h2"` y los niveles anidados en consecuencia). Si un componente compartido (`ProgressCard`, `LearningMap`) se usa en contextos con niveles distintos, recibe el nivel por prop.
+    - **PG-24:** los enlaces sueltos «Ver historial», «Ver mapa», «Volver al panel» y «Acciones sugeridas…» miden al menos 24 px de alto.
+  - No cambian rutas, permisos, reglas de validación ni contratos de API. Los únicos textos nuevos son las claves `progress.validation.*`.
+  - **Hecho cuando:**
+    - Vitest comprueba que, con entradas inválidas, cada mensaje que producen los esquemas de objetivo es una clave `progress.validation.*` presente en los 3 catálogos.
+    - typecheck, lint y Vitest pasan.
+    - Con Playwright sobre un build de producción, sin guardar: en `/dashboard/progreso`, los errores de «Proponer objetivo» y de evidencia salen en español con la interfaz en español y en inglés con la interfaz en inglés.
+    - axe, en es a 1280 y 320 px, sin `heading-order`, `page-has-heading-one`, `landmark-unique` ni `landmark-complementary-is-top-level` en las rutas de T-011.6, y ningún enlace de la lista con menos de 24 px de alto.
+    - Datos de desarrollo sin cambios.
+
+- [x] **T-011.7. Auditar espacio de mentor y administración.** RF-011.1–RF-011.8, RNF-011.1–RNF-011.4
+  - Resultado (2026-11-17): `audit.md` §T-011.7. Cumplen `/admin/sessions`, `/dashboard/mentor`, feedback, la lista de progreso, el mapa y el historial del mentor. Altas: A11Y-PG-01 (selectores de filtro sin nombre en `/admin/users`, `/admin/mentors` y `/admin/evaluations`) y PG-04 (la tabla de usuarios a 320 px no se puede desplazar con el teclado). Media: SH-12 (errores de Zod en inglés en los formularios del espacio del mentor) y PG-27 (contraste en el progreso del mentee y en admin). Baja: SH-07 (Inicio y Fin en las pestañas), PG-25 (dos h1 en el espacio del mentor), PG-26 (`heading-order`) y PG-28 (enlaces de 20 px). Límites por datos: paginación, bloqueo por plan y paneles de feedback, observaciones y mapas con datos.
   - Revisar páginas de mentor, perfil de mentee, progreso individual, retos, feedback y paneles administrativos de usuarios, mentores, evaluaciones y sesiones.
   - Inspeccionar formularios, diálogo/subida de archivos, acciones, mensajes asíncronos y navegación entre secciones.
   - **Hecho cuando:** cada ruta/rol de este grupo tiene resultado reproducible o una limitación de acceso/datos documentada.
 
-- [ ] **T-011.8. Consolidar hallazgos y definir las unidades de corrección.** RF-011.8, RNF-011.1–RNF-011.3
+- [x] **T-011.8. Consolidar hallazgos y definir las unidades de corrección.** RF-011.8, RNF-011.1–RNF-011.3
+  - Resultado (2026-11-17): `audit.md` §T-011.8. Hay 39 IDs clasificados (PG-07 no se usó): 29 corregidos y verificados, 8 abiertos, 1 observación de producto y 1 sin hallazgo. Las dos barreras altas que siguen abiertas, PG-01 y PG-04, están priorizadas. Se proponen la unidad T-011.7a, dentro de esta spec, para todo lo abierto, y la spec hija 019, para verificar los estados bloqueados por datos, hacer la prueba con lector de pantalla y decidir la regresión automatizada. Ambas quedan **pendientes de aprobación**.
   - Completar `specs/011-frontend-accessibility/audit.md` con criterio WCAG, ruta/estado, evidencia, severidad/prioridad, componente compartido afectado y método de regresión.
   - Deduplicar causas comunes, identificar barreras de prioridad alta y proponer specs hijas de corrección con alcance independiente y no más de 10 tareas cada una.
   - **Hecho cuando:** no quedan hallazgos sin clasificar; las barreras altas están priorizadas y las propuestas de specs hijas tienen requisitos/casos verificables para revisión del usuario.
