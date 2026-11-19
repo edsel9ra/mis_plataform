@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/schemas/auth';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +55,7 @@ function ResetPasswordForm() {
         password_confirmation: data.password_confirmation,
       });
       setDone(true);
+      requestFocusAfterNavigation();
       router.push(localePath('/login', locale));
     } catch (err) {
       setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));

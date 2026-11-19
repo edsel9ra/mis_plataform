@@ -11,6 +11,7 @@ import { clientTypeOptions, registerSchema, type RegisterFormData } from '@/lib/
 import { useAuth } from '@/components/auth/AuthProvider';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -130,6 +131,7 @@ export default function RegisterFormPage() {
     setServerError('');
     try {
       await authRegister(data);
+      requestFocusAfterNavigation();
       router.push(localePath('/onboarding/test-personalidad', locale));
     } catch (err) {
       setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));

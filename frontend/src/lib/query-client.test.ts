@@ -3,7 +3,7 @@ import { ApiError } from './api';
 import { shouldRetryQuery } from './query-client';
 
 describe('shouldRetryQuery', () => {
-  it.each([401, 403, 422])('does not retry HTTP %s errors', (status) => {
+  it.each([401, 403, 422, 429])('does not retry HTTP %s errors', (status) => {
     expect(shouldRetryQuery(0, new ApiError('request failed', status))).toBe(false);
   });
 

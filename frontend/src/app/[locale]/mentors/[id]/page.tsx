@@ -1,6 +1,6 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
@@ -66,6 +66,15 @@ export default function MentorDetailPage() {
     ? createRelationship.data
     : null;
   const relationship = selectedContext?.relationship ?? createdForSelectedContext;
+  const [requestSent, setRequestSent] = useState(false);
+
+  // After a successful request, focus the "pending" alert that replaces the
+  // form so the change of state is announced and focus is not lost to <body>.
+  useEffect(() => {
+    if (requestSent && relationship?.status === 'pending') {
+      document.getElementById('mentorship-pending')?.focus();
+    }
+  }, [requestSent, relationship?.status]);
 
   const frame = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : <main>{content}</main>);
 
@@ -199,7 +208,9 @@ export default function MentorDetailPage() {
                     </div>
                   </Alert>
                 ) : relationship?.status === 'pending' ? (
-                  <Alert variant="info">{t('mentors.relationship_pending')}</Alert>
+                  <Alert variant="info" id="mentorship-pending" tabIndex={-1} className="outline-none">
+                    {t('mentors.relationship_pending')}
+                  </Alert>
                 ) : (
                   <>
                     <Textarea
@@ -221,7 +232,7 @@ export default function MentorDetailPage() {
                         source_id: selectedContext.source_id,
                         mentor_id: mentor.id,
                         objectives: objectives.trim() || undefined,
-                      })}
+                      }, { onSuccess: () => setRequestSent(true) })}
                     >
                       {t('mentors.request_cta')}
                     </Button>

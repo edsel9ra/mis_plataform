@@ -774,7 +774,8 @@
     "not_applicable": "Not applicable",
     "minutes_short": "min",
     "seconds_short": "s",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "rate_limited": "Too many attempts. Wait a minute and try again."
   },
   "landing": {
     "metric_ocean": "OCEAN profile",
@@ -1150,6 +1151,11 @@
       "evidence_required": "Add a note or attach a file.",
       "status_invalid": "Select a valid status.",
       "invalid_id": "Invalid identifier."
+    },
+    "feedback": {
+      "objective_created": "Objective created",
+      "evidence_added": "Evidence added",
+      "status_updated": "Status updated: {status}"
     }
   },
   "calendar": {

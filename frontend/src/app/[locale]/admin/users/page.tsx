@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageSpinner } from '@/components/ui/spinner';
+import { PaginationControls } from '@/components/ui/pagination';
 import { Alert } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { clientTypeOptions, sexOptions } from '@/lib/schemas/auth';
@@ -134,6 +135,7 @@ export default function AdminUsers() {
 
       return normalizePaginatedResponse(response, { page, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
@@ -279,16 +281,18 @@ export default function AdminUsers() {
           </table>
         </div>
 
-        {data && data.meta.last_page > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              {t('common.previous')}
-            </Button>
-            <span className="text-sm text-gray-600">{t('common.page')} {data.meta.current_page} {t('common.of')} {data.meta.last_page}</span>
-            <Button variant="outline" size="sm" disabled={page >= data.meta.last_page || isFetching} onClick={() => setPage(p => p + 1)}>
-              {t('common.next')}
-            </Button>
-          </div>
+        {data && (
+          <PaginationControls
+            meta={data.meta}
+            page={page}
+            onPageChange={setPage}
+            isLoading={isFetching}
+            ariaLabel={t('common.pagination')}
+            previousLabel={t('common.previous')}
+            nextLabel={t('common.next')}
+            pageLabel={t('common.page')}
+            ofLabel={t('common.of')}
+          />
         )}
       </Card>
 

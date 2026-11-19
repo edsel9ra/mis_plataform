@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { ApiError } from './api';
-import { apiErrorMessage, isNotFoundError } from './errors';
+import { apiErrorMessage, classifyApiError, isNotFoundError } from './errors';
 
 const translate = (key: string) => key;
 
@@ -18,6 +18,11 @@ describe('apiErrorMessage', () => {
 
   it('uses a localized generic message for unknown errors', () => {
     expect(apiErrorMessage(new Error('database connection details'), translate)).toBe('common.error');
+  });
+
+  it('maps HTTP 429 to a localized rate-limit message', () => {
+    expect(classifyApiError(new ApiError('too many requests', 429))).toBe('rate_limited');
+    expect(apiErrorMessage(new ApiError('too many requests', 429), translate)).toBe('common.rate_limited');
   });
 });
 

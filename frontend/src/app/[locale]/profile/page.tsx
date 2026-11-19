@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { localePath } from '@/i18n/paths';
 import { toSkillInputs, type MentorSkillInput } from '@/lib/mentor-skills';
 import { localeOptions } from '@/lib/schemas/auth';
@@ -43,6 +44,7 @@ export default function ProfilePage() {
     try {
       await api.put('/profile/locale', { locale: nextLocale });
       await refreshUser();
+      requestFocusAfterNavigation();
       router.replace(localePath('/profile', nextLocale));
     } catch (error) {
       setLocaleError(error);

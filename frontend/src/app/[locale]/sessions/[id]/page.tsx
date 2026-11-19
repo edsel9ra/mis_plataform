@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useParams, useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/AppShell';
@@ -33,16 +33,21 @@ export default function SessionDetailPage() {
   const invalidId = !UUID_RE.test(id);
   const { data: session, isLoading, error, refetch } = useSession(invalidId ? '' : id);
   const [statusAnnouncement, setStatusAnnouncement] = useState<string | null>(null);
+  const focusStatusRef = useRef(false);
 
   // Runs after the commit in which the dialog unmounts; the dialog's passive
-  // cleanup (focus restoration) always executes before this effect.
+  // cleanup (focus restoration) always executes before this effect. Only the
+  // session actions (complete/cancel/…) move focus to #session-status; the
+  // attendance panel keeps focus inside its own rows.
   useEffect(() => {
-    if (statusAnnouncement) {
+    if (statusAnnouncement && focusStatusRef.current) {
+      focusStatusRef.current = false;
       document.getElementById('session-status')?.focus();
     }
   }, [statusAnnouncement]);
 
   const announceSessionChange = (message: string) => {
+    focusStatusRef.current = true;
     setStatusAnnouncement(message);
   };
 

@@ -213,13 +213,21 @@ class AccessibilityAuditSeeder extends Seeder
 
         foreach (array_keys($sessions) as $key) {
             foreach ([$ana, $mentor] as $attendee) {
-                SessionAttendee::create([
+                $sessionAttendee = SessionAttendee::create([
                     'session_id' => $sessions[$key]->id,
                     'user_id' => $attendee->id,
                     'attended' => $key === 'completed',
                     'attendance_status' => $key === 'completed' ? 'attended' : 'not_confirmed',
                     'confirmed_at' => $key === 'completed' ? $now->subDays(7) : null,
                 ]);
+                // Attendees register at booking time (before the session ends);
+                // otherwise the attendance rules flag them as not registered
+                // on past sessions.
+                $registeredAt = $sessions[$key]->scheduled_at->subDays(2);
+                $sessionAttendee->forceFill([
+                    'created_at' => $registeredAt,
+                    'updated_at' => $registeredAt,
+                ])->save();
             }
         }
         $created['sessions'] = Session::query()->count();
@@ -354,7 +362,7 @@ class AccessibilityAuditSeeder extends Seeder
             ->forOceanFactor('O')
             ->create(['user_id' => $ana->id]);
 
-        $catalog = Assessment::query()->where('is_active', true)->orderBy('slug')->limit(2)->get();
+        $catalog = Assessment::query()->where('is_active', true)->orderBy('slug')->limit(4)->get();
         if ($catalog->isNotEmpty()) {
             AssessmentResult::create([
                 'user_id' => $ana->id,
@@ -365,7 +373,9 @@ class AccessibilityAuditSeeder extends Seeder
                 'completed_at' => $now->subDays(10),
             ]);
         }
-        // Second catalog assessment stays unanswered: ana's "available" state.
+        // The rest stay unanswered: one backs the keyboard/focus tests
+        // (evaluationOpenId) and the others are submitted by the PG-37 result
+        // test (evaluationSubmitId), which needs a fresh one per suite run.
 
         $created['competency_assessment_links'] = CompetencyAssessmentLink::query()->count();
         $created['assessment_results'] = AssessmentResult::query()->count();

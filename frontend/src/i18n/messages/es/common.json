@@ -774,7 +774,8 @@
     "not_applicable": "No aplica",
     "minutes_short": "min",
     "seconds_short": "s",
-    "dismiss": "Descartar"
+    "dismiss": "Descartar",
+    "rate_limited": "Demasiados intentos. Espera un minuto y vuelve a intentarlo."
   },
   "landing": {
     "metric_ocean": "Perfil OCEAN",
@@ -1150,6 +1151,11 @@
       "evidence_required": "Añade una nota o adjunta un archivo.",
       "status_invalid": "Selecciona un estado válido.",
       "invalid_id": "Identificador no válido."
+    },
+    "feedback": {
+      "objective_created": "Objetivo creado",
+      "evidence_added": "Evidencia añadida",
+      "status_updated": "Estado actualizado: {status}"
     }
   },
   "calendar": {

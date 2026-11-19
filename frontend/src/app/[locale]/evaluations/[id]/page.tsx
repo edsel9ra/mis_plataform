@@ -98,6 +98,15 @@ export default function EvaluationDetailPage() {
     (selected ?? options?.[0])?.focus();
   }, [current]);
 
+  const result = isRetaking ? null : submittedResult;
+
+  // When the result view appears (after submit or on a completed evaluation),
+  // move focus to its heading instead of leaving it lost on <body>.
+  useEffect(() => {
+    if (!result) return;
+    document.getElementById('evaluation-result-heading')?.focus();
+  }, [result]);
+
   if (isLoading) {
     return (
       <AppShell>
@@ -125,7 +134,6 @@ export default function EvaluationDetailPage() {
   const question = questions[current];
   const completed = Object.keys(answers).length;
   const progress = questions.length > 0 ? (completed / questions.length) * 100 : 0;
-  const result = isRetaking ? null : submittedResult;
   const currentQuestionId = question ? String(question.id ?? current + 1) : '';
   const currentAnswered = currentQuestionId !== '' && answers[currentQuestionId] !== undefined;
 
@@ -157,7 +165,7 @@ export default function EvaluationDetailPage() {
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle as="h1" className="text-2xl">{t('evaluations.result_title')}</CardTitle>
+                  <CardTitle as="h1" id="evaluation-result-heading" tabIndex={-1} className="text-2xl outline-none">{t('evaluations.result_title')}</CardTitle>
                   <p className="mt-1 text-sm text-slate-600">{t('evaluations.result_desc')}</p>
                 </div>
                 <Badge variant={result.passed ? 'success' : 'warning'}>
