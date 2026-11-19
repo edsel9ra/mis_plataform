@@ -157,7 +157,7 @@ export default function AdminMentors() {
            <p className="mt-1 text-sm text-gray-500">{t('admin.mentors_description')}</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{data?.meta.total ?? 0} {t('common.total')}</span>
+          <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
@@ -189,7 +189,7 @@ export default function AdminMentors() {
                 <div>
                   <CardTitle className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
                   <p className="mt-1 text-sm text-gray-500">{mentor.email}</p>
-                  <p className="text-xs text-gray-400">{t(`client_types.${mentor.client_type}`)}</p>
+                  <p className="text-xs text-gray-600">{t(`client_types.${mentor.client_type}`)}</p>
                 </div>
                  <Badge variant="success">{t('admin.active_mentees_count', { count: mentor.active_mentees_count })}</Badge>
               </div>
@@ -243,7 +243,7 @@ export default function AdminMentors() {
       </div>
 
       {(!data?.data || data.data.length === 0) && (
-        <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
+        <p className="mt-8 text-center text-gray-600">{t('common.no_results')}</p>
       )}
 
       {data && (

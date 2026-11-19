@@ -71,7 +71,7 @@ export default function CertificatesPage() {
                 <CardHeader>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <CardTitle>{certificate.title}</CardTitle>
+                      <CardTitle as="h2">{certificate.title}</CardTitle>
                       <p className="mt-1 text-sm text-gray-500">{formatDate(certificate.issued_at, locale)}</p>
                     </div>
                     <Badge variant={certificateStatus(certificate) === 'revoked' ? 'danger' : certificateStatus(certificate) === 'expired' ? 'warning' : 'success'}>

@@ -601,7 +601,7 @@ export default function AdminEvaluations() {
                       </div>
                       <Badge variant={result.passed ? 'success' : 'warning'}>{Math.round(result.score)}%</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-400">
+                    <p className="mt-1 text-xs text-gray-600">
                       {new Date(result.completed_at).toLocaleDateString(locale)}
                     </p>
                   </button>

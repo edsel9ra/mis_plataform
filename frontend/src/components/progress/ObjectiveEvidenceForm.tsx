@@ -7,6 +7,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { useAddObjectiveEvidence } from '@/hooks/use-progress';
+import { validationMessage } from '@/lib/validation-message';
 import { objectiveEvidenceSchema, type ObjectiveEvidenceFormValues } from '@/lib/schemas/objective';
 
 /**
@@ -44,7 +45,7 @@ export function ObjectiveEvidenceForm({
         label={t('progress.evidence.note_label')}
         rows={3}
         placeholder={t('progress.evidence.note_placeholder')}
-        error={form.formState.errors.note?.message}
+        error={validationMessage(form.formState.errors.note?.message, t)}
         {...form.register('note')}
       />
 

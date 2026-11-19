@@ -115,7 +115,7 @@ export default function AdminDashboard() {
               </div>
             ))}
             {(!reports?.users_by_type || reports.users_by_type.length === 0) && (
-              <p className="text-sm text-gray-400">{t('common.no_results')}</p>
+              <p className="text-sm text-gray-600">{t('common.no_results')}</p>
             )}
           </div>
         </Card>

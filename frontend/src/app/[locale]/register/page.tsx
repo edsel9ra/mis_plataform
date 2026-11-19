@@ -57,7 +57,7 @@ export default function RegisterPage() {
   if (requestedType === undefined || hasValidRequestedType) return <PageSpinner />;
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <Link href={localePath('/', locale)} className="inline-flex items-center gap-3 text-gray-900">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary-600 text-white">
@@ -136,7 +136,7 @@ export default function RegisterPage() {
           </Link>
         </p>
       </div>
-    </div>
+    </main>
   );
 }
 

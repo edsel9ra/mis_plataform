@@ -213,7 +213,7 @@ export default function AdminUsers() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('admin.users')}</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{data?.meta.total ?? 0} {t('common.total')}</span>
+          <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>

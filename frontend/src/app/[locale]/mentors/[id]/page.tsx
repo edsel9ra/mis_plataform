@@ -67,20 +67,20 @@ export default function MentorDetailPage() {
     : null;
   const relationship = selectedContext?.relationship ?? createdForSelectedContext;
 
-  const withShell = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : content);
+  const frame = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : <main>{content}</main>);
 
-  if (isLoading) return withShell(<PageSpinner />);
+  if (isLoading) return frame(<PageSpinner />);
 
   if (error || !mentor) {
-    return withShell(
+    return frame(
       <Alert variant="error" className="mx-auto max-w-3xl">
         {error ? apiErrorMessage(error, (key) => t(key)) || t('common.load_error') : t('common.no_results')}
       </Alert>,
     );
   }
 
-  return withShell(
-    <main className="mx-auto max-w-3xl px-4 py-10">
+  return frame(
+    <div className="mx-auto max-w-3xl px-4 py-10">
       <Card className="border-0 shadow-xl shadow-gray-200">
         <CardHeader>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -93,7 +93,7 @@ export default function MentorDetailPage() {
                 className="rounded-2xl bg-primary-100 text-xl font-bold text-primary-700"
               />
               <div>
-                <CardTitle>{mentor.full_name}</CardTitle>
+                <CardTitle as="h1">{mentor.full_name}</CardTitle>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="success">{t(`client_types.${mentor.client_type}`)}</Badge>
                   {'personality_assessment' in mentor && (
@@ -115,15 +115,15 @@ export default function MentorDetailPage() {
         </CardHeader>
         {mentor.bio && <p className="text-sm leading-6 text-gray-600">{mentor.bio}</p>}
         <div className="mt-6 rounded-2xl border bg-gray-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
             <Brain className="h-4 w-4 text-primary-600" aria-hidden="true" />
             {t('mentors.skills')}
-          </div>
+          </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {(mentor.skills ?? []).map((skill, index) => (
               <span key={skill.id ?? index} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
                 {skill.skill?.name}
-                <span className="ml-1 text-gray-400">· {t(`learning_levels.${skill.level}`)}</span>
+                <span className="ml-1 text-gray-600">· {t(`learning_levels.${skill.level}`)}</span>
               </span>
             ))}
             {(mentor.skills ?? []).length === 0 && (
@@ -216,7 +216,7 @@ export default function MentorDetailPage() {
           </section>
         )}
       </Card>
-    </main>
+    </div>
   );
 }
 

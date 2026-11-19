@@ -54,6 +54,7 @@ export default function SessionDetailPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {t('common.back')}
           </Button>
+          <h1 className="text-xl font-semibold text-gray-950">{t('nav.sessions')}</h1>
           <Alert variant="error">{t('common.not_applicable')}</Alert>
         </div>
       </AppShell>
@@ -76,6 +77,7 @@ export default function SessionDetailPage() {
             <ArrowLeft className="h-4 w-4" aria-hidden="true" />
             {t('common.back')}
           </Button>
+          <h1 className="text-xl font-semibold text-gray-950">{t('nav.sessions')}</h1>
           <Alert variant="error">
             {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
           </Alert>

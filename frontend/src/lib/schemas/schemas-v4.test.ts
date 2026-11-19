@@ -30,7 +30,7 @@ describe('objectiveSchema (zod 4)', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path[0] === 'owner_type');
-      expect(issue?.message).toBe('Select the responsible collective.');
+      expect(issue?.message).toBe('progress.validation.collective_required');
     }
   });
 
@@ -40,7 +40,7 @@ describe('objectiveSchema (zod 4)', () => {
     expect(result.success).toBe(false);
     if (!result.success) {
       const issue = result.error.issues.find((i) => i.path[0] === 'owner_id');
-      expect(issue?.message).toBe('Select the owner.');
+      expect(issue?.message).toBe('progress.validation.owner_required');
     }
   });
 });

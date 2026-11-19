@@ -7,6 +7,7 @@ import { useAuth } from '@/components/auth/AuthProvider';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Alert } from '@/components/ui/alert';
 import { localePath } from '@/i18n/paths';
+import Link from 'next/link';
 
 const platformAdminRoles = new Set(['super_admin', 'admin']);
 const oauthErrorMessages: Record<string, string> = {
@@ -60,9 +61,17 @@ export default function OAuthCallbackPage() {
 
   if (error) {
     return (
-      <div className="flex min-h-screen items-center justify-center px-4">
-        <Alert variant="error">{error}</Alert>
-      </div>
+      <main className="flex min-h-screen items-center justify-center px-4">
+        <div className="w-full max-w-md">
+          <h1 className="mb-4 text-center text-xl font-bold">{t('common.error')}</h1>
+          <Alert variant="error">{error}</Alert>
+          <p className="mt-4 text-center text-sm">
+            <Link href={localePath('/login', locale)} className="font-semibold text-primary-600 hover:text-primary-500">
+              {t('auth.back_to_login')}
+            </Link>
+          </p>
+        </div>
+      </main>
     );
   }
 

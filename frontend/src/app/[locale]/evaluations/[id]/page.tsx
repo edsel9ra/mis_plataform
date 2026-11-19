@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -83,6 +83,21 @@ export default function EvaluationDetailPage() {
     setSubmittedResult(evaluation.user_result ?? null);
   }, [evaluation, isRetaking]);
 
+  const questionHeadingId = useId();
+  const questionProgressId = useId();
+  const optionsRef = useRef<HTMLDivElement>(null);
+  const firstRender = useRef(true);
+
+  useEffect(() => {
+    if (firstRender.current) {
+      firstRender.current = false;
+      return;
+    }
+    const options = optionsRef.current?.querySelectorAll<HTMLButtonElement>('button[aria-pressed]');
+    const selected = [...(options ?? [])].find((option) => option.getAttribute('aria-pressed') === 'true');
+    (selected ?? options?.[0])?.focus();
+  }, [current]);
+
   if (isLoading) {
     return (
       <AppShell>
@@ -94,7 +109,14 @@ export default function EvaluationDetailPage() {
   if (error || !evaluation) {
     return (
       <AppShell>
-        <Alert variant="error">{t('common.error')}</Alert>
+        <div className="mx-auto max-w-3xl space-y-4">
+          <h1 className="text-2xl font-bold text-gray-950">{t('nav.evaluations')}</h1>
+          <Alert variant="error">{t('common.error')}</Alert>
+          <Link href={localePath('/evaluations', locale)} className="inline-flex items-center gap-2 text-sm font-semibold text-primary-600 hover:text-primary-700">
+            <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+            {t('evaluations.back')}
+          </Link>
+        </div>
       </AppShell>
     );
   }
@@ -104,16 +126,14 @@ export default function EvaluationDetailPage() {
   const completed = Object.keys(answers).length;
   const progress = questions.length > 0 ? (completed / questions.length) * 100 : 0;
   const result = isRetaking ? null : submittedResult;
+  const currentQuestionId = question ? String(question.id ?? current + 1) : '';
+  const currentAnswered = currentQuestionId !== '' && answers[currentQuestionId] !== undefined;
 
   function answerQuestion(optionIndex: number) {
     if (!question) return;
 
     const questionId = String(question.id ?? current + 1);
     setAnswers((prev) => ({ ...prev, [questionId]: optionIndex }));
-
-    if (current < questions.length - 1) {
-      setCurrent((value) => value + 1);
-    }
   }
 
   function startRetake() {
@@ -137,7 +157,7 @@ export default function EvaluationDetailPage() {
             <CardHeader>
               <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                 <div>
-                  <CardTitle className="text-2xl">{t('evaluations.result_title')}</CardTitle>
+                  <CardTitle as="h1" className="text-2xl">{t('evaluations.result_title')}</CardTitle>
                   <p className="mt-1 text-sm text-slate-500">{t('evaluations.result_desc')}</p>
                 </div>
                 <Badge variant={result.passed ? 'success' : 'warning'}>
@@ -149,7 +169,7 @@ export default function EvaluationDetailPage() {
             <div className="rounded-3xl bg-gradient-to-br from-primary-50 to-slate-50 p-6 text-center">
               <p className="text-sm font-medium text-slate-500">{localizedText(evaluation.title, locale)}</p>
               <p className="mt-4 text-6xl font-black tracking-tight text-slate-950">{Math.round(result.score)}%</p>
-              <div className="mx-auto mt-5 h-3 max-w-md rounded-full bg-white shadow-inner" role="progressbar" aria-valuenow={Math.round(Math.min(100, result.score))} aria-valuemin={0} aria-valuemax={100}>
+              <div className="mx-auto mt-5 h-3 max-w-md rounded-full bg-white shadow-inner" role="progressbar" aria-label={t('evaluations.score')} aria-valuenow={Math.round(Math.min(100, result.score))} aria-valuemin={0} aria-valuemax={100}>
                 <div className="h-3 rounded-full bg-primary-500" style={{ width: `${Math.min(100, result.score)}%` }} />
               </div>
               <p className="mt-3 text-sm text-slate-500">
@@ -190,7 +210,7 @@ export default function EvaluationDetailPage() {
           <CardHeader>
             <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <CardTitle className="text-2xl">{localizedText(evaluation.title, locale)}</CardTitle>
+                <CardTitle as="h1" className="text-2xl">{localizedText(evaluation.title, locale)}</CardTitle>
                 <p className="mt-2 text-sm leading-6 text-slate-500">{localizedText(evaluation.description, locale)}</p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -208,20 +228,20 @@ export default function EvaluationDetailPage() {
 
           <div className="mb-8">
             <div className="flex items-center justify-between text-sm text-slate-600">
-              <span>{t('personality.question')} {current + 1} {t('personality.of')} {questions.length}</span>
+              <span id={questionProgressId}>{t('personality.question')} {current + 1} {t('personality.of')} {questions.length}</span>
               <span>{Math.round(progress)}%</span>
             </div>
-            <div className="mt-2 h-2 rounded-full bg-slate-100" role="progressbar" aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
+            <div className="mt-2 h-2 rounded-full bg-slate-100" role="progressbar" aria-labelledby={questionProgressId} aria-valuenow={Math.round(progress)} aria-valuemin={0} aria-valuemax={100}>
               <div className="h-2 rounded-full bg-primary-600 transition-all" style={{ width: `${progress}%` }} />
             </div>
           </div>
 
           {question ? (
             <div className="rounded-2xl border border-slate-100 bg-slate-50 p-5 sm:p-6">
-              <h2 className="text-xl font-semibold text-slate-950">{question.text}</h2>
+              <h2 id={questionHeadingId} className="text-xl font-semibold text-slate-950">{question.text}</h2>
               {question.dimension && <p className="mt-2 text-sm text-slate-500">{question.dimension}</p>}
 
-              <div className="mt-6 space-y-3">
+              <div ref={optionsRef} role="group" aria-labelledby={questionHeadingId} className="mt-6 space-y-3">
                 {question.options.map((option, index) => {
                   const questionId = String(question.id ?? current + 1);
                   const selected = answers[questionId] === index;
@@ -250,9 +270,16 @@ export default function EvaluationDetailPage() {
                   {t('common.previous')}
                 </Button>
                 <span className="text-sm text-slate-500">{completed} {t('evaluations.answered')}</span>
-                <Button type="button" disabled={completed < questions.length} loading={submitMutation.isPending} onClick={() => submitMutation.mutate()}>
-                  {t('evaluations.submit')}
-                </Button>
+                <div className="flex gap-3">
+                  {current < questions.length - 1 && (
+                    <Button type="button" variant="outline" disabled={!currentAnswered} onClick={() => setCurrent((value) => value + 1)}>
+                      {t('common.next')}
+                    </Button>
+                  )}
+                  <Button type="button" disabled={completed < questions.length} loading={submitMutation.isPending} onClick={() => submitMutation.mutate()}>
+                    {t('evaluations.submit')}
+                  </Button>
+                </div>
               </div>
 
               {Boolean(submitMutation.isError || submitError) && (

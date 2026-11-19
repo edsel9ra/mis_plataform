@@ -217,7 +217,7 @@ function MessagesContent() {
                 )}
               >
                 <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
-                <p className={cn('mt-1 text-[10px]', own ? 'text-primary-100' : 'text-gray-400')}>
+                <p className={cn('mt-1 text-[10px]', own ? 'text-primary-100' : 'text-gray-600')}>
                   {formatTime(message.created_at, locale)}
                   {own && message.read_at !== null ? ' · ✓' : ''}
                 </p>

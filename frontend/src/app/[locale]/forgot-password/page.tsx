@@ -42,13 +42,13 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md p-6 sm:p-8">
         <CardHeader className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-100">
             <Brain className="h-8 w-8" aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl">{t('auth.forgot_password_title')}</CardTitle>
+          <CardTitle as="h1" className="text-2xl">{t('auth.forgot_password_title')}</CardTitle>
           <p className="mt-2 text-sm text-gray-500">{t('auth.forgot_password_subtitle')}</p>
         </CardHeader>
 
@@ -85,6 +85,6 @@ export default function ForgotPasswordPage() {
           </form>
         )}
       </Card>
-    </div>
+    </main>
   );
 }

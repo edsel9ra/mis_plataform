@@ -144,7 +144,8 @@
     "ocean_chart_label": "Gráfico do perfil OCEAN",
     "improvement_title": "Áreas para melhorar",
     "improvement_description": "Estes componentes têm uma pontuação menor que 51. Você pode se concentrar em fortalecê-los:",
-    "improvement_score": "Pontuação: {score}"
+    "improvement_score": "Pontuação: {score}",
+    "progress_label": "Progresso do teste"
   },
   "dashboard": {
     "welcome": "Bem-vindo",
@@ -215,7 +216,8 @@
     "relationship_pending": "Sua solicitação de mentoria está aguardando análise.",
     "relationship_active": "Esta mentoria está ativa.",
     "view_sessions": "Ver sessões",
-    "request_error": "Não foi possível enviar a solicitação. Tente novamente."
+    "request_error": "Não foi possível enviar a solicitação. Tente novamente.",
+    "results_count": "{count, plural, one {# mentor encontrado} other {# mentores encontrados}}"
   },
   "company": {
     "setup_title": "Configure sua empresa",
@@ -1118,6 +1120,21 @@
         "competency_key": "competência",
         "other": "outro dado"
       }
+    },
+    "validation": {
+      "title_min": "O título deve ter pelo menos 3 caracteres.",
+      "title_max": "O título não pode exceder 200 caracteres.",
+      "text_required": "Este campo é obrigatório.",
+      "text_max": "O texto é muito longo.",
+      "due_required": "Indique a data limite.",
+      "date_invalid": "Indique uma data válida.",
+      "owner_required": "Selecione o titular.",
+      "collective_required": "Selecione o coletivo responsável.",
+      "individual_no_collective": "Um objetivo individual não tem tipo de coletivo.",
+      "nothing_to_update": "Não há alterações para salvar.",
+      "evidence_required": "Adicione uma nota ou anexe um arquivo.",
+      "status_invalid": "Selecione um status válido.",
+      "invalid_id": "Identificador inválido."
     }
   },
   "calendar": {

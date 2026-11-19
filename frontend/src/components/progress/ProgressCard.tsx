@@ -23,7 +23,7 @@ export function ProgressCard({
     <Card className={className}>
       <div className="mb-4 flex items-start justify-between gap-3">
         <div className="flex flex-wrap items-center gap-2">
-          <CardTitle className="text-base">{title}</CardTitle>
+          <CardTitle as="h2" className="text-base">{title}</CardTitle>
           {period ? <PeriodBadge period={period} /> : null}
         </div>
         {action}

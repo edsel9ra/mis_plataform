@@ -333,7 +333,7 @@ export default function PersonalDashboard() {
           </section>
         </div>
 
-        <aside className="space-y-6">
+        <aside className="space-y-6" aria-label={t('dashboard.suggested_next_steps')}>
           <Card className="border-0 shadow-sm">
             <CardHeader>
               <CardTitle>{t('dashboard.suggested_next_steps')}</CardTitle>
@@ -368,7 +368,7 @@ export default function PersonalDashboard() {
                     <span className="text-lg font-bold text-gray-950">{item.value}</span>
                   </div>
                 ))}
-                <Link href={localePath('/recommendations', locale)} className="inline-flex text-sm font-semibold text-primary-600 hover:text-primary-700">
+                <Link href={localePath('/recommendations', locale)} className="inline-flex items-center py-1 text-sm font-semibold text-primary-600 hover:text-primary-700">
                   {t('dashboard.view_recommendations')}
                 </Link>
               </div>

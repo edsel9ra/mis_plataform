@@ -218,7 +218,7 @@ export default function EvaluationsPage() {
                   <CardHeader>
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <CardTitle>{localizedText(evaluation.title, locale)}</CardTitle>
+                        <CardTitle as="h2">{localizedText(evaluation.title, locale)}</CardTitle>
                         {evaluation.category && <p className="mt-1 text-sm text-slate-500">{evaluationCategoryLabel(evaluation.category, t)}</p>}
                       </div>
                       {result ? (

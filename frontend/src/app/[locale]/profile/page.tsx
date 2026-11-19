@@ -78,7 +78,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-xl font-semibold text-gray-950">{user?.name} {user?.last_name}</h2>
               <p className="text-gray-500">{user?.email}</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-600">
                 {user?.client_type ? clientTypeLabel(user.client_type, t) : t('common.not_applicable')}
                 {' · '}
                 {user?.role ? roleLabel(user.role, t) : t('common.not_applicable')}

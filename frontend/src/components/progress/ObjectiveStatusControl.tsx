@@ -45,9 +45,9 @@ export function ObjectiveStatusControl({ objective }: { objective: Objective }) 
       {mutation.error ? <Alert variant="error">{t('progress.status_control.error')}</Alert> : null}
 
       <div>
-        <h5 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-500">
           {t('progress.status_control.history_title')}
-        </h5>
+        </h3>
         {objective.history && objective.history.length > 0 ? (
           <ul className="mt-2 space-y-1.5">
             {objective.history.map((entry) => (

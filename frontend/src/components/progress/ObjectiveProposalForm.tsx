@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { datetimeLocalToApiIso } from '@/lib/datetime';
 import { useProposeObjective } from '@/hooks/use-progress';
+import { validationMessage } from '@/lib/validation-message';
 import { objectiveProposalSchema, type ObjectiveProposalFormValues } from '@/lib/schemas/objective';
 
 /**
@@ -50,23 +51,23 @@ export function ObjectiveProposalForm({
 
   return (
     <form onSubmit={(event) => void form.handleSubmit(submit)(event)} className="space-y-4">
-      <Input label={t('progress.form.title_label')} error={errors.title?.message} {...form.register('title')} />
+      <Input label={t('progress.form.title_label')} error={validationMessage(errors.title?.message, t)} {...form.register('title')} />
       <Textarea
         label={t('progress.form.success_criteria_label')}
         rows={3}
-        error={errors.success_criteria?.message}
+        error={validationMessage(errors.success_criteria?.message, t)}
         {...form.register('success_criteria')}
       />
       <Textarea
         label={t('progress.form.description_label')}
         rows={3}
-        error={errors.description?.message}
+        error={validationMessage(errors.description?.message, t)}
         {...form.register('description')}
       />
       <Input
         label={t('progress.form.due_at_label')}
         type="datetime-local"
-        error={errors.due_at?.message}
+        error={validationMessage(errors.due_at?.message, t)}
         {...form.register('due_at')}
       />
 
