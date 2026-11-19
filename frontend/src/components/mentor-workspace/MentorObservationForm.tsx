@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useTranslations } from 'next-intl';
+import { validationMessage } from '@/lib/validation-message';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
@@ -47,12 +48,12 @@ export function MentorObservationForm({
         <p className="mt-1 text-sm text-slate-500">{t('mentor_workspace.add_observation_description')}</p>
       </div>
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <Input label={t('mentor_workspace.attention_focus')} type="number" min="0" max="100" {...form.register('focus')} error={form.formState.errors.focus?.message} />
-        <Input label={t('mentor_workspace.emotional_regulation')} type="number" min="0" max="100" {...form.register('regulation')} error={form.formState.errors.regulation?.message} />
-        <Input label={t('mentor_workspace.stress_load')} type="number" min="0" max="100" {...form.register('stress')} error={form.formState.errors.stress?.message} />
-        <Input label={t('mentor_workspace.energy_level')} type="number" min="0" max="100" {...form.register('energy')} error={form.formState.errors.energy?.message} />
+        <Input label={t('mentor_workspace.attention_focus')} type="number" min="0" max="100" {...form.register('focus')} error={validationMessage(form.formState.errors.focus?.message, t)} />
+        <Input label={t('mentor_workspace.emotional_regulation')} type="number" min="0" max="100" {...form.register('regulation')} error={validationMessage(form.formState.errors.regulation?.message, t)} />
+        <Input label={t('mentor_workspace.stress_load')} type="number" min="0" max="100" {...form.register('stress')} error={validationMessage(form.formState.errors.stress?.message, t)} />
+        <Input label={t('mentor_workspace.energy_level')} type="number" min="0" max="100" {...form.register('energy')} error={validationMessage(form.formState.errors.energy?.message, t)} />
       </div>
-      <Textarea label={t('mentor_workspace.observation_note')} rows={3} {...form.register('note')} error={form.formState.errors.note?.message} />
+      <Textarea label={t('mentor_workspace.observation_note')} rows={3} {...form.register('note')} error={validationMessage(form.formState.errors.note?.message, t)} />
       {mutation.error && <Alert variant="error">{t('mentor_workspace.save_error')}</Alert>}
       {mutation.isSuccess && <Alert variant="success">{t('mentor_workspace.observation_saved')}</Alert>}
       <Button type="submit" loading={mutation.isPending}>{t('mentor_workspace.save_observation')}</Button>

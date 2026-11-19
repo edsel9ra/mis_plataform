@@ -360,7 +360,7 @@ export default function AdminEvaluations() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.evaluations')}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-600">
             {t('admin.evaluations_description')}
           </p>
         </div>
@@ -401,7 +401,7 @@ export default function AdminEvaluations() {
                 <Input aria-label={t('common.search')} placeholder={t('common.search')} value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} />
               </div>
               <div className="w-44">
-                <Select options={[{ value: '', label: t('common.all') }, ...clientTypeOptions]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
+                <Select aria-label={t('admin.client_type')} options={[{ value: '', label: t('common.all') }, ...clientTypeOptions]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
               </div>
             </div>
           </Card>

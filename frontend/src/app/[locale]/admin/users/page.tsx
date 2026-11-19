@@ -226,11 +226,11 @@ export default function AdminUsers() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </div>
              <div className="w-40">
-               <Select options={roleOptions} value={roleFilter}
+               <Select aria-label={t('admin.role')} options={roleOptions} value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }} />
             </div>
              <div className="w-40">
-               <Select options={typeOptions} value={typeFilter}
+               <Select aria-label={t('admin.client_type')} options={typeOptions} value={typeFilter}
                 onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} />
             </div>
           </div>
@@ -242,7 +242,7 @@ export default function AdminUsers() {
           </Alert>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" tabIndex={0} role="region" aria-label={t('admin.users')}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-500">

@@ -154,7 +154,7 @@ export default function AdminMentors() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.mentors')}</h1>
-           <p className="mt-1 text-sm text-gray-500">{t('admin.mentors_description')}</p>
+           <p className="mt-1 text-sm text-gray-600">{t('admin.mentors_description')}</p>
         </div>
         <div className="flex items-center gap-4">
           <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
@@ -168,7 +168,7 @@ export default function AdminMentors() {
             <Input aria-label={t('common.search')} placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="w-44">
-             <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} />
+             <Select aria-label={t('admin.client_type')} options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} />
           </div>
         </div>
       </Card>
@@ -187,7 +187,7 @@ export default function AdminMentors() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
+                  <CardTitle as="h2" className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
                   <p className="mt-1 text-sm text-gray-500">{mentor.email}</p>
                   <p className="text-xs text-gray-600">{t(`client_types.${mentor.client_type}`)}</p>
                 </div>

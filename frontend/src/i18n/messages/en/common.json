@@ -569,7 +569,19 @@
     "save_error": "The information could not be saved. Try again.",
     "status_assigned": "Assigned",
     "status_abandoned": "Abandoned",
-    "status_template": "Template"
+    "status_template": "Template",
+    "validation": {
+      "title_min": "The title must be at least 3 characters.",
+      "title_max": "The title can't exceed 160 characters.",
+      "text_max": "The text can't exceed 2,000 characters.",
+      "file_required": "Select a file.",
+      "file_too_large": "The file must be 25 MB or smaller.",
+      "file_unsupported": "Select a supported file type.",
+      "media_unsupported": "Select a supported audio or video file.",
+      "note_or_file": "Enter a note or select a file.",
+      "score_range": "Enter a value between 0 and 100.",
+      "score_invalid": "Enter a number."
+    }
   },
   "admin": {
     "overview": "Admin Dashboard",

@@ -66,13 +66,13 @@ export function ObjectiveStatusControl({ objective }: { objective: Objective }) 
                   <span> {t('progress.status_control.changed_by', { name: entry.causer_name })}</span>
                 ) : null}
                 {entry.created_at ? (
-                  <span className="text-slate-400"> · {new Date(entry.created_at).toLocaleDateString(locale)}</span>
+                  <span className="text-slate-600"> · {new Date(entry.created_at).toLocaleDateString(locale)}</span>
                 ) : null}
               </li>
             ))}
           </ul>
         ) : (
-          <p className="mt-1 text-xs text-slate-400">{t('progress.status_control.no_history')}</p>
+          <p className="mt-1 text-xs text-slate-600">{t('progress.status_control.no_history')}</p>
         )}
       </div>
     </div>

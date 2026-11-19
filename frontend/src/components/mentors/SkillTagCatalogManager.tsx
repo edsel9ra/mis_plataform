@@ -71,7 +71,7 @@ export function SkillTagCatalogManager() {
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="text-base">{t('admin.specialties_catalog')}</CardTitle>
+            <CardTitle as="h2" className="text-base">{t('admin.specialties_catalog')}</CardTitle>
             <p className="mt-1 text-sm text-gray-500">{t('admin.specialties_catalog_description')}</p>
           </div>
           <Button type="button" size="sm" onClick={openCreate}>+ {t('admin.add_specialty')}</Button>

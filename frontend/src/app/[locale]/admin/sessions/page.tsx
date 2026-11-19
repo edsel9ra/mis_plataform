@@ -325,7 +325,7 @@ export default function AdminSessions() {
           </Alert>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" tabIndex={0} role="region" aria-label={t('admin.sessions')}>
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-gray-500">

@@ -569,7 +569,19 @@
     "save_error": "Não foi possível salvar as informações. Tente novamente.",
     "status_assigned": "Atribuído",
     "status_abandoned": "Abandonado",
-    "status_template": "Modelo"
+    "status_template": "Modelo",
+    "validation": {
+      "title_min": "O título deve ter pelo menos 3 caracteres.",
+      "title_max": "O título não pode exceder 160 caracteres.",
+      "text_max": "O texto não pode exceder 2.000 caracteres.",
+      "file_required": "Selecione um arquivo.",
+      "file_too_large": "O arquivo deve ter 25 MB ou menos.",
+      "file_unsupported": "Selecione um arquivo de um tipo compatível.",
+      "media_unsupported": "Selecione um arquivo de áudio ou vídeo compatível.",
+      "note_or_file": "Escreva uma nota ou selecione um arquivo.",
+      "score_range": "Informe um valor entre 0 e 100.",
+      "score_invalid": "Informe um número."
+    }
   },
   "admin": {
     "overview": "Painel Administrativo",
