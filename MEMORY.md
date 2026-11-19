@@ -270,3 +270,9 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - Vitest 394.
 - **Spec 019 — T019.5 hecha (2026-11-19, sin commit)**: 116 pruebas de axe (58 rutas a 1280 y 320 px). Pasan 109 y tardan 18,2 min. Los fallos son 2 hallazgos nuevos para T019.9: PG-30 (enlace del logo del admin, `label-content-name-mismatch`) y PG-31 (`heading-order` en la lista de empleados). Contexto de Playwright con `locale: 'es'`, porque si no el middleware redirige a `/en`. En el CI hará falta `--shard`.
 - **Spec 019 — T019.6 hecha (2026-11-19, sin commit)**: `focus.spec.ts` con 19 pruebas (pasan 18). Defecto real **PG-32**: en `/dashboard/personal` a 375 px, los bloques que cargan después no tienen altura reservada y, con `scroll-behavior: smooth`, el elemento enfocado se queda fuera de la pantalla si se tabula durante la carga. Quedó demostrado que la suite falla al deshacer correcciones (`select-name` y el `disabled` de `Button`) y que vuelve a pasar al restaurarlas.
+- **Spec 019 — T019.7 hecha (2026-11-19)**:
+  - El job de CI `a11y` va en 3 shards, cada uno de unos 3 min, y pasa en el PR #8.
+  - Si se reintroduce `select-name`, falla, como se comprobó en la rama `tmp/a11y-ci-negative`, pendiente de borrar con confirmación del usuario.
+  - También corregidos PG-30 a PG-33, dentro de T019.9; PG-33 era de contraste, y los cambios en `Badge` success y `Button` danger son globales. Se quitó `scroll-behavior: smooth`.
+  - La suite completa pasa: 135/135.
+  - Notas de configuración: hace falta `fullyParallel: true` para repartir por prueba. Los nombres del seeder son de faker, así que la suite toma los datos dinámicos del login o del API.

@@ -86,7 +86,16 @@ Plan: `plan.md`. En orden de dependencia. Ninguna tarea toca la base de datos de
     - la suite pasa en local;
     - revertir en local una corrección (`aria-label` de un filtro del admin y, por separado, el `disabled` de `Button`) hace fallar la suite con la ruta, la regla o la comprobación y el selector. La reversión no se sube.
 
-- [ ] **T019.7. Job de CI `a11y`.** RF-019.6, RF-019.7
+- [x] **T019.7. Job de CI `a11y`.** RF-019.6, RF-019.7
+  - Resultado (2026-11-19):
+    - Job `Accessibility regression (N/3)` en `ci.yml`, validado en local con actionlint 1.7.12.
+    - El seed usa una contraseña aleatoria en cada ejecución (`openssl rand`), sin ningún literal en el workflow.
+    - Los navegadores se cachean por versión de Playwright, y si el job falla se suben el reporte y los logs (`upload-artifact` v4.6.2, fijado por SHA).
+    - `playwright.config.ts` con `fullyParallel: true`, para que `--shard` reparta por prueba (45 por shard) y no por fichero.
+    - **En el PR #8, cada shard pasa sus 45 pruebas en unos 40 s, y el job entero tarda de 2,5 a 3,5 min.**
+    - En la primera ejecución falló la prueba de búsqueda de mentores, porque usaba un apellido fijo y el seeder los genera con faker. Ahora `global-setup` toma el apellido real del mentor sembrado.
+    - **Prueba de que el job falla:** en la rama `tmp/a11y-ci-negative`, quitar el `aria-label` del filtro de rol de `/admin/users` hizo fallar el shard 3/3 con «admin-users @ 1280px: 1 violation(s) - select-name (critical): #_r_1_» (run 44532669113).
+    - Falta borrar esa rama, pendiente de la confirmación del usuario.
   - Job en `.github/workflows/ci.yml` según el plan, con el reporte como artifact si falla.
   - Hecho cuando:
     - el job pasa en el PR;
