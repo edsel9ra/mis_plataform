@@ -20,6 +20,7 @@ backend/bootstrap/cache/*
 !backend/bootstrap/cache/.gitkeep
 backend/public/storage
 backend/storage/app/public/avatars
+backend/storage/app/private/
 !backend/storage/app/public/.gitkeep
 !backend/storage/framework/cache/.gitkeep
 !backend/storage/framework/sessions/.gitkeep
@@ -32,6 +33,9 @@ frontend/.next/
 frontend/out/
 frontend/*.tsbuildinfo
 frontend/coverage/
+frontend/playwright-report/
+frontend/test-results/
+frontend/e2e/.auth/
 
 # Matching
 matching-service/__pycache__/

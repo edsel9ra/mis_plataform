@@ -16,5 +16,6 @@ export default defineConfig({
     clearMocks: true,
     restoreMocks: true,
     unstubGlobals: true,
+    exclude: ['**/node_modules/**', 'e2e/**/*.spec.ts'],
   },
 });
