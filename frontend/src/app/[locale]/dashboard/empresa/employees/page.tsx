@@ -3,10 +3,14 @@
 import { useState } from 'react';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
+import { UserPlus } from 'lucide-react';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { queryKeys } from '@/lib/query-keys';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
 import { useAuth } from '@/components/auth/AuthProvider';
+import { EmployeeInviteDialog } from '@/components/company/EmployeeInviteDialog';
+import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
@@ -33,10 +37,13 @@ export default function CompanyEmployeesPage() {
   const t = useTranslations();
   const { user } = useAuth();
   const [page, setPage] = useState(1);
+  const [inviteOpen, setInviteOpen] = useState(false);
+  const [inviteFeedback, setInviteFeedback] = useState('');
   const perPage = 12;
+  const companyId = user?.company_id ?? '';
 
   const { data, isLoading, isFetching, error } = useQuery<EmployeesResponse>({
-    queryKey: ['company-employees', user?.company_id, { page, per_page: perPage }],
+    queryKey: queryKeys.companyEmployees(companyId, page, perPage),
     enabled: Boolean(user?.company_id),
     queryFn: async ({ signal }) => {
       const response = await api.get<RawEmployeesResponse>(`/companies/${user?.company_id}/employees`, {
@@ -73,8 +80,28 @@ export default function CompanyEmployeesPage() {
     <div>
       <div className="flex items-end justify-between gap-4">
         <h1 className="text-2xl font-bold text-gray-900">{t('company.manage_employees')}</h1>
-        <span className="text-sm text-gray-500">{t('company.employee_count', { count: data?.meta.total ?? 0 })}</span>
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">{t('company.employee_count', { count: data?.meta.total ?? 0 })}</span>
+          {user.company_id && (
+            <Button type="button" onClick={() => setInviteOpen(true)}>
+              <UserPlus className="h-4 w-4" aria-hidden="true" />
+              {t('company.invite.open')}
+            </Button>
+          )}
+        </div>
       </div>
+      <div role="status" className="sr-only">{inviteFeedback}</div>
+      {user.company_id && (
+        <EmployeeInviteDialog
+          companyId={user.company_id}
+          open={inviteOpen}
+          onOpenChange={setInviteOpen}
+          onInvited={(employee) => {
+            setPage(1);
+            setInviteFeedback(t('company.invite.sent', { email: employee.user?.email ?? '' }));
+          }}
+        />
+      )}
       <div className="mt-4 grid gap-3 sm:grid-cols-3">
         <StatusCard label={t('company.active_employees')} value={data?.status_counts.active ?? 0} />
         <StatusCard label={t('company.pending_employees')} value={data?.status_counts.invited ?? 0} />

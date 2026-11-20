@@ -71,6 +71,7 @@ purga diaria: los assets objective_evidence cuyo mediaable no sea una evidencia 
    - Los diálogos de disponibilidad y de reprogramar (spec 016) usan `buildTimeZoneOptions` con la misma lista y tienen el mismo problema latente. No se tocan en esta spec; queda anotado.
 6. **Foto subida con `POST /profile/avatar` y `_method=PUT`.** PHP no lee los ficheros de un `PUT` multipart; Laravel acepta el método falseado. La ruta y el contrato no cambian.
 7. **La foto se sirve a través de Next (`/storage/avatars/*`).** El backend guarda la URL absoluta del disco público (`APP_URL/storage/avatars/…`), que en desarrollo es `http://` y `Avatar` descarta por no ser `https`. `Avatar` convierte las URLs con ruta `/storage/avatars/` en relativas y `next.config.ts` las reenvía a nginx, igual que `/api`. Las fotos de OAuth (`https`) no cambian. Alternativa descartada: devolver una ruta relativa desde el backend, que cambia el contrato de `avatar`.
+8. **La lista de empleados se ordena de forma determinista: los más recientes primero (`created_at` desc, `id` desc).** Comprobado en T020.6: `EmployeeController::index` pagina sin `orderBy`, así que el orden no está definido y el empleado recién invitado podría quedar en cualquier página. Con este orden aparece el primero de la página 1, y la página vuelve a la 1 tras invitar. Cambia el orden, no los campos ni los permisos. Alternativa descartada: dejar el orden indefinido y avisar solo con el anuncio.
 
 ## Estrategia de tests
 

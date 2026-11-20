@@ -82,7 +82,25 @@ Plan: `plan.md`. En orden de dependencia.
     - el envío se anuncia y la lista de los 5 últimos se actualiza;
     - Vitest y Pest pasan.
 
-- [ ] **T020.6. Invitar empleados.** RF-020.1, RF-020.2
+- [x] **T020.6. Invitar empleados.** RF-020.1, RF-020.2
+  - Resultado (2026-11-20):
+    - Backend:
+      - `EmployeeController::index` ordena por `created_at` desc e `id` desc (plan, decisión 8);
+      - tildes corregidas en `companies.employee_limit_reached` (es y pt);
+      - 3 tests nuevos en `CompanyTest`: el orden, el email duplicado y el límite, los dos últimos con el mensaje en español.
+    - Frontend:
+      - `EmployeeInviteDialog` (RHF + Zod): un error de un campo va a su campo con el foco; el límite del plan o la falta de plan van a un aviso dentro del diálogo, que recibe el foco; los datos se conservan siempre;
+      - `hooks/use-company.ts` invalida `companyEmployeesRoot` y `['company', id]`;
+      - en la página, el botón «Invitar empleado» y una región `role="status"` siempre montada; tras invitar, se vuelve a la página 1.
+    - Pest: suite del backend 1209. Vitest 456 (7 nuevos); typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 24/24:
+      - el diálogo funciona con teclado (foco dentro, Escape y vuelta del foco al botón);
+      - un envío vacío no hace ninguna petición;
+      - un email duplicado muestra «El email ya está registrado.» en su campo y conserva los demás campos;
+      - el límite real del plan (con `max_members` bajado temporalmente en la base de auditoría) muestra un aviso que recibe el foco;
+      - tras el éxito aparece el primero con «Invitado» y suben las invitaciones pendientes;
+      - axe sin violaciones con el diálogo abierto y cerrado, a 1280 y 320 px.
+    - Hay que medir axe cuando termina la animación de apertura del diálogo (unos 0,3 s); a mitad de la animación da falsos positivos de contraste.
   - Diálogo de invitación, esquema y mutación.
   - Hecho cuando:
     - un email duplicado y el límite del plan muestran su error sin perder los datos;

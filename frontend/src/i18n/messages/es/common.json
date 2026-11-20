@@ -265,7 +265,30 @@
     "employee_count": "{count} empleados",
     "employee_status_active": "Activo",
     "employee_status_invited": "Invitado",
-    "employee_status_inactive": "Inactivo"
+    "employee_status_inactive": "Inactivo",
+    "invite": {
+      "open": "Invitar empleado",
+      "title": "Invitar a un empleado",
+      "description": "Le enviaremos un correo para que cree su contraseña.",
+      "email": "Correo electrónico",
+      "name": "Nombre",
+      "last_name": "Apellidos (opcional)",
+      "position": "Puesto (opcional)",
+      "department": "Departamento (opcional)",
+      "submit": "Enviar invitación",
+      "cancel": "Cancelar",
+      "sent": "Invitación enviada a {email}.",
+      "error": "No se pudo enviar la invitación. Inténtalo de nuevo."
+    },
+    "validation": {
+      "email_required": "El correo electrónico es obligatorio.",
+      "email_invalid": "Ingresa un correo electrónico válido.",
+      "name_required": "El nombre es obligatorio.",
+      "name_max": "El nombre no puede superar 100 caracteres.",
+      "last_name_max": "Los apellidos no pueden superar 100 caracteres.",
+      "position_max": "El puesto no puede superar 100 caracteres.",
+      "department_max": "El departamento no puede superar 100 caracteres."
+    }
   },
   "sessions": {
     "schedule": "Agendar Sesión",

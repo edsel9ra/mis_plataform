@@ -265,7 +265,30 @@
     "employee_count": "{count} funcionários",
     "employee_status_active": "Ativo",
     "employee_status_invited": "Convidado",
-    "employee_status_inactive": "Inativo"
+    "employee_status_inactive": "Inativo",
+    "invite": {
+      "open": "Convidar funcionário",
+      "title": "Convidar um funcionário",
+      "description": "Enviaremos um e-mail para que ele crie a sua senha.",
+      "email": "E-mail",
+      "name": "Nome",
+      "last_name": "Apelido (opcional)",
+      "position": "Cargo (opcional)",
+      "department": "Departamento (opcional)",
+      "submit": "Enviar convite",
+      "cancel": "Cancelar",
+      "sent": "Convite enviado para {email}.",
+      "error": "Não foi possível enviar o convite. Tente novamente."
+    },
+    "validation": {
+      "email_required": "O e-mail é obrigatório.",
+      "email_invalid": "Introduza um e-mail válido.",
+      "name_required": "O nome é obrigatório.",
+      "name_max": "O nome não pode exceder 100 caracteres.",
+      "last_name_max": "O apelido não pode exceder 100 caracteres.",
+      "position_max": "O cargo não pode exceder 100 caracteres.",
+      "department_max": "O departamento não pode exceder 100 caracteres."
+    }
   },
   "sessions": {
     "schedule": "Agendar Sessão",

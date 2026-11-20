@@ -314,3 +314,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **Spec 020 — T020.5 hecha (2026-11-20)**: tarjeta «¿Cómo te sientes hoy?» en `/dashboard/personal`, una por relación con `features.emotional_check_ins`. Backend 1206, Vitest 449.
   - `features` solo existe en `GET /relationships` y `GET /relationships/{id}` (`ViewerRelationshipResource`); repite las condiciones de `menteeRelationship()` y `requireEntitlement`, así que `true` implica 200 en `/relationships/{id}/emotional-check-ins`.
   - Cuentas de auditoría: `ana.audit` tiene el entitlement y `kai.audit` no.
+- **Spec 020 — T020.6 hecha (2026-11-20)**: diálogo «Invitar empleado» en `/dashboard/empresa/employees`. Backend 1209, Vitest 456.
+  - `GET /companies/{id}/employees` ahora devuelve primero los más recientes (antes no tenía orden).
+  - En la suite de axe hay que esperar a que termine la animación del `Dialog` antes de medir, o da falsos positivos de contraste.

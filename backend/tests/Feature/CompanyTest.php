@@ -182,3 +182,139 @@ it('invites an employee when the company has an active plan', function () {
         ])
         ->assertCreated();
 });
+
+it('lists employees newest first with a deterministic tiebreak', function () {
+    $admin = User::factory()->create([
+        'client_type' => 'empresa',
+        'role' => 'company_admin',
+    ]);
+    $company = Company::create([
+        'legal_name' => 'Acme Consulting',
+        'admin_id' => $admin->id,
+    ]);
+    $admin->update(['company_id' => $company->id]);
+
+    $make = function (string $createdAt) use ($company) {
+        $employee = Employee::create([
+            'company_id' => $company->id,
+            'user_id' => User::factory()->create([
+                'client_type' => 'empresa',
+                'role' => 'employee',
+                'company_id' => $company->id,
+            ])->id,
+            'status' => 'invited',
+        ]);
+        $employee->created_at = $createdAt;
+        $employee->save();
+
+        return $employee;
+    };
+
+    $oldest = $make(now()->subDays(3)->toDateTimeString());
+    $middle = $make(now()->subDays(2)->toDateTimeString());
+    $recent = $make(now()->subDay()->toDateTimeString());
+    $tiedAt = now()->subDays(2)->addHours(6)->toDateTimeString();
+    $tie1 = $make($tiedAt);
+    $tie2 = $make($tiedAt);
+
+    $tiedFirst = collect([$tie1, $tie2])->sortByDesc('id')->pluck('id')->all();
+    $expected = array_merge([$recent->id], $tiedFirst, [$middle->id, $oldest->id]);
+
+    $response = $this->withToken($admin->createToken('test')->plainTextToken)
+        ->getJson("/api/v1/companies/{$company->id}/employees");
+
+    $response->assertOk();
+    expect(collect($response->json('data'))->pluck('id')->all())->toBe($expected);
+});
+
+it('rejects a duplicate employee email with a localized field error', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create([
+        'client_type' => 'empresa',
+        'role' => 'company_admin',
+    ]);
+    $company = Company::create([
+        'legal_name' => 'Acme Consulting',
+        'admin_id' => $admin->id,
+    ]);
+    $admin->update(['company_id' => $company->id]);
+
+    $plan = Plan::create([
+        'client_type' => 'empresa',
+        'name' => ['es' => 'Empresa'],
+        'price_monthly' => 100,
+        'price_yearly' => 1000,
+        'max_members' => 10,
+        'is_active' => true,
+    ]);
+    Subscription::create([
+        'subscriber_type' => 'company',
+        'subscriber_id' => $company->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addMonth(),
+    ]);
+    User::factory()->create(['email' => 'taken@example.com']);
+
+    $this->withToken($admin->createToken('test')->plainTextToken)
+        ->withHeader('X-MIS-Locale', 'es')
+        ->postJson("/api/v1/companies/{$company->id}/employees", [
+            'name' => 'Jane',
+            'email' => 'taken@example.com',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['email'])
+        ->assertJsonPath('errors.email.0', 'El email ya está registrado.');
+});
+
+it('rejects invitations beyond the plan limit with a localized message', function () {
+    Notification::fake();
+
+    $admin = User::factory()->create([
+        'client_type' => 'empresa',
+        'role' => 'company_admin',
+    ]);
+    $company = Company::create([
+        'legal_name' => 'Acme Consulting',
+        'admin_id' => $admin->id,
+    ]);
+    $admin->update(['company_id' => $company->id]);
+
+    $plan = Plan::create([
+        'client_type' => 'empresa',
+        'name' => ['es' => 'Empresa'],
+        'price_monthly' => 100,
+        'price_yearly' => 1000,
+        'max_members' => 1,
+        'is_active' => true,
+    ]);
+    Subscription::create([
+        'subscriber_type' => 'company',
+        'subscriber_id' => $company->id,
+        'plan_id' => $plan->id,
+        'status' => 'active',
+        'starts_at' => now()->subDay(),
+        'ends_at' => now()->addMonth(),
+    ]);
+    Employee::create([
+        'company_id' => $company->id,
+        'user_id' => User::factory()->create([
+            'client_type' => 'empresa',
+            'role' => 'employee',
+            'company_id' => $company->id,
+        ])->id,
+        'status' => 'invited',
+    ]);
+
+    $this->withToken($admin->createToken('test')->plainTextToken)
+        ->withHeader('X-MIS-Locale', 'es')
+        ->postJson("/api/v1/companies/{$company->id}/employees", [
+            'name' => 'Jane',
+            'email' => 'jane.limit@example.com',
+        ])
+        ->assertUnprocessable()
+        ->assertJsonValidationErrors(['employee'])
+        ->assertJsonPath('errors.employee.0', 'Se alcanzó el límite de empleados del plan.');
+});

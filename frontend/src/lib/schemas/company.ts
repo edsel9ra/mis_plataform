@@ -15,3 +15,40 @@ export const companySchema = z.object({
 });
 
 export type CompanyFormData = z.infer<typeof companySchema>;
+
+const optionalEmployeeField = (message: string) => z.string().trim().max(100, message);
+
+export const inviteEmployeeSchema = z.object({
+  email: z.string({ error: 'company.validation.email_required' })
+    .trim()
+    .min(1, 'company.validation.email_required')
+    .email('company.validation.email_invalid')
+    .max(255, 'company.validation.email_invalid'),
+  name: z.string({ error: 'company.validation.name_required' })
+    .trim()
+    .min(1, 'company.validation.name_required')
+    .max(100, 'company.validation.name_max'),
+  last_name: optionalEmployeeField('company.validation.last_name_max'),
+  position: optionalEmployeeField('company.validation.position_max'),
+  department: optionalEmployeeField('company.validation.department_max'),
+});
+
+export type InviteEmployeeFormValues = z.infer<typeof inviteEmployeeSchema>;
+
+export interface InviteEmployeePayload {
+  email: string;
+  name: string;
+  last_name: string | null;
+  position: string | null;
+  department: string | null;
+}
+
+export function toInviteEmployeePayload(values: InviteEmployeeFormValues): InviteEmployeePayload {
+  return {
+    email: values.email.trim().toLowerCase(),
+    name: values.name.trim(),
+    last_name: values.last_name.trim() || null,
+    position: values.position.trim() || null,
+    department: values.department.trim() || null,
+  };
+}

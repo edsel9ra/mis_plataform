@@ -78,6 +78,12 @@ export const queryKeys = {
     userId ?? 'all',
     relationshipId ?? 'all',
   ] as const,
+  companyEmployeesRoot: (companyId: string) => ['company-employees', companyId] as const,
+  companyEmployees: (companyId: string, page: number, perPage: number) => [
+    'company-employees',
+    companyId,
+    { page, per_page: perPage },
+  ] as const,
   menteeEmotionalCheckIns: (relationshipId: string) => [
     'mentee',
     'emotional-check-ins',
