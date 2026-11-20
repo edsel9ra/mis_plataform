@@ -107,7 +107,17 @@ Plan: `plan.md`. En orden de dependencia.
     - tras el éxito, el empleado aparece en la lista como «invitado»;
     - Vitest pasa.
 
-- [ ] **T020.7. Editar, activar y desactivar empleados.** RF-020.3
+- [x] **T020.7. Editar, activar y desactivar empleados.** RF-020.3
+  - Resultado (2026-11-20):
+    - Backend sin cambios de código. `EmployeeManagementTest` añade 6 tests de cobertura del comportamiento que ya existía, y pasaron a la primera: editar (los campos vacíos pasan a `null`), activar a un empleado invitado y a uno inactivo, desactivar, y 403 para el administrador de otra empresa.
+    - Frontend:
+      - `EmployeeEditDialog` (puesto y departamento) y `EmployeeDeactivateDialog`, que pone el foco en «Cancelar» al abrirse;
+      - mutaciones en `hooks/use-company.ts` con una invalidación compartida;
+      - botones según el estado del empleado: «Editar» siempre; si está activo, «Desactivar»; si está inactivo, «Activar»; si está invitado, los dos;
+      - el nombre accesible de cada botón incluye el nombre del empleado (WCAG 2.5.3);
+      - tras activar o desactivar, el foco va al título con el nombre del empleado, porque el botón pulsado desaparece; tras editar, vuelve a «Editar».
+    - Suite del backend 1215 (`ProgressHistoryIndexesTest` sigue siendo inestable en la suite completa). Vitest 461; typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 33/33: editar, desactivar (Escape no envía nada), activar a un empleado inactivo y a uno invitado, los nombres accesibles y axe sin violaciones en la página y en los dos diálogos, a 1280 y 320 px.
   - Diálogo de edición, acciones de activar y desactivar, y confirmación de la desactivación.
   - Hecho cuando: cada acción actualiza la lista y anuncia el resultado, el foco vuelve a la fila y Vitest pasa.
 

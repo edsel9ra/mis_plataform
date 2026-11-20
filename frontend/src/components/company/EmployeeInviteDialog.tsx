@@ -13,7 +13,7 @@ import {
   toInviteEmployeePayload,
   type InviteEmployeeFormValues,
 } from '@/lib/schemas/company';
-import { useInviteEmployee, type InvitedEmployee } from '@/hooks/use-company';
+import { useInviteEmployee, type ManagedEmployee } from '@/hooks/use-company';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,7 +27,7 @@ interface EmployeeInviteDialogProps {
   companyId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onInvited: (employee: InvitedEmployee) => void;
+  onInvited: (employee: ManagedEmployee) => void;
 }
 
 export function EmployeeInviteDialog({ companyId, open, onOpenChange, onInvited }: EmployeeInviteDialogProps) {

@@ -52,3 +52,22 @@ export function toInviteEmployeePayload(values: InviteEmployeeFormValues): Invit
     department: values.department.trim() || null,
   };
 }
+
+export const updateEmployeeSchema = z.object({
+  position: optionalEmployeeField('company.validation.position_max'),
+  department: optionalEmployeeField('company.validation.department_max'),
+});
+
+export type UpdateEmployeeFormValues = z.infer<typeof updateEmployeeSchema>;
+
+export interface UpdateEmployeePayload {
+  position: string | null;
+  department: string | null;
+}
+
+export function toUpdateEmployeePayload(values: UpdateEmployeeFormValues): UpdateEmployeePayload {
+  return {
+    position: values.position.trim() || null,
+    department: values.department.trim() || null,
+  };
+}

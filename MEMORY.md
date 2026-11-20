@@ -317,3 +317,5 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **Spec 020 — T020.6 hecha (2026-11-20)**: diálogo «Invitar empleado» en `/dashboard/empresa/employees`. Backend 1209, Vitest 456.
   - `GET /companies/{id}/employees` ahora devuelve primero los más recientes (antes no tenía orden).
   - En la suite de axe hay que esperar a que termine la animación del `Dialog` antes de medir, o da falsos positivos de contraste.
+- **Spec 020 — T020.7 hecha (2026-11-20)**: editar, activar y desactivar empleados (confirmación al desactivar). Backend 1215, Vitest 461.
+  - Patrón de foco cuando la acción quita el botón pulsado: guardar un `pendingFocusId` y, al actualizarse los datos, enfocar el título de la fila (`tabIndex=-1`). Ese efecto se ejecuta después de que el `Dialog` devuelva el foco al cerrarse.

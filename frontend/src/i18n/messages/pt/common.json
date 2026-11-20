@@ -288,6 +288,23 @@
       "last_name_max": "O apelido não pode exceder 100 caracteres.",
       "position_max": "O cargo não pode exceder 100 caracteres.",
       "department_max": "O departamento não pode exceder 100 caracteres."
+    },
+    "manage": {
+      "edit": "Editar",
+      "edit_title": "Editar {name}",
+      "position": "Cargo",
+      "department": "Departamento",
+      "save": "Guardar alterações",
+      "cancel": "Cancelar",
+      "updated": "Dados de {name} atualizados.",
+      "activate": "Ativar",
+      "activated": "{name} ativado.",
+      "deactivate": "Desativar",
+      "deactivate_title": "Desativar {name}?",
+      "deactivate_description": "Perderá o acesso à plataforma até que o ative novamente.",
+      "deactivate_confirm": "Desativar",
+      "deactivated": "{name} desativado.",
+      "error": "Não foi possível concluir a ação. Tente novamente."
     }
   },
   "sessions": {

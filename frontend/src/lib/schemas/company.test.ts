@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import es from '@/i18n/messages/es/common.json';
 import en from '@/i18n/messages/en/common.json';
 import pt from '@/i18n/messages/pt/common.json';
-import { inviteEmployeeSchema, toInviteEmployeePayload } from './company';
+import { inviteEmployeeSchema, toInviteEmployeePayload, toUpdateEmployeePayload, updateEmployeeSchema } from './company';
 
 function expectKeyEverywhere(key: string) {
   for (const catalog of [es, en, pt]) {
@@ -79,5 +79,24 @@ describe('inviteEmployeeSchema (T020.6)', () => {
       position: null,
       department: 'Operaciones',
     });
+  });
+});
+
+describe('updateEmployeeSchema (T020.7)', () => {
+  it('trims both fields and caps them at 100 chars', () => {
+    expect(updateEmployeeSchema.parse({ position: '  Lead ', department: ' Fin ' })).toEqual({
+      position: 'Lead',
+      department: 'Fin',
+    });
+    for (const field of ['position', 'department'] as const) {
+      const tooLong = updateEmployeeSchema.safeParse({ position: 'ok', department: 'ok', [field]: 'x'.repeat(101) });
+      expect(tooLong.success, field).toBe(false);
+      expectKeyEverywhere(tooLong.error!.issues[0].message);
+    }
+  });
+
+  it('converts empty strings to null in the payload', () => {
+    const values = updateEmployeeSchema.parse({ position: ' ', department: 'Finanzas' });
+    expect(toUpdateEmployeePayload(values)).toEqual({ position: null, department: 'Finanzas' });
   });
 });
