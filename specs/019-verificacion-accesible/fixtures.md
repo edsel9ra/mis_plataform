@@ -31,6 +31,8 @@ Además, `AdminUserSeeder` crea `admin@mis.com` (super_admin) con la contraseña
 | Workspace de ana | 1 observación neurocognitiva, 1 check-in emocional, 1 mapa sistémico (2 nodos + 1 arista) |
 | Objetivos de ana | 1 `in_progress` con evidencia; 1 con historial de estados (`not_started`→`in_progress`→`achieved`) |
 | Competencia | 1 `CompetencyAssessmentLink` OCEAN (factor O) sobre la personalidad de ana |
+| Disponibilidad del mentor | Ventanas semanales de `mentor.audit`: lunes–viernes 09:00–13:00 y 15:00–18:00 en su zona horaria (10 `mentor_availability_windows`), para que `/sessions/new` ofrezca huecos en la primera semana que busca |
+| Ruta de aprendizaje de ana | `Ruta de auditoría de accesibilidad` con `UserLearningProgress` `in_progress` y 3 módulos: uno sin retos vinculados («Sin datos»), uno con un reto `in_progress` («No completado») y uno con un reto de estado heredado `paused` («Incompleto…») en el mapa |
 | Evaluaciones | Catálogo real (`EvaluationCatalogSeeder`); ana tiene 1 resultado registrado y 3 sin responder (la primera sin responder se resuelve como `evaluationOpenId`, de solo lectura; la última como `evaluationSubmitId`, que la prueba de envío de T019.9 consume una por ejecución de la suite) |
 | Colectivos | `Familia Audit` (+miembro), `Cohorte Audit` (+miembro), `Audit Corp` (+2 empleados `active`) |
 | Planes | Los reales de `PlanSeeder` + `audit_personal_locked` (`entitlements.mentor_workspace=false`) |
@@ -115,6 +117,8 @@ Para la persona que ejecuta el guion del lector de pantalla (decisión D-3):
 2. `bash setup.sh` (o `make build && make up`): levanta todo el stack y siembra la base de **desarrollo**.
 3. Crea y siembra la base de auditoría con los comandos de «Procedimiento local» (pasos 1–3), eligiendo una `A11Y_SEED_PASSWORD` de prueba. **Anota esa contraseña**: el equipo técnico la entregará aparte.
 4. En **ese equipo**, edita `.env.backend` y cambia `DB_DATABASE=mis_project` por `DB_DATABASE=mis_project_audit`; añade `SCOUT_DRIVER=null`, `BROADCAST_CONNECTION=log`, `QUEUE_CONNECTION=sync` y `CACHE_STORE=array` si no quieres interferir con nada más. Reinicia: `docker compose up -d backend queue-worker`.
+
+   **Ojo (verificado en T019.9):** el arranque del contenedor `backend` ejecuta `migrate --seed --force` (`RUN_DATABASE_BOOTSTRAP=true` en `docker-compose.yml`), y ese seed mete **datos de demostración** en la base a la que apunta `DB_DATABASE` — incluida una relación extra de `ana` con otro mentor, que rompe la selección automática del flujo de reserva. Si recreas el backend ya apuntando a `mis_project_audit`, vuelve a ejecutar los pasos 1–3 de «Procedimiento local» (borrar, migrar y sembrar) **después** de que el backend esté arriba, para dejar la base limpia.
 5. Sirve el frontend. Para una sesión de lector de pantalla basta el modo desarrollo (`docker compose up -d frontend`, `http://localhost:3000`); si se quiere producción, `API_INTERNAL_URL` debe apuntar al backend de Compose (`http://nginx`).
 6. Abre `http://localhost:3000` (o `http://app.mis-project.local` si el equipo usa el vhost de nginx) y entra con las cuentas `*.audit@audit.mis.test` y la contraseña de prueba.
 7. Al terminar la auditoría, `DROP DATABASE` como en «Procedimiento local» si no se reutiliza.

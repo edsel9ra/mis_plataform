@@ -122,6 +122,10 @@ Plan: `plan.md`. En orden de dependencia. Ninguna tarea toca la base de datos de
     - `focus.spec` sube a 27 pruebas: la suite tiene 143 y pasa entera dos veces seguidas sin volver a sembrar (6,4 y 6,3 min). Vitest 400/400.
     - `playwright.config.ts` acepta `A11Y_EXPECT_TIMEOUT_MS` y `A11Y_TEST_TIMEOUT_MS`, para cuando el equipo local va muy cargado; sin ellas, el comportamiento es el mismo.
     - PG-41, corregido después: `keepPreviousData` en los 8 consumidores de `PaginationControls`. Vitest 400/400.
+    - Avance (2026-11-20, al revisar el guion para T019.10):
+      - Corregidos PG-42 (proponer objetivo no anunciaba el éxito y el foco caía a `body`; ahora escribe «Propuesta enviada» en la región `status` y devuelve el foco al botón) y PG-43 (las burbujas de `/messages` no anunciaban al autor; ahora llevan un `span.sr-only` con «Tú:» o el nombre del remitente).
+      - El seeder crea ahora las ventanas de disponibilidad de `mentor.audit` (lunes–viernes, 09:00–13:00 y 15:00–18:00 en su zona) y una ruta de aprendizaje asignada a ana con 3 módulos («Sin datos», «No completado», «Incompleto…»), para que el guion pueda probar la reserva y el mapa.
+      - `focus.spec` sube a 30 pruebas: las 3 nuevas fallaban antes del cambio y pasan después.
     - Queda abierta solo por T019.10.
     - Siguen pendientes los hallazgos que salgan de T019.10.
   - Los de T019.5, T019.8 y, cuando llegue, T019.10, según RF-011.8, y la suite se amplía para cubrirlos.
