@@ -137,6 +137,41 @@ it('leaves media assets of other purposes untouched', function () {
     }
 });
 
+it('keeps the row and fails when the file cannot be deleted', function () {
+    $asset = purgeEvidenceAsset($this->objective, $this->mentee, 25);
+    $other = Objective::factory()->individual($this->mentee)->create(['created_by' => $this->mentor->id]);
+    $second = purgeEvidenceAsset($other, $this->mentee, 25);
+
+    $stub = Mockery::mock(Illuminate\Contracts\Filesystem\Filesystem::class);
+    $stub->shouldReceive('delete')->with($asset->path)->andReturn(false);
+    $stub->shouldReceive('exists')->with($asset->path)->andReturn(true);
+    $stub->shouldReceive('delete')->with($second->path)->andReturn(true);
+    $stub->shouldReceive('exists')->with($second->path)->andReturn(true);
+    Storage::shouldReceive('disk')->with('local')->andReturn($stub);
+
+    $this->artisan('media:purge-orphan-evidence')->assertFailed();
+
+    // The failed deletion keeps its row and file; the other orphan still purges.
+    expect(MediaAsset::find($asset->id))->not->toBeNull()
+        ->and(MediaAsset::find($second->id))->toBeNull();
+});
+
+it('purges the row when the file is already gone from disk', function () {
+    $asset = MediaAsset::factory()->create([
+        'relationship_id' => $this->objective->relationship_id,
+        'uploaded_by' => $this->mentee->id,
+        'purpose' => 'objective_evidence',
+    ]);
+    $asset->mediaable()->associate($this->objective);
+    $asset->save();
+    MediaAsset::where('id', $asset->id)->update(['created_at' => now()->subHours(25)]);
+    // Deliberately no Storage::put: the file is already missing.
+
+    $this->artisan('media:purge-orphan-evidence')->assertSuccessful();
+
+    expect(MediaAsset::find($asset->id))->toBeNull();
+});
+
 it('only reports the count with --dry-run', function () {
     purgeEvidenceAsset($this->objective, $this->mentee, 25);
     $other = Objective::factory()->individual($this->mentee)->create(['created_by' => $this->mentor->id]);

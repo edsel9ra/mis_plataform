@@ -53,11 +53,18 @@ class PurgeOrphanEvidenceMedia extends Command
         }
 
         $purged = [];
-        $orphans->chunkById(500, function ($assets) use (&$purged) {
+        $failed = [];
+        $orphans->chunkById(500, function ($assets) use (&$purged, &$failed) {
             foreach ($assets as $asset) {
-                Storage::disk($asset->disk)->delete($asset->path);
-                $asset->delete();
-                $purged[] = $asset->id;
+                $disk = Storage::disk($asset->disk);
+                // A file already gone counts as purged; a failed deletion
+                // keeps the row so the next run can retry it.
+                if ($disk->delete($asset->path) || ! $disk->exists($asset->path)) {
+                    $asset->delete();
+                    $purged[] = $asset->id;
+                } else {
+                    $failed[] = $asset->id;
+                }
             }
         });
 
@@ -66,6 +73,16 @@ class PurgeOrphanEvidenceMedia extends Command
             'count' => count($purged),
             'asset_ids' => $purged,
         ]);
+
+        if ($failed !== []) {
+            $this->warn(sprintf('%d orphan evidence media assets could not be deleted.', count($failed)));
+            Log::warning('media:purge-orphan-evidence failed deletions', [
+                'count' => count($failed),
+                'asset_ids' => $failed,
+            ]);
+
+            return self::FAILURE;
+        }
 
         return self::SUCCESS;
     }
