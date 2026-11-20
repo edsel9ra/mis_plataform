@@ -298,3 +298,4 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - Suite de 143 pruebas, en verde dos veces seguidas. Vitest 400.
   - **PG-41 abierto:** otros 8 consumidores de la paginación desmontan los controles al recargar.
   - Entorno: con todo el stack de desarrollo arrancado, el portátil llega a una carga de 40; durante la suite hay que parar scheduler, matching, queue-worker, frontend, meilisearch, reverb y mailpit.
+- **Cabeceras de specs puestas al día (2026-11-20, aprobado por el usuario)**: 001, 003–009, 013 y 014 pasan a «implementada» (todas sus tareas estaban hechas); 015 pone al día el plan y las tareas. La 002 queda implementada a través de sus hijas 003–010 y de 016–018; sus paquetes T001–T010 siguen sin marcar porque no se ejecutaron directamente. Quedan abiertas solo la 011 y la 019, que se cierran con T019.10.

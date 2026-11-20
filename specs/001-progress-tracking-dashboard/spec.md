@@ -1,6 +1,6 @@
 # Spec 001 — Panel de progreso y seguimiento
 
-**Estado:** aprobada
+**Estado:** implementada
 **Versión:** 0.5.1
 **Baseline funcional previo:** v0.3.0 — implementada; ampliaciones aprobadas v0.4.0, v0.5.0 y v0.5.1 — pendientes de implementación
 **Fecha de aprobación:** 2026-10-13

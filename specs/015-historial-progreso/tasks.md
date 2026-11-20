@@ -1,6 +1,6 @@
 # Tareas — Spec 015: Historial verificable de progreso
 
-**Estado:** aprobadas 2026-11-15 (con el plan revisado; D-1 sin productor de nivel, D-2 solo objetivos individuales) · **Spec:** aprobada
+**Estado:** completado (T015.1–T015.10; cabecera puesta al día el 2026-11-20)
 **Orden:** dependencias 012, 013 y 014 ya implementadas. Una tarea cada vez: tests en rojo, implementación, verde, marcar y parar. Cada tarea entre 20 y 30 min.
 
 > Revisión 2026-11-15: sustituye el backlog anterior. T015.1 (inventario de fuentes) queda absorbida por el plan §1, ya verificado contra el código. La antigua T015.10 [BLOQUEADA] deja de estarlo: la política v1.0.0 está vigente y la Spec 014 ya produce el evento mínimo; aquí pasa a ser el adapter de lectura T015.5.

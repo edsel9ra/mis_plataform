@@ -1,6 +1,6 @@
 # Tareas — Spec 001: Panel de progreso y seguimiento
 
-**Estado:** backlog listo para ejecutar
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)
 **Versión:** 1.0.0
 **Fecha:** 2026-10-11
 **Referencias:** `specs/001-progress-tracking-dashboard/spec.md` (v0.2.0) y `specs/001-progress-tracking-dashboard/plan.md` (v1.0.0)

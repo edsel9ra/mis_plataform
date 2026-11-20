@@ -1,6 +1,6 @@
 # Tareas — Spec 009: Calendario y consulta
 
-**Estado:** aprobado; T009-01–02 completadas; quedan T009-03–04 pendientes.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/009-agenda-calendar/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T009-01. Extender GET /sessions con rangos y autorización contractual.** RF-009.1, RF-009.4–009.5; CA hija RF-009.1/4/5; CA padre CA-4.1/4.6/4.7, CA-10.1/10.5/10.7.

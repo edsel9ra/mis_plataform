@@ -1,6 +1,6 @@
 # Spec 014 — Evidencia de evaluaciones y competencias
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre aprobada:** `specs/001-progress-tracking-dashboard/spec.md`, v0.5.1 (2026-10-13). Esta spec desglosa únicamente RF-18 y RF-21, incluidas sus precisiones aprobadas en v0.5.1. No añade relaciones, interpretaciones ni reglas de nivel.
 

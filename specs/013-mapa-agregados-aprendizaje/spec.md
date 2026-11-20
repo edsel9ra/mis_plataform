@@ -1,6 +1,6 @@
 # Spec 013 — Mapa y agregados de aprendizaje
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre aprobada:** `specs/001-progress-tracking-dashboard/spec.md`, v0.5.1 (2026-10-13). Esta spec desglosa RF-16 y la ampliación agregada ya aprobada de RF-10/RF-11; no altera la agregación baseline ni amplía permisos.
 

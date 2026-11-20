@@ -1,6 +1,6 @@
 # Tareas — Spec 002: Agenda y gestión de mentorías
 
-**Estado:** aprobada; implementación en curso
+**Estado:** cerrado sin ejecución directa: estos paquetes se desglosaron y se implementaron en las specs hijas 003–010 y 016–018, por eso siguen sin marcar (cabecera puesta al día el 2026-11-20)
 **Spec:** `specs/002-mentorship-scheduling/spec.md` v0.4.2, aprobada
 **Plan:** `specs/002-mentorship-scheduling/plan.md` v1.2.0, aprobado
 

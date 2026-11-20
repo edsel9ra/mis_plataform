@@ -1,6 +1,6 @@
 # Spec 009 — Calendario y consulta de agenda
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.2, aprobada.
 **Dependencias:** hijas 003–008; definición de acceso y zona de 003, estados de 006, enlace Meet de 008.

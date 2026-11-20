@@ -1,6 +1,6 @@
 # Spec 008 — Recordatorios y Google Meet de sesiones
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.2, aprobada.
 **Dependencias:** hijas 003 (zona/privacidad), 004 y 005 (participantes), 006 (estados), 007 (eventos de reprogramación y cancelación).

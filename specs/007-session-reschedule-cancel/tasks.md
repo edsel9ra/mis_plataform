@@ -1,6 +1,6 @@
 # Tareas — Spec 007: Reprogramación y cancelación
 
-**Estado:** aprobada; implementación en curso.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/007-session-reschedule-cancel/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T007-01. Añadir reglas de elegibilidad e historial de reprogramación.** RF-007.1–007.2; CA hija RF-007.1/2; CA padre CA-6.1–6.3/6.6–6.8.

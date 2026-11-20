@@ -1,6 +1,6 @@
 # Plan — Spec 009: Calendario y consulta de agenda
 
-**Estado:** aprobado (sin implementación)  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/009-agenda-calendar/spec.md`; scope hijo aprobado.  
 **Base:** Spec 002 v0.4.2 y plan 002 v1.2.0.  
 **Dependencias:** 003 acceso/zona, 004–005 participantes, 006 estados, 007 cambios y 008 enlace Meet. 010 aplica accesibilidad/idioma a las superficies resultantes.
