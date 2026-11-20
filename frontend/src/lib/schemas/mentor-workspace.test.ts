@@ -62,6 +62,23 @@ describe('mentor workspace schemas emit mentor_workspace.validation.* keys', () 
     expectKeyMessages(mentorFeedbackSchema.safeParse({ feedback_file: big }));
   });
 
+  // Same RHF FileList quirk as the evidence form: an empty FileList must not
+  // block a note-only feedback (Devin Review PR #9).
+  it('mentorFeedbackSchema accepts a note with an empty FileList', () => {
+    const emptyList = { length: 0 };
+    const result = mentorFeedbackSchema.safeParse({ note: 'solo nota', feedback_file: emptyList });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.feedback_file).toBeUndefined();
+  });
+
+  it('mentorFeedbackSchema unwraps the File out of a FileList', () => {
+    const file = fileOf(64, 'audio/mpeg');
+    const list = { 0: file, length: 1 };
+    const result = mentorFeedbackSchema.safeParse({ feedback_file: list });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.feedback_file).toBe(file);
+  });
+
   it('mentorObservationSchema: every rule reports a key', () => {
     expectKeyMessages(mentorObservationSchema.safeParse({ focus: 'abc' }));
     expectKeyMessages(mentorObservationSchema.safeParse({ focus: -1 }));

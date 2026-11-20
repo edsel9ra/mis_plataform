@@ -12,8 +12,11 @@ Los crea `database/seeders/AccessibilityAuditSeeder.php`, que solo corre contra 
 | `carlos.audit@audit.mis.test` | mentee `familiar` | `family` (grupo familiar) | Dashboard familiar; relación con source `family_group` |
 | `diana.audit@audit.mis.test` | mentee `grupal` | `group` (cohorte) | Dashboard grupal; source `cohort` |
 | `empresa.admin.audit@audit.mis.test` | `company_admin` `empresa` | `startup` (Audit Corp) | `/dashboard/empresa` real con empleados e invitaciones |
-| `empleado.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Dashboard limitado de empleado |
+| `empleado.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Dashboard limitado de empleado (inicia sesión; no desactivarlo) |
 | `empleado2.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Segundo empleado de la lista |
+| `invitado.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Employee `invited`, nunca activado; solo aparece en la lista, sin login |
+| `inactivo.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Employee `inactive` (`is_active=false`); solo aparece en la lista, sin login |
+| `rotativo.audit@audit.mis.test` | `employee` `empresa` | vía Audit Corp | Employee `active` con nombre fijo «Rotativo Audit»; la prueba de foco lo desactiva y reactiva (termina `active` → repetible), sin login |
 | `empresa.setup.audit@audit.mis.test` | `company_admin` `empresa` | — (sin compañía) | Estado «configura tu empresa» (h1 y formulario de setup) |
 | `mentor.audit@audit.mis.test` | `mentor` | — | Espacio del mentor; skills `expert` (3 etiquetas) |
 | `relleno.NN.audit@audit.mis.test` (NN=01–25) | mentee `personal` | — | Relleno para que `/admin/users` supere el `per_page` de 20; `relleno.04` cambia de idioma en `/profile` y `relleno.05` solicita mentoría (T019.9) |
@@ -34,8 +37,13 @@ Además, `AdminUserSeeder` crea `admin@mis.com` (super_admin) con la contraseña
 | Disponibilidad del mentor | Ventanas semanales de `mentor.audit`: lunes–viernes 09:00–13:00 y 15:00–18:00 en su zona horaria (10 `mentor_availability_windows`), para que `/sessions/new` ofrezca huecos en la primera semana que busca |
 | Ruta de aprendizaje de ana | `Ruta de auditoría de accesibilidad` con `UserLearningProgress` `in_progress` y 3 módulos: uno sin retos vinculados («Sin datos»), uno con un reto `in_progress` («No completado») y uno con un reto de estado heredado `paused` («Incompleto…») en el mapa |
 | Evaluaciones | Catálogo real (`EvaluationCatalogSeeder`); ana tiene 1 resultado registrado y 3 sin responder (la primera sin responder se resuelve como `evaluationOpenId`, de solo lectura; la última como `evaluationSubmitId`, que la prueba de envío de T019.9 consume una por ejecución de la suite) |
-| Colectivos | `Familia Audit` (+miembro), `Cohorte Audit` (+miembro), `Audit Corp` (+2 empleados `active`) |
+| Colectivos | `Familia Audit` (+miembro), `Cohorte Audit` (+miembro), `Audit Corp` (5 empleados: 3 `active` —empleado, empleado2 y Rotativo Audit—, 1 `invited`, 1 `inactive`) |
 | Planes | Los reales de `PlanSeeder` + `audit_personal_locked` (`entitlements.mentor_workspace=false`) |
+
+**Lo que cambia cada pasada de la suite (spec 020).** Se puede repetir sin volver a sembrar:
+- se añade un empleado invitado (`invite.t0208.*`) a Audit Corp; el plan startup admite 20 y se siembran 5;
+- ana acumula check-ins y evidencias, con y sin fichero, y se le sustituye la foto;
+- «Rotativo Audit» se desactiva y se vuelve a activar, así que termina `active`.
 
 **No creado:** «bio» del mentor — no existe columna `bio` en `users` ni perfil de mentor (`MentorResource.bio` siempre resuelve `null`); solo las skills reales quedan sembradas.
 

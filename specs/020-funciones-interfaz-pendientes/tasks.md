@@ -1,58 +1,148 @@
 # Tareas — Spec 020, funciones de interfaz pendientes
 
-Estado: borrador
+Estado: completado (T020.1–T020.9)
 
 Plan: `plan.md`. En orden de dependencia.
 
-- [ ] **T020.1. Endpoint de subida de ficheros de evidencia, con su autorización.** RF-020.7, RF-020.9
+- [x] **T020.1. Endpoint de subida de ficheros de evidencia, con su autorización.** RF-020.7, RF-020.9
+  - Resultado (2026-11-19):
+    - `POST /objectives/{objective}/media`, con `UploadObjectiveEvidenceMediaRequest` (`can('addEvidence')`) y `StoreObjectiveEvidenceMediaAction`, que guarda en el disco `local` (`objectives/{id}/{uuid}.ext`) con `mediaable=Objective`.
+    - Las reglas de fichero se comparten en `App\Support\MediaUploadRules`, y `ValidatesMentorFiles` delega en ella sin cambiar ningún valor.
+    - `StoreObjectiveEvidenceRequest` exige que el asset sea de ese objetivo, de propósito `objective_evidence`, subido por quien crea la evidencia y sin enlazar todavía. `AttachObjectiveEvidenceAction` reasigna el asset a la evidencia dentro de una transacción.
+    - `MediaAssetPolicy::view` tiene una rama al principio que delega en `ObjectivePolicy::view`; si la evidencia ya no existe, deniega. `MediaAssetController::show` descarga el fichero como adjunto, con el MIME guardado.
+    - Tests: `ObjectiveEvidenceMediaTest`, 16 en rojo primero (15 fallaban) y después en verde. Suite del backend 1191/1191.
+    - Riesgo aceptado: no hay restricción única en `objective_evidences.media_asset_id`, así que dos peticiones simultáneas con el mismo asset podrían enlazarlo dos veces. Solo podría hacerlo la misma persona que lo subió y no expone nada a terceros.
   - Request, Action, ruta, rama de `MediaAssetPolicy` y validación de `media_asset_id` en `evidences`, con los tests de autorización en rojo primero.
   - Hecho cuando: pasan los tests del plan (subida, validación del asset y `GET /media`), y también la suite de progreso y la de media existentes.
 
-- [ ] **T020.2. Purga de ficheros de evidencia huérfanos.** RF-020.10
+- [x] **T020.2. Purga de ficheros de evidencia huérfanos.** RF-020.10
+  - Resultado (2026-11-19):
+    - Comando `media:purge-orphan-evidence {--hours=24} {--dry-run}`, que se ejecuta cada día (`withoutOverlapping`).
+    - La consulta es única y va por lotes (`chunkById`). Borra el fichero y luego la fila. En el log solo deja el recuento y los ids, sin `activity()`.
+    - Hechos comprobados en el esquema:
+      - `User` y `Objective` usan SoftDeletes, así que borrar una cuenta desde la app no borra las evidencias;
+      - `MediaAsset` y `ObjectiveEvidence` no usan SoftDeletes;
+      - `objective_evidences.media_asset_id` tiene `nullOnDelete`.
+    - Tests: `PurgeOrphanEvidenceMediaTest`, 6 en rojo primero y después en verde. Cubren los casos (a) a (g), incluida la cascada (403 y luego la purga) y que no cambian los recuentos de `evidence_deletion_events` ni de `activity_log`. Suite del backend 1197/1197.
+    - **Limitación previa a esta spec, fuera de alcance:** `media_assets.uploaded_by` y `relationship_id` tienen `cascadeOnDelete`. Si una cuenta o una relación se borra de verdad (hard delete), desaparece la fila del asset, pero el fichero se queda en el disco y la purga no lo ve. Afecta también a los ficheros del mentor. Habría que hacer un barrido del disco aparte.
   - Comando y programación en `routes/console.php`.
   - Hecho cuando:
     - los tests de la purga pasan;
     - en la cascada de borrar una cuenta, `GET /media/{id}` da 403 y la purga elimina el fichero;
     - los eventos y el historial de la spec 014 no cambian.
 
-- [ ] **T020.3. Evidencia con fichero en la interfaz.** RF-020.8
+- [x] **T020.3. Evidencia con fichero en la interfaz.** RF-020.8
+  - Resultado (2026-11-19):
+    - Código:
+      - `lib/media-types.ts`, con los tipos admitidos compartidos con el mentor;
+      - el esquema acepta fichero, nota o los dos, con las claves `file_too_large` y `file_unsupported`;
+      - `submitObjectiveEvidence`, que sube primero el fichero y luego crea la evidencia; si la subida falla, no la crea;
+      - `FileUploadField` pasa a `components/ui/`;
+      - el enlace «Descargar {name}» en `ObjectivesBlock` mide 24 px.
+    - El recurso del backend ya incluía `media_asset` sin `path` ni `disk`, así que no se tocó.
+    - En la revisión se añadió el texto de reserva `progress.evidence.error` para cuando el error no trae mensaje.
+    - Vitest 406, typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 9/9: ana adjunta un `.txt` y lo descarga (200); un `.html` muestra el error en el campo; `mentor.audit` descarga (200) y `kai` recibe 403.
+    - Entorno: durante la prueba se apuntó `.env.backend` temporalmente a la base de auditoría y después se restauró (`mis_project` se comprobó sin cambios). El build de producción no puede convivir con `next dev`, porque comparten el volumen `.next`.
   - `ObjectiveEvidenceForm` con el fichero opcional, la subida en dos pasos y el enlace al fichero en las vistas de evidencias del titular y del mentor.
   - Hecho cuando:
     - Vitest cubre el esquema (nota o fichero) y el hook;
     - si la subida falla, se conserva la nota;
     - typecheck y lint pasan.
 
-- [ ] **T020.4. Datos personales en el perfil.** RF-020.11, RF-020.12
+- [x] **T020.4. Datos personales en el perfil.** RF-020.11, RF-020.12
+  - Resultado (2026-11-20):
+    - Código:
+      - `ProfileDetailsForm` (nombre, apellidos y zona horaria, con RHF) y `AvatarField` (foto, sin opción de quitarla), en `components/profile/`;
+      - `lib/time-zones.ts` traduce los 19 nombres antiguos de ICU que `timezone:all` rechaza (plan, decisión 5);
+      - `hooks/use-profile.ts`; la foto se sube con `POST` y `_method=PUT` (decisión 6);
+      - `lib/avatar-src.ts` y el rewrite `/storage/avatars/*` en `next.config.ts` (decisión 7); `Avatar` muestra la foto en la tarjeta del perfil y en el lateral;
+      - los errores 422 se colocan en su campo con `mapServerFieldErrors` (ahora exportado desde `lib/availability.ts`); confirmaciones en regiones `role="status"` siempre montadas.
+    - En la revisión se quitó el `disabled` del botón «Cambiar foto»: al vaciar el fichero tras el éxito, el botón se desactivaba con el foco encima y el foco se perdía.
+    - Vitest 437 (31 nuevos, 13 en rojo primero), typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 23/23: el nombre nuevo aparece en el lateral y en la tarjeta sin recargar, con el foco en «Guardar datos»; `Asia/Kolkata` y `America/Argentina/Buenos_Aires` se guardan (200) y la lista no ofrece los nombres antiguos; un 422 simulado aparece bajo la zona horaria con `aria-invalid` y el foco en el campo; un PNG se sube y se ve desde `/storage/avatars/`; un `.txt` o un fichero de más de 2 MB se rechazan sin petición; axe sin violaciones a 1280 y 320 px.
+    - Entorno: el build de prueba se hizo con `NEXT_PUBLIC_API_TIMEOUT_MS=30000` porque el host tardaba 2–6 s por petición. `.env.backend` se restauró y `mis_project` se comprobó sin cambios.
   - Formulario de nombre, apellidos y zona horaria, y campo de foto.
   - Hecho cuando:
     - Vitest cubre el esquema y el helper de zonas horarias;
     - al guardar, el nombre nuevo se ve en la cabecera y en el lateral sin recargar;
     - un error del servidor aparece en su campo.
 
-- [ ] **T020.5. Check-in emocional del mentee.** RF-020.4, RF-020.5, RF-020.6
+- [x] **T020.5. Check-in emocional del mentee.** RF-020.4, RF-020.5, RF-020.6
+  - Resultado (2026-11-20):
+    - `menteeRelationship()` solo admite relaciones personales activas cuyo `source` es la propia persona, así que la tarjeta va solo en `/dashboard/personal` (plan, decisión 4).
+    - Backend: `RelationshipViewerFeatures` (servicio `scoped`, que resuelve el plan de quien consulta una vez por petición) y `ViewerRelationshipResource`, usado solo en `GET /relationships` y `GET /relationships/{id}`. `RelationshipResource`, anidado en sesiones y certificados, no cambia.
+    - Frontend: `EmotionalCheckInCard` (radios nativos con texto en `fieldset`/`legend`, estrés opcional con «Sin indicar», nota, estado `role="status"` siempre montado, botón que nunca se desactiva), `hooks/use-emotional-check-ins.ts` (`per_page=5`, `keepPreviousData`), `lib/emotional-check-in.ts` y `lib/schemas/mentee.ts`. `aria-invalid` va en un contenedor `role="radiogroup"`, porque ARIA no lo admite en los radios.
+    - Pest: 9 tests nuevos (7 en rojo primero); suite del backend 1206. Vitest 449 (12 nuevos); typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 15/15: ana registra un check-in solo con teclado (201, se anuncia, el foco se queda en «Guardar check-in» y aparece el primero de la lista con «Ánimo: Bien · Estrés: Alto»); sin ánimo, error en el grupo y ninguna petición; kai (plan bloqueado) no ve la tarjeta y no hay ninguna llamada a `/emotional-check-ins`; axe sin violaciones a 1280 y 320 px, sin scroll horizontal.
+    - Entorno restaurado; `mis_project` sin cambios.
   - `features.emotional_check_ins` en `RelationshipResource`, con test en Pest; comprobar qué tipos de relación admite `menteeRelationship()`; la tarjeta y su hook.
   - Hecho cuando:
     - con un plan sin el entitlement no hay tarjeta ni llamada que dé 403;
     - el envío se anuncia y la lista de los 5 últimos se actualiza;
     - Vitest y Pest pasan.
 
-- [ ] **T020.6. Invitar empleados.** RF-020.1, RF-020.2
+- [x] **T020.6. Invitar empleados.** RF-020.1, RF-020.2
+  - Resultado (2026-11-20):
+    - Backend:
+      - `EmployeeController::index` ordena por `created_at` desc e `id` desc (plan, decisión 8);
+      - tildes corregidas en `companies.employee_limit_reached` (es y pt);
+      - 3 tests nuevos en `CompanyTest`: el orden, el email duplicado y el límite, los dos últimos con el mensaje en español.
+    - Frontend:
+      - `EmployeeInviteDialog` (RHF + Zod): un error de un campo va a su campo con el foco; el límite del plan o la falta de plan van a un aviso dentro del diálogo, que recibe el foco; los datos se conservan siempre;
+      - `hooks/use-company.ts` invalida `companyEmployeesRoot` y `['company', id]`;
+      - en la página, el botón «Invitar empleado» y una región `role="status"` siempre montada; tras invitar, se vuelve a la página 1.
+    - Pest: suite del backend 1209. Vitest 456 (7 nuevos); typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 24/24:
+      - el diálogo funciona con teclado (foco dentro, Escape y vuelta del foco al botón);
+      - un envío vacío no hace ninguna petición;
+      - un email duplicado muestra «El email ya está registrado.» en su campo y conserva los demás campos;
+      - el límite real del plan (con `max_members` bajado temporalmente en la base de auditoría) muestra un aviso que recibe el foco;
+      - tras el éxito aparece el primero con «Invitado» y suben las invitaciones pendientes;
+      - axe sin violaciones con el diálogo abierto y cerrado, a 1280 y 320 px.
+    - Hay que medir axe cuando termina la animación de apertura del diálogo (unos 0,3 s); a mitad de la animación da falsos positivos de contraste.
   - Diálogo de invitación, esquema y mutación.
   - Hecho cuando:
     - un email duplicado y el límite del plan muestran su error sin perder los datos;
     - tras el éxito, el empleado aparece en la lista como «invitado»;
     - Vitest pasa.
 
-- [ ] **T020.7. Editar, activar y desactivar empleados.** RF-020.3
+- [x] **T020.7. Editar, activar y desactivar empleados.** RF-020.3
+  - Resultado (2026-11-20):
+    - Backend sin cambios de código. `EmployeeManagementTest` añade 6 tests de cobertura del comportamiento que ya existía, y pasaron a la primera: editar (los campos vacíos pasan a `null`), activar a un empleado invitado y a uno inactivo, desactivar, y 403 para el administrador de otra empresa.
+    - Frontend:
+      - `EmployeeEditDialog` (puesto y departamento) y `EmployeeDeactivateDialog`, que pone el foco en «Cancelar» al abrirse;
+      - mutaciones en `hooks/use-company.ts` con una invalidación compartida;
+      - botones según el estado del empleado: «Editar» siempre; si está activo, «Desactivar»; si está inactivo, «Activar»; si está invitado, los dos;
+      - el nombre accesible de cada botón incluye el nombre del empleado (WCAG 2.5.3);
+      - tras activar o desactivar, el foco va al título con el nombre del empleado, porque el botón pulsado desaparece; tras editar, vuelve a «Editar».
+    - Suite del backend 1215 (`ProgressHistoryIndexesTest` sigue siendo inestable en la suite completa). Vitest 461; typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 33/33: editar, desactivar (Escape no envía nada), activar a un empleado inactivo y a uno invitado, los nombres accesibles y axe sin violaciones en la página y en los dos diálogos, a 1280 y 320 px.
   - Diálogo de edición, acciones de activar y desactivar, y confirmación de la desactivación.
   - Hecho cuando: cada acción actualiza la lista y anuncia el resultado, el foco vuelve a la fila y Vitest pasa.
 
-- [ ] **T020.8. Fixtures y suite de accesibilidad de las pantallas nuevas.** RNF-020.3
+- [x] **T020.8. Fixtures y suite de accesibilidad de las pantallas nuevas.** RNF-020.3
+  - Resultado (2026-11-20): pasa en local y en el CI del PR #9 (154 pruebas en 3 shards).
+    - Seeder: tres empleados nuevos en Audit Corp (5 en total): `invitado.audit` (`invited`), `inactivo.audit` (`inactive`) y `rotativo.audit` («Rotativo Audit», `active`), que la prueba desactiva y vuelve a activar. ana ya tenía relación con el check-in emocional y un check-in sembrado.
+    - `routes.ts`: nueva ruta `kai-dashboard`, el panel sin la tarjeta de check-in. Ya estaban `ana-dashboard`, `ana-profile` y `empresa-admin-employees`.
+    - `focus.spec.ts`: 9 pruebas nuevas: perfil (guardar, 422 de zona horaria, foto), check-in (teclado, envío vacío, kai sin tarjeta), evidencia con fichero, invitar (teclado, duplicado, éxito, axe del diálogo a 1280 y 320 px) y el ciclo editar/desactivar/activar con axe del diálogo de confirmación.
+    - `animations.ts` reúne `AXE_TAGS` y la espera a las animaciones finitas, que usan `axe.spec.ts` y `focus.spec.ts`.
+    - Suite completa, 154 pruebas, dos veces seguidas sin volver a sembrar: 154/154 (5,6 min) y 154/154 (5,8 min), con un solo worker. La primera ejecución encontró un defecto del test, no de la app: `getByRole('radio', { name: 'Bien' })` también encajaba con «Muy bien». Se corrigió con `exact: true` y se volvió a sembrar antes de las dos pasadas.
+    - Cada pasada añade un empleado invitado. Tras dos pasadas hay 7 de 20 en el plan startup y «Rotativo Audit» sigue en la página 1.
+    - Junto con esta tarea, a petición del usuario: `buildTimeZoneOptions` (disponibilidad y reprogramar) traduce las 19 zonas con nombre antiguo, con 3 tests nuevos. Vitest 464, typecheck y lint limpios, `AuditTargetGuardTest` 6/6 y build de producción correcto.
   - El seeder deja los datos que hacen falta: una relación de ana con check-ins y un empleado invitado e inactivo para activarlo. Se añaden rutas a `routes.ts` y pruebas de foco por flujo.
   - Hecho cuando:
     - la suite completa pasa dos veces seguidas en local sin volver a sembrar;
     - el CI pasa.
 
-- [ ] **T020.9. Cierre.**
+- [x] **T020.9. Cierre.**
+  - Resultado (2026-11-20):
+    - Local sobre `ca11c7b`: backend 1215 tests (5274 assertions), esta vez sin fallos de `ProgressHistoryIndexesTest`; Vitest 464, typecheck y lint limpios.
+    - Devin Review encontró 4 problemas en el PR #9 y los corregí con tests que fallaban antes:
+      - **Evidencia solo con nota bloqueada (alta):** `register('file')` entrega un FileList vacío que el esquema rechazaba. `lib/schemas/file-input.ts` lo normaliza (`optionalFileInput`) en la evidencia y también en el feedback del mentor, que tenía el mismo fallo desde antes. Prueba e2e nueva de evidencia solo con nota.
+      - **Activar una suscripción no refrescaba las relaciones**, así que la tarjeta de check-in no aparecía hasta recargar. Ahora también se invalida `relationshipsRoot`.
+      - **La purga borraba la fila aunque no pudiera borrar el fichero.** Ahora conserva la fila, registra los ids y termina con FAILURE.
+      - **La nota del check-in tenía un id repetido entre tarjetas.** Ahora usa `useId`.
+    - Tras las correcciones (`a1e8e3e`): Vitest 470, typecheck y lint limpios; Pest de la purga y de los ficheros de evidencia 24/24; en el navegador, 11/11 en las pruebas afectadas. El CI del PR #9 pasa entero, incluidos los 3 shards de accesibilidad, en el push y en el pull_request.
   - Suites completas del backend y del frontend, CI, `fixtures.md` y `MEMORY.md`, y la spec marcada como implementada.
   - Hecho cuando: todo está en verde y la documentación, actualizada.

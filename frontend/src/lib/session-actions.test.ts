@@ -4,6 +4,7 @@ import enMessages from '../i18n/messages/en/common.json';
 import esMessages from '../i18n/messages/es/common.json';
 import ptMessages from '../i18n/messages/pt/common.json';
 import { ApiError } from './api';
+import { LEGACY_TIME_ZONE_ALIASES } from './time-zones';
 import {
   BLOCK_REASON_CODES,
   actionReasonKey,
@@ -331,6 +332,37 @@ describe('buildTimeZoneOptions (T016-09)', () => {
     } finally {
       Intl.supportedValuesOf = original;
     }
+  });
+
+  it('canonicalizes legacy Intl entries and dedupes them (stubbed list)', () => {
+    const original = Intl.supportedValuesOf;
+    Intl.supportedValuesOf = (() => ['Asia/Calcutta', 'Asia/Kolkata', 'UTC']) as typeof Intl.supportedValuesOf;
+    try {
+      const options = buildTimeZoneOptions('Europe/Madrid');
+      expect(options).toEqual(['Europe/Madrid', 'Asia/Kolkata', 'UTC']);
+      expect(options).not.toContain('Asia/Calcutta');
+    } finally {
+      Intl.supportedValuesOf = original;
+    }
+  });
+
+  it('canonicalizes a legacy preferred zone and keeps it first', () => {
+    const original = Intl.supportedValuesOf;
+    Intl.supportedValuesOf = (() => ['UTC']) as typeof Intl.supportedValuesOf;
+    try {
+      const options = buildTimeZoneOptions('America/Buenos_Aires', 'Europe/Madrid');
+      expect(options[0]).toBe('America/Argentina/Buenos_Aires');
+      expect(options).not.toContain('America/Buenos_Aires');
+    } finally {
+      Intl.supportedValuesOf = original;
+    }
+  });
+
+  it('contains none of the legacy ICU names in the real Intl list', () => {
+    const legacy = Object.keys(LEGACY_TIME_ZONE_ALIASES);
+    expect(legacy).toHaveLength(19);
+    const options = buildTimeZoneOptions();
+    for (const name of legacy) expect(options).not.toContain(name);
   });
 });
 

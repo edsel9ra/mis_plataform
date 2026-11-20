@@ -57,6 +57,7 @@ use App\Services\Progress\History\ObjectiveEvidenceHistoryAdapter;
 use App\Services\Progress\History\ObjectiveHistoryAdapter;
 use App\Services\Progress\History\ProgressHistoryService;
 use App\Services\Progress\ProgressCacheObserver;
+use App\Services\RelationshipViewerFeatures;
 use Illuminate\Auth\Notifications\ResetPassword;
 use Illuminate\Cache\RateLimiting\Limit;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -72,6 +73,8 @@ class AppServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->scoped(RelationshipViewerFeatures::class);
+
         // T015.6: the unified timeline merges every feed (plan §4 step 2).
         $this->app->bind(ProgressHistoryService::class, fn ($app) => new ProgressHistoryService([
             $app->make(ObjectiveHistoryAdapter::class),

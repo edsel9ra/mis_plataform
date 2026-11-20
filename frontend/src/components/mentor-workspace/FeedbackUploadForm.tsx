@@ -8,9 +8,9 @@ import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileUploadField } from '@/components/mentor-workspace/FileUploadField';
+import { FileUploadField } from '@/components/ui/file-upload-field';
 import { useCreateMentorFeedback } from '@/hooks/use-mentor-workspace';
-import { mentorFeedbackSchema, type MentorFeedbackFormValues } from '@/lib/schemas/mentor-workspace';
+import { mentorFeedbackSchema, type MentorFeedbackFormInput, type MentorFeedbackFormValues } from '@/lib/schemas/mentor-workspace';
 
 export function FeedbackUploadForm({
   userId,
@@ -22,7 +22,7 @@ export function FeedbackUploadForm({
   const t = useTranslations();
   const mutation = useCreateMentorFeedback();
   const [selectedFileName, setSelectedFileName] = useState('');
-  const form = useForm<MentorFeedbackFormValues>({
+  const form = useForm<MentorFeedbackFormInput, unknown, MentorFeedbackFormValues>({
     resolver: zodResolver(mentorFeedbackSchema),
     defaultValues: { note: '', feedback_file: undefined },
   });

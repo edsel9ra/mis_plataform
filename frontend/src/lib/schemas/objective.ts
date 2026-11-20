@@ -1,5 +1,8 @@
 import { z } from 'zod';
 
+import { MAX_MEDIA_FILE_SIZE_BYTES, SUPPORTED_MEDIA_TYPES } from '@/lib/media-types';
+import { optionalFileInput } from '@/lib/schemas/file-input';
+
 /**
  * Objective form schemas (spec 001, T-093, RF-1).
  *
@@ -90,13 +93,26 @@ export const objectiveProposalSchema = z.object({
   relationship_id: z.guid({ error: V('invalid_id') }).optional(),
 });
 
-/** Evidence needs a note or an already-uploaded media asset. */
+/**
+ * Optional evidence attachment. Size and type mirror the server-side media
+ * rules shared with mentor uploads (`lib/media-types.ts`).
+ */
+const evidenceFile = z
+  .custom<File>(
+    (value) => typeof File !== 'undefined' && value instanceof File && value.size > 0,
+    { message: V('file_unsupported') },
+  )
+  .refine((file) => file.size <= MAX_MEDIA_FILE_SIZE_BYTES, { message: V('file_too_large') })
+  .refine((file) => SUPPORTED_MEDIA_TYPES.has(file.type), { message: V('file_unsupported') });
+
+/** Evidence needs a note, an attached file or an already-uploaded media asset. */
 export const objectiveEvidenceSchema = z
   .object({
     note: optionalText(20_000),
     media_asset_id: z.guid({ error: V('invalid_id') }).optional(),
+    file: optionalFileInput(evidenceFile),
   })
-  .refine(({ note, media_asset_id }) => Boolean(note?.trim() || media_asset_id), {
+  .refine(({ note, media_asset_id, file }) => Boolean(note?.trim() || media_asset_id || file), {
     path: ['note'],
     message: V('evidence_required'),
   });
@@ -108,5 +124,6 @@ export const objectiveStatusSchema = z.object({
 export type ObjectiveFormValues = z.infer<typeof objectiveSchema>;
 export type ObjectiveUpdateFormValues = z.infer<typeof objectiveUpdateSchema>;
 export type ObjectiveProposalFormValues = z.infer<typeof objectiveProposalSchema>;
+export type ObjectiveEvidenceFormInput = z.input<typeof objectiveEvidenceSchema>;
 export type ObjectiveEvidenceFormValues = z.infer<typeof objectiveEvidenceSchema>;
 export type ObjectiveStatusFormValues = z.infer<typeof objectiveStatusSchema>;

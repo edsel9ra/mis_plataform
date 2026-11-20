@@ -29,6 +29,8 @@ class EmployeeController
         $perPage = min(max((int) $request->input('per_page', 20), 1), 100);
         $employees = $query
             ->with('user')
+            ->orderByDesc('created_at')
+            ->orderByDesc('id')
             ->paginate($perPage);
 
         return EmployeeResource::collection($employees)

@@ -1,8 +1,11 @@
 import { z } from 'zod';
 
+import { MAX_MEDIA_FILE_SIZE_BYTES, SUPPORTED_MEDIA_TYPES } from '@/lib/media-types';
+import { optionalFileInput } from '@/lib/schemas/file-input';
+
 const V = (key: string) => `mentor_workspace.validation.${key}`;
 
-export const MAX_MENTOR_FILE_SIZE_BYTES = 25 * 1024 * 1024;
+export const MAX_MENTOR_FILE_SIZE_BYTES = MAX_MEDIA_FILE_SIZE_BYTES;
 
 const uploadedFile = z.custom<File>(
   (value) => typeof File !== 'undefined' && value instanceof File && value.size > 0,
@@ -12,26 +15,7 @@ const uploadedFile = z.custom<File>(
   { message: V('file_too_large') },
 );
 
-const supportedMentorMediaTypes = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'application/pdf',
-  'text/plain',
-  'text/csv',
-  'application/msword',
-  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-  'application/vnd.ms-excel',
-  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-  'audio/mpeg',
-  'audio/wav',
-  'audio/x-wav',
-  'audio/mp4',
-  'audio/webm',
-  'video/mp4',
-  'video/quicktime',
-  'video/webm',
-]);
+const supportedMentorMediaTypes = SUPPORTED_MEDIA_TYPES;
 
 export const mentorChallengeSchema = z.object({
   title: z.string().trim().min(3, { error: V('title_min') }).max(160, { error: V('title_max') }),
@@ -42,7 +26,7 @@ export const mentorChallengeSchema = z.object({
 
 export const mentorFeedbackSchema = z.object({
   note: z.string().trim().max(2000, { error: V('text_max') }).optional(),
-  feedback_file: uploadedFile.optional().refine(
+  feedback_file: optionalFileInput(uploadedFile).refine(
     (file) => !file || (
       supportedMentorMediaTypes.has(file.type)
       && (file.type.startsWith('audio/') || file.type.startsWith('video/'))
@@ -68,6 +52,7 @@ export const mentorObservationSchema = z.object({
 });
 
 export type MentorChallengeFormValues = z.infer<typeof mentorChallengeSchema>;
+export type MentorFeedbackFormInput = z.input<typeof mentorFeedbackSchema>;
 export type MentorFeedbackFormValues = z.infer<typeof mentorFeedbackSchema>;
 export type MentorObservationFormInput = z.input<typeof mentorObservationSchema>;
 export type MentorObservationFormValues = z.output<typeof mentorObservationSchema>;

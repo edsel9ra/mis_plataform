@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, type MutationOptions, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import {
   fetchAllCollection,
@@ -19,7 +19,7 @@ import type {
   WorkspacePlan,
 } from '@/types/mentor-workspace';
 
-const MEDIA_UPLOAD_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_MEDIA_UPLOAD_TIMEOUT_MS ?? 120_000);
+export const MEDIA_UPLOAD_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_MEDIA_UPLOAD_TIMEOUT_MS ?? 120_000);
 
 export interface MentorChallengePayload {
   title: string;
@@ -69,15 +69,28 @@ export function useActiveSubscription(enabled = true) {
   });
 }
 
-export function useStartSubscription() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
+/**
+ * A new subscription can unlock per-relationship features (e.g. the mentee
+ * emotional check-in card reads features.emotional_check_ins), so the
+ * relationships queries refresh together with the subscription (PR #9
+ * review).
+ */
+export function startSubscriptionMutationOptions(
+  queryClient: QueryClient,
+): MutationOptions<ActiveSubscription, Error, string> {
+  return {
     mutationFn: (planId: string) => api.post<ActiveSubscription>('/subscriptions', { plan_id: planId }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.activeSubscription });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.relationshipsRoot });
     },
-  });
+  };
+}
+
+export function useStartSubscription() {
+  const queryClient = useQueryClient();
+
+  return useMutation(startSubscriptionMutationOptions(queryClient));
 }
 
 export function useMentorUserProfile(userId: string, relationshipId: string, enabled = true) {

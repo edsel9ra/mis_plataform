@@ -1,6 +1,7 @@
 import { cn } from '@/lib/utils';
+import { resolveAvatarSrc } from '@/lib/avatar-src';
 import { User } from 'lucide-react';
-import { useState, type HTMLAttributes, type ReactNode } from 'react';
+import { useEffect, useState, type HTMLAttributes, type ReactNode } from 'react';
 
 interface AvatarProps extends HTMLAttributes<HTMLDivElement> {
   src?: string | null;
@@ -13,7 +14,9 @@ const sizes = { sm: 'h-8 w-8', md: 'h-10 w-10', lg: 'h-14 w-14' };
 
 export function Avatar({ className, src, alt = '', size = 'md', fallback, ...props }: AvatarProps) {
   const [imageFailed, setImageFailed] = useState(false);
-  const safeSrc = src && isSafeImageSource(src) ? src : null;
+  useEffect(() => setImageFailed(false), [src]);
+  const resolved = resolveAvatarSrc(src);
+  const safeSrc = resolved && isSafeImageSource(resolved) ? resolved : null;
 
   if (safeSrc && !imageFailed) {
     return (

@@ -298,4 +298,35 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - Suite de 143 pruebas, en verde dos veces seguidas. Vitest 400.
   - **PG-41 abierto:** otros 8 consumidores de la paginación desmontan los controles al recargar.
   - Entorno: con todo el stack de desarrollo arrancado, el portátil llega a una carga de 40; durante la suite hay que parar scheduler, matching, queue-worker, frontend, meilisearch, reverb y mailpit.
+- **PG-41 corregido y T020.1 hecha (2026-11-19)**:
+  - PG-41: `keepPreviousData` en todas las listas paginadas.
+  - T020.1: `POST /objectives/{o}/media` (`MediaUploadRules` compartido); `MediaAssetPolicy` delega en `ObjectivePolicy::view` cuando el propósito es `objective_evidence`; el asset se reasigna a la evidencia dentro de una transacción. 16 tests y suite del backend 1191/1191.
+- **Spec 020 — T020.2 hecha (2026-11-19)**:
+  - `media:purge-orphan-evidence`, diario; suite del backend 1197.
+  - **Limitación conocida:** `media_assets.uploaded_by` y `relationship_id` tienen `cascadeOnDelete`, así que un hard delete deja ficheros en el disco sin su fila. Pasa también con los ficheros del mentor y no está cubierto.
+- **Spec 020 — T020.3 hecha (2026-11-19)**: evidencia con fichero, subido en dos pasos; `FileUploadField` está ahora en `components/ui/`. Vitest 406.
+  - Entorno: `next dev` y `next start` comparten el volumen `.next`, así que hay que parar el frontend de desarrollo antes de un build de producción, o este se rompe.
+  - Con `php -S` sin opcache, las peticiones tardan 2–5 s. Para pruebas largas, mejor php-fpm a través de nginx.
+- **Spec 020 — T020.4 hecha (2026-11-20)**: datos personales y foto en `/profile`. Vitest 437.
+  - Zonas horarias: ICU devuelve 19 nombres antiguos (`America/Buenos_Aires`, `Asia/Calcutta`, `Europe/Kiev`…) que `timezone:all` de PHP rechaza con 422. `lib/time-zones.ts` los traduce. **Pendiente fuera de alcance:** `buildTimeZoneOptions` (disponibilidad y reprogramar, spec 016) sigue ofreciéndolos.
+  - Foto: `PUT` multipart no llega a PHP, así que se envía `POST` con `_method=PUT`. `Avatar` convierte las URLs `/storage/avatars/` en relativas y Next las reenvía a nginx. Hace falta `php artisan storage:link` (lo hace `setup.sh`).
+  - Entorno: para las pruebas en el navegador en este host conviene construir con `NEXT_PUBLIC_API_TIMEOUT_MS=30000`; con 5 s se cortan peticiones.
+- **Spec 020 — T020.5 hecha (2026-11-20)**: tarjeta «¿Cómo te sientes hoy?» en `/dashboard/personal`, una por relación con `features.emotional_check_ins`. Backend 1206, Vitest 449.
+  - `features` solo existe en `GET /relationships` y `GET /relationships/{id}` (`ViewerRelationshipResource`); repite las condiciones de `menteeRelationship()` y `requireEntitlement`, así que `true` implica 200 en `/relationships/{id}/emotional-check-ins`.
+  - Cuentas de auditoría: `ana.audit` tiene el entitlement y `kai.audit` no.
+- **Spec 020 — T020.6 hecha (2026-11-20)**: diálogo «Invitar empleado» en `/dashboard/empresa/employees`. Backend 1209, Vitest 456.
+  - `GET /companies/{id}/employees` ahora devuelve primero los más recientes (antes no tenía orden).
+  - En la suite de axe hay que esperar a que termine la animación del `Dialog` antes de medir, o da falsos positivos de contraste.
+- **Spec 020 — T020.7 hecha (2026-11-20)**: editar, activar y desactivar empleados (confirmación al desactivar). Backend 1215, Vitest 461.
+  - Patrón de foco cuando la acción quita el botón pulsado: guardar un `pendingFocusId` y, al actualizarse los datos, enfocar el título de la fila (`tabIndex=-1`). Ese efecto se ejecuta después de que el `Dialog` devuelva el foco al cerrarse.
+- **Spec 020 — T020.8 hecha (2026-11-20)**: suite a11y de 154 pruebas, 2 pasadas seguidas en verde sin resembrar y CI del PR #9 en verde. `buildTimeZoneOptions` también usa `canonicalTimeZone`. Vitest 464.
+  - Para correr la suite en este portátil: parar frontend dev, matching, scheduler, reverb y queue-worker (el correo de invitación es síncrono, basta Mailpit), un solo contenedor Playwright y `--workers=1`. Con todo el stack levantado y varios contenedores Playwright, la carga llegó a ~500, se agotó el swap y Docker dejó de responder.
+  - En Playwright, `getByRole(..., { name })` hace coincidencia parcial: «Bien» encaja con «Muy bien». Usar `exact: true`.
+  - Cada pasada de la suite añade un empleado invitado a Audit Corp (plan startup, máximo 20).
+- **Spec 020 — implementada (T020.9, 2026-11-20)**: PR #9 (base `feat/011-accesibilidad-auditoria`, encima del PR #8) con el CI en verde. Backend 1215, Vitest 470.
+  - `register('file')` de RHF entrega un FileList (vacío si no se elige nada) en vez de `undefined`. Los campos de fichero opcionales deben pasar por `optionalFileInput` (`lib/schemas/file-input.ts`). El feedback del mentor solo con nota estaba roto por esto desde antes de la spec 020.
+  - Toda mutación que cambie el plan del usuario debe invalidar también `relationshipsRoot`, porque `features.*` de las relaciones depende del plan.
+  - `media:purge-orphan-evidence` termina con FAILURE y conserva la fila si no puede borrar el fichero (el disco tiene `throw => false`).
 - **Cabeceras de specs puestas al día (2026-11-20, aprobado por el usuario)**: 001, 003–009, 013 y 014 pasan a «implementada» (todas sus tareas estaban hechas); 015 pone al día el plan y las tareas. La 002 queda implementada a través de sus hijas 003–010 y de 016–018; sus paquetes T001–T010 siguen sin marcar porque no se ejecutaron directamente. Quedan abiertas solo la 011 y la 019, que se cierran con T019.10.
+- **T019.9 — PG-42, PG-43 y fixtures nuevos (2026-11-20)**: propuesta de objetivo anuncia «Propuesta enviada» en la región `status` y devuelve el foco al botón; las burbujas de `/messages` llevan `span.sr-only` con el autor. El seeder de auditoría crea las ventanas de `mentor.audit` (L–V 09:00–13:00 y 15:00–18:00) y una ruta de ana con los tres estados del mapa. Guion a v1.1. `feat/011` mergeada en `feat/020`. Vitest 470.
+  - **Gotcha del backend de Compose:** el entrypoint ejecuta `migrate --seed --force` en cada recreación (`RUN_DATABASE_BOOTSTRAP=true`; el flag `/tmp/mis-database-ready` no sobrevive al recreate). Si `DB_DATABASE` apunta a `mis_project_audit`, el arranque siembra los datos demo ahí — incluida una relación extra de `ana` que rompe la preselección de la reserva. Hay que resembrar la base de auditoría **después** de recrear el backend.

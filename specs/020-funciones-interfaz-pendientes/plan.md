@@ -1,6 +1,6 @@
 # Plan — Spec 020, funciones de interfaz pendientes
 
-Estado: borrador
+Estado: implementado
 
 Base: `spec.md` (aprobada el 2026-11-19, decisiones D-1 a D-4).
 
@@ -64,7 +64,14 @@ purga diaria: los assets objective_evidence cuyo mediaable no sea una evidencia 
 2. **La visibilidad se delega en `ObjectivePolicy::view` (D-3)**, en lugar de duplicar sus reglas en `MediaAssetPolicy`. Así siguen siempre la misma política. Alternativa descartada: copiar las reglas.
 3. **`features.emotional_check_ins` en `RelationshipResource` (aditivo).** Cumple RF-020.6 sin llamadas que acaben en 403. Alternativa descartada: llamar a `GET …/emotional-check-ins` y ocultar la tarjeta si falla, que provoca justo esos 403.
 4. **La tarjeta de check-in va en `/dashboard/personal`.** Comprobaremos en T020.5 si `menteeRelationship()` solo admite relaciones personales; si admite otras, también irá en los paneles familiar y grupal. Alternativa descartada: ponerla en todos los paneles sin comprobarlo.
+   - Comprobado en T020.5: `menteeRelationship()` exige una relación `active`, de tipo `personal`, cuyo `source` es la propia persona, y `requireEntitlement` exige además que el plan personal no esté bloqueado (incluye `mentor_workspace`). Solo va en `/dashboard/personal`.
+   - `features.emotional_check_ins` repite exactamente esas condiciones (y que quien consulta no sea mentor), para que `true` implique que el endpoint responde 200. Va en una subclase `ViewerRelationshipResource`, que solo usan `GET /relationships` y `GET /relationships/{id}`. Así no aparece en las relaciones anidadas en sesiones o certificados ni cambia sus contratos. El plan de quien consulta se resuelve una sola vez por petición. Alternativa descartada: añadirlo a `RelationshipResource`, que se anida en otras respuestas y haría una consulta de plan por relación.
 5. **Zona horaria con `Intl.supportedValuesOf('timeZone')`.** El backend valida con `timezone:all`. Si el navegador no tiene la API, se usa la lista de zonas que ya use la agenda, si existe. Alternativa descartada: un campo de texto libre.
+   - Comprobado en T020.4: ICU (Node 76.1, tz 2024b) devuelve 19 nombres antiguos que `timezone:all` (PHP, tz 2025.2) rechaza, entre ellos `America/Buenos_Aires`, `America/Cordoba`, `Asia/Calcutta` y `Europe/Kiev`. Elegirlos daría un 422. El helper del perfil (`lib/time-zones.ts`) los traduce a su nombre actual (`America/Argentina/Buenos_Aires`, `Asia/Kolkata`, `Europe/Kyiv`…), que `Intl.DateTimeFormat` también acepta. Alternativa descartada: cambiar el backend a `timezone:all_with_bc`, que amplía la validación de un endpoint existente fuera de esta spec.
+   - Los diálogos de disponibilidad y de reprogramar (spec 016) usan `buildTimeZoneOptions` con la misma lista y tenían el mismo problema. El usuario pidió corregirlo el 2026-11-20: `buildTimeZoneOptions` pasa también por `canonicalTimeZone`, sin cambiar su orden (primero las zonas preferidas, después las demás).
+6. **Foto subida con `POST /profile/avatar` y `_method=PUT`.** PHP no lee los ficheros de un `PUT` multipart; Laravel acepta el método falseado. La ruta y el contrato no cambian.
+7. **La foto se sirve a través de Next (`/storage/avatars/*`).** El backend guarda la URL absoluta del disco público (`APP_URL/storage/avatars/…`), que en desarrollo es `http://` y `Avatar` descarta por no ser `https`. `Avatar` convierte las URLs con ruta `/storage/avatars/` en relativas y `next.config.ts` las reenvía a nginx, igual que `/api`. Las fotos de OAuth (`https`) no cambian. Alternativa descartada: devolver una ruta relativa desde el backend, que cambia el contrato de `avatar`.
+8. **La lista de empleados se ordena de forma determinista: los más recientes primero (`created_at` desc, `id` desc).** Comprobado en T020.6: `EmployeeController::index` pagina sin `orderBy`, así que el orden no está definido y el empleado recién invitado podría quedar en cualquier página. Con este orden aparece el primero de la página 1, y la página vuelve a la 1 tras invitar. Cambia el orden, no los campos ni los permisos. Alternativa descartada: dejar el orden indefinido y avisar solo con el anuncio.
 
 ## Estrategia de tests
 

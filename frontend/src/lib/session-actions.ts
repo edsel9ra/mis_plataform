@@ -8,6 +8,7 @@
 
 import type { ApiError } from './api';
 import { queryKeys } from './query-keys';
+import { canonicalTimeZone } from './time-zones';
 
 export const BLOCK_REASON_CODES = [
   'terminal_status',
@@ -307,7 +308,7 @@ export function rescheduleServerFieldErrors(
 export function buildTimeZoneOptions(
   ...preferred: (string | null | undefined)[]
 ): string[] {
-  const preferredZones = [...new Set(preferred.filter((z): z is string => Boolean(z)))];
+  const preferredZones = [...new Set(preferred.filter((z): z is string => Boolean(z)).map(canonicalTimeZone))];
   let all: string[] = [];
   try {
     if (typeof Intl.supportedValuesOf === 'function') {
@@ -316,7 +317,7 @@ export function buildTimeZoneOptions(
   } catch {
     all = [];
   }
-  const rest = all.filter((z) => !preferredZones.includes(z));
+  const rest = [...new Set(all.map(canonicalTimeZone))].filter((z) => !preferredZones.includes(z));
   const options = [...preferredZones, ...rest];
   if (!options.includes('UTC')) options.push('UTC');
   return options;

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import esMessages from '../../i18n/messages/es/common.json';
 import enMessages from '../../i18n/messages/en/common.json';
 import ptMessages from '../../i18n/messages/pt/common.json';
+import { MAX_MEDIA_FILE_SIZE_BYTES } from '../media-types';
 import {
   objectiveEvidenceSchema,
   objectiveProposalSchema,
@@ -24,6 +25,11 @@ function keyExists(key: string): boolean {
 }
 
 const PREFIX = 'progress.validation.';
+
+const fileOf = (size: number, type = 'application/pdf', name = 'doc.pdf') =>
+  new File(['x'.repeat(Math.min(size, 64))], name, { type });
+// Node's File ignores the size we want to fake; patch it on the instance.
+const sized = (file: File, size: number) => Object.defineProperty(file, 'size', { value: size });
 
 function expectKeyMessages(result: { success: boolean; error?: { issues: { message: string }[] } }) {
   expect(result.success).toBe(false);
@@ -83,6 +89,45 @@ describe('objective schemas emit progress.validation.* keys', () => {
     expectKeyMessages(objectiveEvidenceSchema.safeParse({ note: '   ' }));
     expectKeyMessages(objectiveEvidenceSchema.safeParse({ note: 'x'.repeat(20_001) }));
     expectKeyMessages(objectiveEvidenceSchema.safeParse({ media_asset_id: 'x' }));
+  });
+
+  it('objectiveEvidenceSchema accepts a note, a file or both', () => {
+    const file = fileOf(64, 'text/plain', 'note.txt');
+    expect(objectiveEvidenceSchema.safeParse({ note: 'progreso' }).success).toBe(true);
+    expect(objectiveEvidenceSchema.safeParse({ file }).success).toBe(true);
+    expect(objectiveEvidenceSchema.safeParse({ note: 'progreso', file }).success).toBe(true);
+    expect(objectiveEvidenceSchema.safeParse({}).success).toBe(false);
+  });
+
+  it('objectiveEvidenceSchema rejects unsupported types and oversized files', () => {
+    expectKeyMessages(objectiveEvidenceSchema.safeParse({ file: fileOf(64, 'application/x-msdownload', 'bad.exe') }));
+    const big = sized(fileOf(64), MAX_MEDIA_FILE_SIZE_BYTES + 1);
+    expectKeyMessages(objectiveEvidenceSchema.safeParse({ file: big }));
+  });
+
+  // RHF stores input.files (a FileList) on submit; an empty one must not
+  // block a note-only evidence (Devin Review PR #9).
+  it('objectiveEvidenceSchema accepts a note with an empty FileList', () => {
+    const emptyList = { length: 0 };
+    const result = objectiveEvidenceSchema.safeParse({ note: 'solo nota', file: emptyList });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.file).toBeUndefined();
+  });
+
+  it('objectiveEvidenceSchema reports evidence_required (not file) with an empty FileList and no note', () => {
+    const emptyList = { length: 0 };
+    const result = objectiveEvidenceSchema.safeParse({ file: emptyList });
+    expect(result.success).toBe(false);
+    const noteIssue = result.error?.issues.find((issue) => issue.path[0] === 'note');
+    expect(noteIssue?.message).toBe(`${PREFIX}evidence_required`);
+  });
+
+  it('objectiveEvidenceSchema unwraps the File out of a FileList', () => {
+    const file = fileOf(64, 'text/plain', 'note.txt');
+    const list = { 0: file, length: 1 };
+    const result = objectiveEvidenceSchema.safeParse({ note: 'x', file: list });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.file).toBe(file);
   });
 
   it('objectiveStatusSchema: invalid status reports a key', () => {

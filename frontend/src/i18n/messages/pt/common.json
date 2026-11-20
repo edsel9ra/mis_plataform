@@ -265,7 +265,47 @@
     "employee_count": "{count} funcionários",
     "employee_status_active": "Ativo",
     "employee_status_invited": "Convidado",
-    "employee_status_inactive": "Inativo"
+    "employee_status_inactive": "Inativo",
+    "invite": {
+      "open": "Convidar funcionário",
+      "title": "Convidar um funcionário",
+      "description": "Enviaremos um e-mail para que ele crie a sua senha.",
+      "email": "E-mail",
+      "name": "Nome",
+      "last_name": "Apelido (opcional)",
+      "position": "Cargo (opcional)",
+      "department": "Departamento (opcional)",
+      "submit": "Enviar convite",
+      "cancel": "Cancelar",
+      "sent": "Convite enviado para {email}.",
+      "error": "Não foi possível enviar o convite. Tente novamente."
+    },
+    "validation": {
+      "email_required": "O e-mail é obrigatório.",
+      "email_invalid": "Introduza um e-mail válido.",
+      "name_required": "O nome é obrigatório.",
+      "name_max": "O nome não pode exceder 100 caracteres.",
+      "last_name_max": "O apelido não pode exceder 100 caracteres.",
+      "position_max": "O cargo não pode exceder 100 caracteres.",
+      "department_max": "O departamento não pode exceder 100 caracteres."
+    },
+    "manage": {
+      "edit": "Editar",
+      "edit_title": "Editar {name}",
+      "position": "Cargo",
+      "department": "Departamento",
+      "save": "Guardar alterações",
+      "cancel": "Cancelar",
+      "updated": "Dados de {name} atualizados.",
+      "activate": "Ativar",
+      "activated": "{name} ativado.",
+      "deactivate": "Desativar",
+      "deactivate_title": "Desativar {name}?",
+      "deactivate_description": "Perderá o acesso à plataforma até que o ative novamente.",
+      "deactivate_confirm": "Desativar",
+      "deactivated": "{name} desativado.",
+      "error": "Não foi possível concluir a ação. Tente novamente."
+    }
   },
   "sessions": {
     "schedule": "Agendar Sessão",
@@ -362,7 +402,35 @@
     "subtitle": "Informações básicas da conta e tipo de cliente.",
     "language": "Idioma",
     "language_description": "Escolha o idioma usado pela interface e pelas suas avaliações.",
-    "language_error": "Não foi possível atualizar o idioma. Tente novamente."
+    "language_error": "Não foi possível atualizar o idioma. Tente novamente.",
+    "details": {
+      "title": "Dados pessoais",
+      "description": "Atualize o seu nome e fuso horário.",
+      "name": "Nome",
+      "last_name": "Apelido",
+      "timezone": "Fuso horário",
+      "submit": "Guardar dados",
+      "saved": "Dados guardados.",
+      "error": "Não foi possível guardar os dados. Tente novamente."
+    },
+    "avatar": {
+      "title": "Foto de perfil",
+      "description": "A sua foto aparece no seu perfil e na barra lateral.",
+      "label": "Nova foto",
+      "hint": "JPG, PNG, GIF ou WebP, até 2 MB.",
+      "submit": "Alterar foto",
+      "saved": "Foto atualizada.",
+      "error": "Não foi possível atualizar a foto. Tente novamente."
+    },
+    "validation": {
+      "name_required": "Indique o seu nome.",
+      "name_max": "O nome não pode exceder 100 caracteres.",
+      "last_name_max": "O apelido não pode exceder 100 caracteres.",
+      "timezone_required": "Selecione um fuso horário.",
+      "avatar_required": "Selecione uma imagem.",
+      "avatar_type": "Selecione uma imagem JPG, PNG, GIF ou WebP.",
+      "avatar_size": "A imagem deve ter 2 MB ou menos."
+    }
   },
   "mentor_dashboard": {
     "nav": "Usuários atribuídos",
@@ -584,6 +652,44 @@
       "note_or_file": "Escreva uma nota ou selecione um arquivo.",
       "score_range": "Informe um valor entre 0 e 100.",
       "score_invalid": "Informe um número."
+    }
+  },
+  "mentee": {
+    "check_in": {
+      "title": "Como se sente hoje?",
+      "with_mentor": "Com {name}",
+      "mood": "O seu ânimo",
+      "mood_levels": {
+        "1": "Muito mal",
+        "2": "Mal",
+        "3": "Normal",
+        "4": "Bem",
+        "5": "Muito bem"
+      },
+      "stress": "O seu nível de estresse (opcional)",
+      "stress_none": "Não indicado",
+      "stress_levels": {
+        "1": "Muito baixo",
+        "2": "Baixo",
+        "3": "Médio",
+        "4": "Alto",
+        "5": "Muito alto"
+      },
+      "note": "Nota (opcional)",
+      "submit": "Guardar check-in",
+      "saved": "Check-in guardado.",
+      "error": "Não foi possível guardar o check-in. Tente novamente.",
+      "recent": "Os seus últimos check-ins",
+      "empty": "Ainda não registou nenhum check-in.",
+      "loading": "A carregar check-ins…",
+      "mood_value": "Ânimo: {level}",
+      "stress_value": "Estresse: {level}",
+      "stress_not_set": "Estresse não indicado"
+    },
+    "validation": {
+      "mood_required": "Escolha como se sente.",
+      "stress_invalid": "O nível de estresse não é válido.",
+      "note_max": "A nota não pode exceder os 10 000 caracteres."
     }
   },
   "admin": {
@@ -923,6 +1029,9 @@
       "title": "Adicionar evidência",
       "note_label": "Nota",
       "note_placeholder": "Descreva seu avanço…",
+      "file_label": "Arquivo (opcional)",
+      "file_hint": "Imagens, PDF, documentos, áudio ou vídeo, até 25 MB.",
+      "file_link": "Baixar {name}",
       "submit": "Anexar evidência",
       "saved": "Evidência adicionada",
       "error": "Não foi possível adicionar a evidência"
@@ -1150,7 +1259,9 @@
       "nothing_to_update": "Não há alterações para salvar.",
       "evidence_required": "Adicione uma nota ou anexe um arquivo.",
       "status_invalid": "Selecione um status válido.",
-      "invalid_id": "Identificador inválido."
+      "invalid_id": "Identificador inválido.",
+      "file_too_large": "O arquivo deve ter 25 MB ou menos.",
+      "file_unsupported": "Selecione um arquivo de um tipo compatível."
     },
     "feedback": {
       "objective_created": "Objetivo criado",

@@ -53,6 +53,7 @@ return [
 
     'messages' => [
         'access_denied' => 'Você não tem acesso a este painel de progresso.',
+        'invalid_media_asset' => 'O ficheiro selecionado não é válido para esta evidência.',
         'not_visible' => 'O recurso solicitado não está disponível.',
         'workspace_locked' => 'O plano do mentorado não inclui o espaço do mentor.',
         'entitlement_missing' => 'O plano não inclui a avaliação de personalidade.',

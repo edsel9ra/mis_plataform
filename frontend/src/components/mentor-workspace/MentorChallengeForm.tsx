@@ -9,7 +9,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileUploadField } from '@/components/mentor-workspace/FileUploadField';
+import { FileUploadField } from '@/components/ui/file-upload-field';
 import { useCreateMentorChallenge } from '@/hooks/use-mentor-workspace';
 import { mentorChallengeSchema, type MentorChallengeFormValues } from '@/lib/schemas/mentor-workspace';
 

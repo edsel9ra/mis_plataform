@@ -7,12 +7,27 @@ use App\Models\Challenge;
 use App\Models\ChallengeSubmission;
 use App\Models\FeedbackEntry;
 use App\Models\MentorshipRelationship;
+use App\Models\Objective;
+use App\Models\ObjectiveEvidence;
 use App\Models\User;
+use Illuminate\Support\Facades\Gate;
 
 class MediaAssetPolicy
 {
     public function view(User $user, MediaAsset $asset): bool
     {
+        if ($asset->purpose === 'objective_evidence') {
+            $mediaable = $asset->mediaable;
+            $objective = match (true) {
+                $mediaable instanceof Objective => $mediaable,
+                $mediaable instanceof ObjectiveEvidence => $mediaable->objective,
+                default => null,
+            };
+
+            return $objective !== null
+                && Gate::forUser($user)->allows('view', $objective);
+        }
+
         $relationship = $asset->relationship;
 
         if (!$relationship) {

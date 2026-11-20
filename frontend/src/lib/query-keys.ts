@@ -17,6 +17,7 @@ export const queryKeys = {
   sessions: (page: number, perPage: number) => ['sessions', { page, per_page: perPage }] as const,
   relationshipsRoot: ['relationships'] as const,
   relationships: (page: number, perPage: number) => ['relationships', { page, per_page: perPage }] as const,
+  allRelationships: ['relationships', 'all', { per_page: 100 }] as const,
   mentorRecommendationsRoot: ['mentor', 'users'] as const,
   mentorRecommendations: (userId: string, relationshipId: string) => [
     'mentor',
@@ -77,6 +78,17 @@ export const queryKeys = {
     'feedback',
     userId ?? 'all',
     relationshipId ?? 'all',
+  ] as const,
+  companyEmployeesRoot: (companyId: string) => ['company-employees', companyId] as const,
+  companyEmployees: (companyId: string, page: number, perPage: number) => [
+    'company-employees',
+    companyId,
+    { page, per_page: perPage },
+  ] as const,
+  menteeEmotionalCheckIns: (relationshipId: string) => [
+    'mentee',
+    'emotional-check-ins',
+    relationshipId,
   ] as const,
   mentorEmotionalCheckIns: (userId: string, relationshipId: string) => [
     'mentor-workspace',

@@ -265,7 +265,47 @@
     "employee_count": "{count} employees",
     "employee_status_active": "Active",
     "employee_status_invited": "Invited",
-    "employee_status_inactive": "Inactive"
+    "employee_status_inactive": "Inactive",
+    "invite": {
+      "open": "Invite employee",
+      "title": "Invite an employee",
+      "description": "We'll send them an email so they can set their password.",
+      "email": "Email address",
+      "name": "First name",
+      "last_name": "Last name (optional)",
+      "position": "Position (optional)",
+      "department": "Department (optional)",
+      "submit": "Send invitation",
+      "cancel": "Cancel",
+      "sent": "Invitation sent to {email}.",
+      "error": "The invitation could not be sent. Please try again."
+    },
+    "validation": {
+      "email_required": "Email address is required.",
+      "email_invalid": "Enter a valid email address.",
+      "name_required": "First name is required.",
+      "name_max": "First name cannot exceed 100 characters.",
+      "last_name_max": "Last name cannot exceed 100 characters.",
+      "position_max": "Position cannot exceed 100 characters.",
+      "department_max": "Department cannot exceed 100 characters."
+    },
+    "manage": {
+      "edit": "Edit",
+      "edit_title": "Edit {name}",
+      "position": "Position",
+      "department": "Department",
+      "save": "Save changes",
+      "cancel": "Cancel",
+      "updated": "{name}'s details updated.",
+      "activate": "Activate",
+      "activated": "{name} activated.",
+      "deactivate": "Deactivate",
+      "deactivate_title": "Deactivate {name}?",
+      "deactivate_description": "They will lose access to the platform until you activate them again.",
+      "deactivate_confirm": "Deactivate",
+      "deactivated": "{name} deactivated.",
+      "error": "The action could not be completed. Please try again."
+    }
   },
   "sessions": {
     "schedule": "Schedule Session",
@@ -362,7 +402,35 @@
     "subtitle": "Basic account information and client type.",
     "language": "Language",
     "language_description": "Choose the language used by the interface and your assessments.",
-    "language_error": "The language could not be updated. Please try again."
+    "language_error": "The language could not be updated. Please try again.",
+    "details": {
+      "title": "Personal details",
+      "description": "Update your name and time zone.",
+      "name": "First name",
+      "last_name": "Last name",
+      "timezone": "Time zone",
+      "submit": "Save details",
+      "saved": "Details saved.",
+      "error": "Your details could not be saved. Please try again."
+    },
+    "avatar": {
+      "title": "Profile photo",
+      "description": "Your photo appears on your profile and in the sidebar.",
+      "label": "New photo",
+      "hint": "JPG, PNG, GIF or WebP, up to 2 MB.",
+      "submit": "Change photo",
+      "saved": "Photo updated.",
+      "error": "The photo could not be updated. Please try again."
+    },
+    "validation": {
+      "name_required": "Enter your name.",
+      "name_max": "Name must be 100 characters or fewer.",
+      "last_name_max": "Last name must be 100 characters or fewer.",
+      "timezone_required": "Select a time zone.",
+      "avatar_required": "Select an image.",
+      "avatar_type": "Select a JPG, PNG, GIF or WebP image.",
+      "avatar_size": "The image must be 2 MB or smaller."
+    }
   },
   "mentor_dashboard": {
     "nav": "Assigned users",
@@ -584,6 +652,44 @@
       "note_or_file": "Enter a note or select a file.",
       "score_range": "Enter a value between 0 and 100.",
       "score_invalid": "Enter a number."
+    }
+  },
+  "mentee": {
+    "check_in": {
+      "title": "How are you feeling today?",
+      "with_mentor": "With {name}",
+      "mood": "Your mood",
+      "mood_levels": {
+        "1": "Very bad",
+        "2": "Bad",
+        "3": "Okay",
+        "4": "Good",
+        "5": "Very good"
+      },
+      "stress": "Your stress level (optional)",
+      "stress_none": "Not specified",
+      "stress_levels": {
+        "1": "Very low",
+        "2": "Low",
+        "3": "Medium",
+        "4": "High",
+        "5": "Very high"
+      },
+      "note": "Note (optional)",
+      "submit": "Save check-in",
+      "saved": "Check-in saved.",
+      "error": "The check-in could not be saved. Please try again.",
+      "recent": "Your recent check-ins",
+      "empty": "You haven't recorded any check-ins yet.",
+      "loading": "Loading check-ins…",
+      "mood_value": "Mood: {level}",
+      "stress_value": "Stress: {level}",
+      "stress_not_set": "Stress not specified"
+    },
+    "validation": {
+      "mood_required": "Choose how you feel.",
+      "stress_invalid": "The stress level is not valid.",
+      "note_max": "The note cannot exceed 10,000 characters."
     }
   },
   "admin": {
@@ -923,6 +1029,9 @@
       "title": "Add evidence",
       "note_label": "Note",
       "note_placeholder": "Describe your progress…",
+      "file_label": "File (optional)",
+      "file_hint": "Images, PDF, documents, audio or video, up to 25 MB.",
+      "file_link": "Download {name}",
       "submit": "Attach evidence",
       "saved": "Evidence added",
       "error": "Could not add the evidence"
@@ -1150,7 +1259,9 @@
       "nothing_to_update": "There is nothing to update.",
       "evidence_required": "Add a note or attach a file.",
       "status_invalid": "Select a valid status.",
-      "invalid_id": "Invalid identifier."
+      "invalid_id": "Invalid identifier.",
+      "file_too_large": "The file must be 25 MB or smaller.",
+      "file_unsupported": "Select a supported file type."
     },
     "feedback": {
       "objective_created": "Objective created",

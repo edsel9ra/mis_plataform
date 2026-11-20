@@ -30,6 +30,10 @@ const config: NextConfig = {
         source: '/api/:path*',
         destination: `${apiInternalUrl}/api/:path*`,
       },
+      {
+        source: '/storage/avatars/:path*',
+        destination: `${apiInternalUrl}/storage/avatars/:path*`,
+      },
     ];
   },
   async headers() {

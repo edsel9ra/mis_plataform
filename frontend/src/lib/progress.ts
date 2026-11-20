@@ -37,6 +37,7 @@ export const PROGRESS_ENDPOINTS = {
   objective: (id: string) => `/objectives/${id}`,
   objectiveStatus: (id: string) => `/objectives/${id}/status`,
   objectiveEvidences: (id: string) => `/objectives/${id}/evidences`,
+  objectiveMedia: (id: string) => `/objectives/${id}/media`,
   objectiveProposals: '/objectives/proposals',
   mentorPortfolio: '/mentor/progress/overview',
   mentorPanel: (userId: string) => `/mentor/users/${userId}/progress`,

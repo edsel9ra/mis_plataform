@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Actions\AttachObjectiveEvidenceAction;
 use App\Actions\CreateObjectiveAction;
 use App\Actions\ProposeObjectiveAction;
+use App\Actions\StoreObjectiveEvidenceMediaAction;
 use App\Actions\TransitionObjectiveStatusAction;
 use App\Actions\UpdateObjectiveAction;
 use App\Http\Requests\Objective\ProposeObjectiveRequest;
@@ -12,6 +13,8 @@ use App\Http\Requests\Objective\StoreObjectiveEvidenceRequest;
 use App\Http\Requests\Objective\StoreObjectiveRequest;
 use App\Http\Requests\Objective\TransitionObjectiveStatusRequest;
 use App\Http\Requests\Objective\UpdateObjectiveRequest;
+use App\Http\Requests\Objective\UploadObjectiveEvidenceMediaRequest;
+use App\Http\Resources\MediaAssetResource;
 use App\Http\Resources\ObjectiveEvidenceResource;
 use App\Http\Resources\ObjectiveResource;
 use App\Models\MentorshipRelationship;
@@ -90,6 +93,16 @@ class ObjectiveController
         $evidence = $this->attachEvidence->execute($request->user(), $objective, $request->validated());
 
         return (new ObjectiveEvidenceResource($evidence->load('user')))
+            ->response()
+            ->setStatusCode(201);
+    }
+
+    public function media(UploadObjectiveEvidenceMediaRequest $request, Objective $objective): JsonResponse
+    {
+        $asset = app(StoreObjectiveEvidenceMediaAction::class)
+            ->execute($request->file('file'), $request->user(), $objective);
+
+        return (new MediaAssetResource($asset))
             ->response()
             ->setStatusCode(201);
     }
