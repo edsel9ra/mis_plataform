@@ -122,6 +122,14 @@ Plan: `plan.md`. En orden de dependencia.
   - Hecho cuando: cada acción actualiza la lista y anuncia el resultado, el foco vuelve a la fila y Vitest pasa.
 
 - [ ] **T020.8. Fixtures y suite de accesibilidad de las pantallas nuevas.** RNF-020.3
+  - Resultado (2026-11-20): criterio local cumplido; falta el CI, que no ha corrido porque la rama no está subida.
+    - Seeder: tres empleados nuevos en Audit Corp (5 en total): `invitado.audit` (`invited`), `inactivo.audit` (`inactive`) y `rotativo.audit` («Rotativo Audit», `active`), que la prueba desactiva y vuelve a activar. ana ya tenía relación con el check-in emocional y un check-in sembrado.
+    - `routes.ts`: nueva ruta `kai-dashboard`, el panel sin la tarjeta de check-in. Ya estaban `ana-dashboard`, `ana-profile` y `empresa-admin-employees`.
+    - `focus.spec.ts`: 9 pruebas nuevas: perfil (guardar, 422 de zona horaria, foto), check-in (teclado, envío vacío, kai sin tarjeta), evidencia con fichero, invitar (teclado, duplicado, éxito, axe del diálogo a 1280 y 320 px) y el ciclo editar/desactivar/activar con axe del diálogo de confirmación.
+    - `animations.ts` reúne `AXE_TAGS` y la espera a las animaciones finitas, que usan `axe.spec.ts` y `focus.spec.ts`.
+    - Suite completa, 154 pruebas, dos veces seguidas sin volver a sembrar: 154/154 (5,6 min) y 154/154 (5,8 min), con un solo worker. La primera ejecución encontró un defecto del test, no de la app: `getByRole('radio', { name: 'Bien' })` también encajaba con «Muy bien». Se corrigió con `exact: true` y se volvió a sembrar antes de las dos pasadas.
+    - Cada pasada añade un empleado invitado. Tras dos pasadas hay 7 de 20 en el plan startup y «Rotativo Audit» sigue en la página 1.
+    - Junto con esta tarea, a petición del usuario: `buildTimeZoneOptions` (disponibilidad y reprogramar) traduce las 19 zonas con nombre antiguo, con 3 tests nuevos. Vitest 464, typecheck y lint limpios, `AuditTargetGuardTest` 6/6 y build de producción correcto.
   - El seeder deja los datos que hacen falta: una relación de ana con check-ins y un empleado invitado e inactivo para activarlo. Se añaden rutas a `routes.ts` y pruebas de foco por flujo.
   - Hecho cuando:
     - la suite completa pasa dos veces seguidas en local sin volver a sembrar;

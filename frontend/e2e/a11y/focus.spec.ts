@@ -1,7 +1,9 @@
 import { expect, test, type Browser, type BrowserContext, type Page } from '@playwright/test';
+import { AxeBuilder } from '@axe-core/playwright';
 import fs from 'node:fs';
 import path from 'node:path';
 import { storageStatePath, type AccountRole } from './accounts';
+import { AXE_TAGS, waitForFiniteAnimations } from './animations';
 
 const WIDTHS = { mobile: 375, desktop: 1280, narrow: 320 };
 
@@ -545,4 +547,284 @@ test('T019.9 · asistencia: marcar un estado anuncia, conserva el foco y no usa 
 
   // The state is also conveyed by the "Estado actual:" text, not color alone.
   await expect(page.getByText(/Estado actual:/)).toContainText(pressedText!.trim());
+});
+
+// ———————————————————————————— T020.8 · pantallas nuevas de la spec 020
+// Todas las pruebas dejan el estado consistente para poder repetir la suite
+// sin volver a sembrar (el check-in y la evidencia se acumulan; el empleado
+// invitado nuevo queda en la lista sin romper las demás pruebas).
+
+const tinyPng = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==',
+  'base64',
+);
+
+// — T020.8 · perfil —
+
+test('T020.8 · perfil: guardar datos anuncia el éxito y conserva el foco', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto('/profile');
+  await waitForPage(page);
+
+  const save = page.getByRole('button', { name: 'Guardar datos' });
+  await save.click();
+  await expect(page.locator('[role="status"]').filter({ hasText: 'Datos guardados.' })).toHaveCount(1, { timeout: 15_000 });
+  expect(await save.evaluate((el) => el === document.activeElement), `focus should stay on Guardar datos (${await describeFocused(page)})`).toBe(true);
+});
+
+test('T020.8 · perfil: un 422 del servidor enfoca la zona horaria', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.route('**/api/v1/profile', (route) => {
+    if (route.request().method() === 'PUT') {
+      void route.fulfill({ status: 422, contentType: 'application/json', body: JSON.stringify({ errors: { timezone: ['La zona horaria no es válida.'] } }) });
+    } else {
+      void route.continue();
+    }
+  });
+  await page.goto('/profile');
+  await waitForPage(page);
+
+  await page.getByRole('button', { name: 'Guardar datos' }).click();
+  await expect(page.getByText('La zona horaria no es válida.')).toBeVisible({ timeout: 10_000 });
+  const timezone = page.getByLabel('Zona horaria');
+  expect(await timezone.evaluate((el) => el === document.activeElement), `focus should be on Zona horaria (${await describeFocused(page)})`).toBe(true);
+});
+
+test('T020.8 · perfil: el avatar sube una imagen y rechaza un .txt sin petición', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  let avatarPosts = 0;
+  page.on('request', (r) => { if (r.url().includes('/profile/avatar')) avatarPosts += 1; });
+  await page.goto('/profile');
+  await waitForPage(page);
+
+  const fileInput = page.getByLabel('Nueva foto');
+  const submit = page.getByRole('button', { name: 'Cambiar foto' });
+
+  await fileInput.setInputFiles({ name: 'avatar-t0208.png', mimeType: 'image/png', buffer: tinyPng });
+  await submit.click();
+  await expect(page.locator('[role="status"]').filter({ hasText: 'Foto actualizada.' })).toHaveCount(1, { timeout: 20_000 });
+  expect(await submit.evaluate((el) => el === document.activeElement), `focus should stay on Cambiar foto (${await describeFocused(page)})`).toBe(true);
+  expect(avatarPosts).toBe(1);
+
+  await fileInput.setInputFiles({ name: 'nota-t0208.txt', mimeType: 'text/plain', buffer: Buffer.from('hola') });
+  avatarPosts = 0;
+  await submit.click();
+  await expect(page.getByText('Selecciona una imagen JPG, PNG, GIF o WebP.')).toBeVisible({ timeout: 5_000 });
+  expect(avatarPosts).toBe(0);
+});
+
+// — T020.8 · check-in emocional —
+
+const checkInCard = (page: Page) => page.locator('section').filter({ has: page.getByRole('heading', { name: '¿Cómo te sientes hoy?' }) }).first();
+
+test('T020.8 · check-in: envío por teclado anuncia, conserva el foco y encabeza la lista', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto('/dashboard/personal');
+  await waitForPage(page);
+
+  const card = checkInCard(page);
+  await expect(card).toBeVisible();
+
+  // Teclado: flechas dentro del grupo de radios eligen ánimo y estrés.
+  await card.getByRole('radio', { name: 'Muy mal' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(card.getByRole('radio', { name: 'Bien', exact: true })).toBeChecked();
+  await card.getByRole('radio', { name: 'Sin indicar' }).focus();
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await page.keyboard.press('ArrowRight');
+  await expect(card.getByRole('radio', { name: 'Alto', exact: true })).toBeChecked();
+
+  const submit = card.getByRole('button', { name: 'Guardar check-in' });
+  await submit.focus();
+  await page.keyboard.press('Enter');
+  await expect(card.locator('[role="status"]').filter({ hasText: 'Check-in guardado.' })).toHaveCount(1, { timeout: 15_000 });
+  expect(await submit.evaluate((el) => el === document.activeElement), `focus should stay on Guardar check-in (${await describeFocused(page)})`).toBe(true);
+
+  const newest = card.getByRole('list').first().locator('li').first();
+  await expect(newest).toContainText('Ánimo: Bien');
+  await expect(newest).toContainText('Estrés: Alto');
+});
+
+test('T020.8 · check-in: envío vacío muestra el error de ánimo sin petición', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  let posts = 0;
+  page.on('request', (r) => { if (r.url().includes('/emotional-check-ins') && r.method() === 'POST') posts += 1; });
+  await page.goto('/dashboard/personal');
+  await waitForPage(page);
+
+  const card = checkInCard(page);
+  await card.getByRole('button', { name: 'Guardar check-in' }).click();
+  await expect(card.getByText('Elige cómo te sientes.')).toBeVisible({ timeout: 5_000 });
+  expect(posts).toBe(0);
+});
+
+test('T020.8 · check-in: kai sin entitlement no ve la tarjeta ni pide sus datos', async ({ browser }) => {
+  const page = await newPage(browser, 'kai', WIDTHS.desktop);
+  let checkInRequests = 0;
+  page.on('request', (r) => { if (r.url().includes('/emotional-check-ins')) checkInRequests += 1; });
+  await page.goto('/dashboard/personal');
+  await waitForPage(page);
+
+  await expect(page.getByRole('heading', { name: '¿Cómo te sientes hoy?' })).toHaveCount(0);
+  expect(checkInRequests).toBe(0);
+});
+
+// — T020.8 · evidencia de objetivo —
+
+test('T020.8 · evidencia: adjunta un .txt, anuncia y devuelve el foco; .html es error de campo', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  let evidencePosts = 0;
+  page.on('request', (r) => { if (r.url().includes('/evidences') || r.url().includes('/media')) evidencePosts += 1; });
+  await page.goto('/dashboard/progreso');
+  await waitForPage(page);
+
+  const objective = page.locator('li').filter({ has: page.getByRole('button', { name: 'Aportar evidencia' }) }).first();
+  const addButton = objective.getByRole('button', { name: 'Aportar evidencia' });
+  await addButton.click();
+
+  const fileName = `evidencia-t0208-${Date.now() % 100000}.txt`;
+  await objective.getByLabel('Nota').fill('Evidencia de la suite T020.8');
+  await objective.getByLabel('Archivo (opcional)').setInputFiles({ name: fileName, mimeType: 'text/plain', buffer: Buffer.from('contenido') });
+  await objective.getByRole('button', { name: 'Adjuntar evidencia' }).click();
+
+  await expect(objective.locator('[role="status"]').filter({ hasText: 'Evidencia añadida' })).toHaveCount(1, { timeout: 20_000 });
+  expect(await addButton.evaluate((el) => el === document.activeElement), `focus should return to Aportar evidencia (${await describeFocused(page)})`).toBe(true);
+  await expect(objective.getByRole('link', { name: `Descargar ${fileName}` })).toBeVisible();
+  expect(evidencePosts).toBeGreaterThan(0);
+
+  await addButton.click();
+  await objective.getByLabel('Nota').fill('Otra evidencia');
+  await objective.getByLabel('Archivo (opcional)').setInputFiles({ name: 'mala-t0208.html', mimeType: 'text/html', buffer: Buffer.from('<p>x</p>') });
+  evidencePosts = 0;
+  await objective.getByRole('button', { name: 'Adjuntar evidencia' }).click();
+  await expect(objective.getByText('Selecciona un archivo de un tipo admitido.')).toBeVisible({ timeout: 5_000 });
+  expect(evidencePosts).toBe(0);
+});
+
+// — T020.8 · invitar empleado —
+
+test('T020.8 · invitar: teclado, duplicado, éxito y axe del diálogo', async ({ browser }) => {
+  const page = await newPage(browser, 'empresaAdmin', WIDTHS.desktop);
+  await page.goto('/dashboard/empresa/employees');
+  await waitForPage(page);
+
+  const inviteButton = page.getByRole('button', { name: 'Invitar empleado' });
+  await inviteButton.focus();
+  await page.keyboard.press('Enter');
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await waitForFiniteAnimations(page);
+  const emailInput = page.getByLabel('Correo electrónico');
+  expect(await emailInput.evaluate((el) => el === document.activeElement), `focus should be in Email (${await describeFocused(page)})`).toBe(true);
+
+  // Axe con el diálogo abierto a ambos anchos.
+  for (const width of [1280, 320]) {
+    await page.setViewportSize({ width, height: 800 });
+    await waitForFiniteAnimations(page);
+    const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+    expect(violations, `axe invite dialog @${width}px: ${JSON.stringify(violations.map((v) => v.id))}`).toEqual([]);
+  }
+  await page.setViewportSize({ width: 1280, height: 800 });
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden({ timeout: 5_000 });
+  expect(await inviteButton.evaluate((el) => el === document.activeElement), `focus should return to Invitar empleado (${await describeFocused(page)})`).toBe(true);
+
+  // Email duplicado: error bajo Email, foco allí y valores conservados.
+  await inviteButton.click();
+  await expect(dialog).toBeVisible();
+  await emailInput.fill('empleado.audit@audit.mis.test');
+  await page.getByLabel('Nombre').fill('Duplicado');
+  await page.getByLabel('Apellidos (opcional)').fill('Audit');
+  await page.getByLabel('Puesto (opcional)').fill('Guardado');
+  await page.getByRole('button', { name: 'Enviar invitación' }).click();
+  await expect(page.getByText('El email ya está registrado.')).toBeVisible({ timeout: 10_000 });
+  expect(await emailInput.evaluate((el) => el === document.activeElement), `focus should be on Email (${await describeFocused(page)})`).toBe(true);
+  expect(await page.getByLabel('Puesto (opcional)').inputValue()).toBe('Guardado');
+
+  // Éxito con email único.
+  const unique = `${Date.now() % 100000}`;
+  await emailInput.fill(`invite.t0208.${unique}@audit.mis.test`);
+  await page.getByRole('button', { name: 'Enviar invitación' }).click();
+  await expect(dialog).toBeHidden({ timeout: 20_000 });
+  await expect(page.locator('[role="status"]').filter({ hasText: `Invitación enviada a invite.t0208.${unique}@audit.mis.test.` })).toHaveCount(1, { timeout: 10_000 });
+  expect(await inviteButton.evaluate((el) => el === document.activeElement), `focus should return to Invitar empleado (${await describeFocused(page)})`).toBe(true);
+  const firstCard = page.locator('div.rounded-xl', { has: page.getByRole('heading') }).first();
+  await expect(firstCard.locator('span.rounded-full').first()).toHaveText('Invitado');
+});
+
+// — T020.8 · editar / desactivar / activar —
+
+const employeeCard = (page: Page, name: string) => page.locator('div.rounded-xl', { has: page.getByRole('heading', { name, exact: true }) }).first();
+
+test('T020.8 · empleados: estados sembrados y ciclo editar/desactivar/activar con foco', async ({ browser }) => {
+  const page = await newPage(browser, 'empresaAdmin', WIDTHS.desktop);
+  await page.goto('/dashboard/empresa/employees');
+  await waitForPage(page);
+
+  // Estados sembrados: el invitado muestra Activar + Desactivar; el inactivo, Activar.
+  const invitedCard = page.locator('div.rounded-xl').filter({ has: page.locator('span.rounded-full', { hasText: 'Invitado' }) }).first();
+  const invitedName = (await invitedCard.getByRole('heading').first().innerText()).trim();
+  await expect(invitedCard.getByRole('button', { name: `Activar ${invitedName}`, exact: true })).toBeVisible();
+  await expect(invitedCard.getByRole('button', { name: `Desactivar ${invitedName}`, exact: true })).toBeVisible();
+  const inactiveCard = page.locator('div.rounded-xl').filter({ has: page.locator('span.rounded-full', { hasText: 'Inactivo' }) }).first();
+  const inactiveName = (await inactiveCard.getByRole('heading').first().innerText()).trim();
+  await expect(inactiveCard.getByRole('button', { name: `Activar ${inactiveName}`, exact: true })).toBeVisible();
+  await expect(inactiveCard.getByRole('button', { name: `Desactivar ${inactiveName}`, exact: true })).toHaveCount(0);
+
+  const ROTATIVO = 'Rotativo Audit';
+  const card = employeeCard(page, ROTATIVO);
+  const heading = page.getByRole('heading', { name: ROTATIVO, exact: true });
+  const editButton = card.getByRole('button', { name: `Editar ${ROTATIVO}`, exact: true });
+
+  // Editar: cambia el puesto, el foco vuelve a «Editar …» y se anuncia.
+  await editButton.click();
+  let dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await waitForFiniteAnimations(page);
+  const puesto = page.getByLabel('Puesto');
+  expect(await puesto.evaluate((el) => el === document.activeElement), `focus should be in Puesto (${await describeFocused(page)})`).toBe(true);
+  await puesto.fill(`Rot-${Date.now() % 100000}`);
+  await dialog.getByRole('button', { name: 'Guardar cambios' }).click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  await expect(page.locator('[role="status"]').filter({ hasText: `Datos de ${ROTATIVO} actualizados.` })).toHaveCount(1, { timeout: 10_000 });
+  expect(await editButton.evaluate((el) => el === document.activeElement), `focus should return to Editar (${await describeFocused(page)})`).toBe(true);
+
+  // Desactivar: foco en «Cancelar», axe del diálogo, Escape sin petición.
+  const deactivateButton = card.getByRole('button', { name: `Desactivar ${ROTATIVO}`, exact: true });
+  let employeeCalls = 0;
+  const countCalls = (r: { url: () => string }) => { if (r.url().includes('/api/v1/employees/')) employeeCalls += 1; };
+  page.on('request', countCalls);
+  await deactivateButton.click();
+  dialog = page.getByRole('dialog');
+  await expect(dialog).toBeVisible({ timeout: 10_000 });
+  await waitForFiniteAnimations(page);
+  const cancelButton = dialog.getByRole('button', { name: 'Cancelar' });
+  expect(await cancelButton.evaluate((el) => el === document.activeElement), `focus should be on Cancelar (${await describeFocused(page)})`).toBe(true);
+  const { violations } = await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
+  expect(violations, `axe deactivate dialog: ${JSON.stringify(violations.map((v) => v.id))}`).toEqual([]);
+
+  await page.keyboard.press('Escape');
+  await expect(dialog).toBeHidden({ timeout: 5_000 });
+  expect(employeeCalls).toBe(0);
+  expect(await deactivateButton.evaluate((el) => el === document.activeElement), `focus should return to Desactivar (${await describeFocused(page)})`).toBe(true);
+
+  // Confirmar: foco en el heading del nombre y anuncio.
+  await deactivateButton.click();
+  await expect(dialog).toBeVisible();
+  await dialog.getByRole('button', { name: 'Desactivar', exact: true }).click();
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  await expect(page.locator('[role="status"]').filter({ hasText: `${ROTATIVO} desactivado.` })).toHaveCount(1, { timeout: 15_000 });
+  expect(await heading.evaluate((el) => el === document.activeElement), `focus should be on the name heading (${await describeFocused(page)})`).toBe(true);
+
+  // Activar de vuelta (termina activo → la prueba es repetible).
+  const activateButton = card.getByRole('button', { name: `Activar ${ROTATIVO}`, exact: true });
+  await activateButton.click();
+  await expect(page.locator('[role="status"]').filter({ hasText: `${ROTATIVO} activado.` })).toHaveCount(1, { timeout: 15_000 });
+  expect(await heading.evaluate((el) => el === document.activeElement), `focus should be on the name heading (${await describeFocused(page)})`).toBe(true);
+  await expect(card.locator('span.rounded-full').first()).toHaveText('Activo');
 });

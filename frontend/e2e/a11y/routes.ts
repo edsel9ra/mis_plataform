@@ -48,6 +48,7 @@ export const ROUTES: AuditRoute[] = [
   { name: 'ana-messages', path: '/messages', role: 'ana' },
 
   // kai / carlos / diana
+  { name: 'kai-dashboard', path: '/dashboard/personal', role: 'kai' },
   { name: 'kai-personality-test', path: '/onboarding/test-personalidad', role: 'kai' },
   { name: 'carlos-dashboard', path: '/dashboard/familiar', role: 'carlos' },
   { name: 'diana-dashboard', path: '/dashboard/grupal', role: 'diana' },

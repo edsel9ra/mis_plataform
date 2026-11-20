@@ -116,6 +116,10 @@ class AccessibilityAuditSeeder extends Seeder
         $companyAdmin = $this->auditUser('empresa.admin.audit', 'company_admin', 'empresa', $passwordHash);
         $employeeUser = $this->auditUser('empleado.audit', 'employee', 'empresa', $passwordHash);
         $employeeUser2 = $this->auditUser('empleado2.audit', 'employee', 'empresa', $passwordHash);
+        $invitedUser = $this->auditUser('invitado.audit', 'employee', 'empresa', $passwordHash);
+        $inactiveUser = $this->auditUser('inactivo.audit', 'employee', 'empresa', $passwordHash);
+        $rotativoUser = $this->auditUser('rotativo.audit', 'employee', 'empresa', $passwordHash);
+        $rotativoUser->forceFill(['name' => 'Rotativo', 'last_name' => 'Audit'])->save();
         $this->auditUser('empresa.setup.audit', 'company_admin', 'empresa', $passwordHash);
 
         $fillers = collect(range(1, 25))->map(
@@ -175,7 +179,7 @@ class AccessibilityAuditSeeder extends Seeder
         $companyAdmin->forceFill(['company_id' => $company->id])->save();
         $this->subscribe('company', $company->id, $startupPlan, $now);
 
-        foreach ([[$employeeUser, 'Analista'], [$employeeUser2, 'Coordinador']] as [$employee, $position]) {
+        foreach ([[$employeeUser, 'Analista'], [$employeeUser2, 'Coordinador'], [$rotativoUser, 'Rotativo']] as [$employee, $position]) {
             $employee->forceFill(['company_id' => $company->id])->save();
             Employee::create([
                 'company_id' => $company->id,
@@ -187,6 +191,27 @@ class AccessibilityAuditSeeder extends Seeder
                 'activated_at' => $now->subDays(25),
             ]);
         }
+        // Never-activated invitee and a deactivated employee for the employee
+        // management screens; neither is used to log in.
+        $invitedUser->forceFill(['company_id' => $company->id, 'is_active' => false])->save();
+        Employee::create([
+            'company_id' => $company->id,
+            'user_id' => $invitedUser->id,
+            'position' => 'Invitado',
+            'department' => 'Auditoría',
+            'status' => 'invited',
+            'invited_at' => $now->subDays(7),
+        ]);
+        $inactiveUser->forceFill(['company_id' => $company->id, 'is_active' => false])->save();
+        Employee::create([
+            'company_id' => $company->id,
+            'user_id' => $inactiveUser->id,
+            'position' => 'Inactivo',
+            'department' => 'Auditoría',
+            'status' => 'inactive',
+            'invited_at' => $now->subDays(40),
+            'activated_at' => $now->subDays(35),
+        ]);
         $created['employees'] = Employee::query()->count();
 
         // ── Personality assessments ──────────────────────────────────────
