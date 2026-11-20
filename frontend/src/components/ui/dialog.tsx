@@ -176,7 +176,7 @@ export function DialogContent({ className, children, showClose = true, ...props 
           <button
             data-dialog-close
             onClick={() => onOpenChange(false)}
-            className="absolute right-4 top-4 rounded-lg p-1 text-gray-400 hover:bg-gray-100 hover:text-gray-600 transition-colors"
+            className="absolute right-4 top-4 rounded-lg p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-600 transition-colors"
             aria-label={t('common.close')}
           >
             <X className="h-4 w-4" />

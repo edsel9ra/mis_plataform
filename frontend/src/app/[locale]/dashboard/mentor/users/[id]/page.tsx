@@ -152,6 +152,7 @@ function ErrorState({ message }: { message: string }) {
 
   return (
     <Card className="mx-auto max-w-xl py-12 text-center" role="alert">
+      <h1 className="mb-3 text-2xl font-bold text-slate-950">{t('mentor_dashboard.title')}</h1>
       <p className="font-medium text-red-700">{message}</p>
       <Link href={localePath('/dashboard/mentor', locale)} className="mt-4 inline-flex text-sm font-semibold text-primary-700 hover:underline">
         {t('mentor_dashboard.back')}

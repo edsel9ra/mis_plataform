@@ -1,6 +1,6 @@
 # Spec 005 — Participación dinámica en sesiones colectivas
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.0, aprobada.
 **Dependencias:** hijas 003 (`agenda-access-timezone`) y 004 (`availability-booking`), especialmente la inscripción inicial colectiva y el concepto de miembro activo.

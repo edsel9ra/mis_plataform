@@ -1,6 +1,6 @@
 import { ApiError } from './api';
 
-export type ApiErrorKind = 'validation' | 'auth' | 'network' | 'server' | 'unknown' | 'aborted';
+export type ApiErrorKind = 'validation' | 'auth' | 'network' | 'server' | 'rate_limited' | 'unknown' | 'aborted';
 
 export function classifyApiError(error: unknown): ApiErrorKind {
   if (!(error instanceof ApiError)) return 'unknown';
@@ -8,9 +8,14 @@ export function classifyApiError(error: unknown): ApiErrorKind {
   if (error.code === 'network' || error.code === 'timeout') return 'network';
   if (error.status === 401 || error.status === 403) return 'auth';
   if (error.status === 422) return 'validation';
+  if (error.status === 429) return 'rate_limited';
   if (error.status >= 500) return 'server';
 
   return 'unknown';
+}
+
+export function isNotFoundError(error: unknown): boolean {
+  return error instanceof ApiError && error.status === 404;
 }
 
 export function apiErrorMessage(
@@ -25,6 +30,7 @@ export function apiErrorMessage(
     return translate(error.status === 401 ? 'common.unauthorized_error' : 'common.forbidden_error');
   }
 
+  if (kind === 'rate_limited') return translate('common.rate_limited');
   if (kind === 'network') return translate('common.network_error');
   if (kind === 'server') return translate('common.server_error');
   if (kind === 'aborted') return '';

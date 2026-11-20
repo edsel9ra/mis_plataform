@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -158,6 +158,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: assessmentPage, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const { data: catalogData, isLoading: catalogLoading, isFetching: catalogFetching, error: catalogError } = useQuery<PaginatedResponse<EvaluationCatalogItem>>({
@@ -172,6 +173,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: catalogPage, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const { data: resultData, isLoading: resultsLoading, isFetching: resultsFetching, error: resultsError } = useQuery<PaginatedResponse<EvaluationResult>>({
@@ -185,6 +187,7 @@ export default function AdminEvaluations() {
 
       return normalizePaginatedResponse(response, { page: resultPage, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const usersQuery = useInfiniteQuery({
@@ -360,7 +363,7 @@ export default function AdminEvaluations() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.evaluations')}</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-600">
             {t('admin.evaluations_description')}
           </p>
         </div>
@@ -401,7 +404,7 @@ export default function AdminEvaluations() {
                 <Input aria-label={t('common.search')} placeholder={t('common.search')} value={catalogSearch} onChange={(e) => setCatalogSearch(e.target.value)} />
               </div>
               <div className="w-44">
-                <Select options={[{ value: '', label: t('common.all') }, ...clientTypeOptions]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
+                <Select aria-label={t('admin.client_type')} options={[{ value: '', label: t('common.all') }, ...clientTypeOptions]} value={catalogClientType} onChange={(e) => setCatalogClientType(e.target.value)} />
               </div>
             </div>
           </Card>
@@ -417,7 +420,7 @@ export default function AdminEvaluations() {
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <p className="font-semibold text-gray-950">{localizedText(evaluation.title, locale)}</p>
-                      <p className="mt-1 text-sm text-gray-500">{localizedText(evaluation.description, locale)}</p>
+                      <p className="mt-1 text-sm text-gray-600">{localizedText(evaluation.description, locale)}</p>
                     </div>
                     <Badge variant={evaluation.is_active ? 'success' : 'warning'}>{evaluation.is_active ? t('common.active') : t('common.inactive')}</Badge>
                   </div>
@@ -433,7 +436,7 @@ export default function AdminEvaluations() {
                   </div>
                 </button>
               ))}
-              {catalog.length === 0 && <p className="text-sm text-gray-500">{t('common.no_results')}</p>}
+              {catalog.length === 0 && <p className="text-sm text-gray-600">{t('common.no_results')}</p>}
             </div>
 
             <Card className="border-0 shadow-sm ring-1 ring-slate-100">
@@ -443,7 +446,7 @@ export default function AdminEvaluations() {
                     <div className="flex items-start justify-between gap-4">
                       <div>
                         <CardTitle>{localizedText(selectedEvaluation.title, locale)}</CardTitle>
-                        <p className="mt-1 text-sm text-gray-500">{selectedEvaluation.slug}</p>
+                        <p className="mt-1 text-sm text-gray-600">{selectedEvaluation.slug}</p>
                       </div>
                       <div className="flex gap-2">
                         <Button variant="outline" size="sm" onClick={() => openEditEvaluation(selectedEvaluation)}>{t('common.edit')}</Button>
@@ -461,7 +464,7 @@ export default function AdminEvaluations() {
                     {selectedEvaluation.questions?.map((question, index) => (
                       <div key={`${question.id ?? index}`} className="rounded-xl border border-slate-100 bg-slate-50 p-3">
                         <p className="text-sm font-medium text-slate-900">{index + 1}. {question.text}</p>
-                        <p className="mt-1 text-xs text-slate-500">{question.options.length} {t('admin.options')} · {question.dimension ?? t('admin.no_dimension')}</p>
+                        <p className="mt-1 text-xs text-slate-600">{question.options.length} {t('admin.options')} · {question.dimension ?? t('admin.no_dimension')}</p>
                       </div>
                     ))}
                   </div>
@@ -470,7 +473,7 @@ export default function AdminEvaluations() {
                 <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-center">
                   <Sparkles className="h-8 w-8 text-primary-500" aria-hidden="true" />
                   <p className="mt-3 font-semibold text-slate-900">{t('admin.select_evaluation')}</p>
-                  <p className="mt-1 max-w-xs text-sm text-slate-500">{t('admin.edit_evaluation_description')}</p>
+                  <p className="mt-1 max-w-xs text-sm text-slate-600">{t('admin.edit_evaluation_description')}</p>
                 </div>
               )}
             </Card>
@@ -512,7 +515,7 @@ export default function AdminEvaluations() {
                       ? <Badge variant="success">{t('common.completed')}</Badge>
                       : <Badge variant="warning">{t('common.pending')}</Badge>}
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-600">
                     {assessment.completed_at ? new Date(assessment.completed_at).toLocaleDateString(locale) : '—'}
                   </p>
                 </button>
@@ -540,7 +543,7 @@ export default function AdminEvaluations() {
                 <div className="flex items-start justify-between">
                   <div>
                     <CardTitle>{selectedAssessment.user.name} {selectedAssessment.user.last_name ?? ''}</CardTitle>
-                    <p className="text-sm text-gray-500">{selectedAssessment.user.email}</p>
+                    <p className="text-sm text-gray-600">{selectedAssessment.user.email}</p>
                   </div>
                   <div className="flex gap-2">
                     <Button variant="outline" size="sm" onClick={() => openEditAssessment(selectedAssessment)}>{t('common.edit')}</Button>
@@ -597,16 +600,16 @@ export default function AdminEvaluations() {
                         <span className="font-medium text-gray-900">
                           {result.user.name} {result.user.last_name ?? ''}
                         </span>
-                        <p className="mt-1 text-sm text-gray-500">{localizedText(result.assessment.title, locale)}</p>
+                        <p className="mt-1 text-sm text-gray-600">{localizedText(result.assessment.title, locale)}</p>
                       </div>
                       <Badge variant={result.passed ? 'success' : 'warning'}>{Math.round(result.score)}%</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-gray-400">
+                    <p className="mt-1 text-xs text-gray-600">
                       {new Date(result.completed_at).toLocaleDateString(locale)}
                     </p>
                   </button>
                 ))}
-                {evaluationResults.length === 0 && <p className="text-sm text-gray-500">{t('common.no_results')}</p>}
+                {evaluationResults.length === 0 && <p className="text-sm text-gray-600">{t('common.no_results')}</p>}
               </div>
 
               {resultData && (
@@ -630,7 +633,7 @@ export default function AdminEvaluations() {
                   <CardHeader className="mb-0 p-0">
                     <div>
                       <CardTitle>{localizedText(selectedEvaluationResult.assessment.title, locale)}</CardTitle>
-                      <p className="mt-1 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-gray-600">
                         {selectedEvaluationResult.user.name} {selectedEvaluationResult.user.last_name ?? ''} · {selectedEvaluationResult.user.email}
                       </p>
                     </div>
@@ -657,7 +660,7 @@ export default function AdminEvaluations() {
                 <div className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-dashed border-slate-200 text-center">
                   <BarChart3 className="h-8 w-8 text-primary-500" aria-hidden="true" />
                   <p className="mt-3 font-semibold text-slate-900">{t('admin.select_result')}</p>
-                  <p className="mt-1 max-w-xs text-sm text-slate-500">{t('admin.result_details')}</p>
+                  <p className="mt-1 max-w-xs text-sm text-slate-600">{t('admin.result_details')}</p>
                 </div>
               )}
             </Card>
@@ -783,7 +786,7 @@ function SummaryCard({ label, value, icon: Icon, color }: { label: string; value
     <Card className="border-0 shadow-sm ring-1 ring-slate-100">
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-sm text-gray-500">{label}</p>
+          <p className="text-sm text-gray-600">{label}</p>
           <p className="mt-2 text-2xl font-bold text-gray-950">{value}</p>
         </div>
         <span className={`rounded-2xl p-3 ${color}`}>
@@ -797,7 +800,7 @@ function SummaryCard({ label, value, icon: Icon, color }: { label: string; value
 function InfoPill({ label, value }: { label: string; value: string | number }) {
   return (
     <div className="rounded-2xl border border-slate-100 bg-slate-50 px-4 py-3">
-      <p className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</p>
+      <p className="text-xs font-medium uppercase tracking-wide text-slate-600">{label}</p>
       <p className="mt-1 font-semibold text-slate-950">{value}</p>
     </div>
   );

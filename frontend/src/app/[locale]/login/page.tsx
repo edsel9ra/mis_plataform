@@ -62,7 +62,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="min-h-screen overflow-hidden bg-gray-950 px-4 py-8 text-white sm:px-6 lg:px-8">
+    <main className="min-h-screen overflow-hidden bg-gray-950 px-4 py-8 text-white sm:px-6 lg:px-8">
       <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top_left,_rgba(37,99,235,0.28),_transparent_34%),radial-gradient(circle_at_bottom_right,_rgba(124,58,237,0.28),_transparent_30%)]" />
       <div className="relative mx-auto flex min-h-[calc(100vh-4rem)] max-w-6xl items-center">
         <div className="grid w-full gap-8 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
@@ -79,9 +79,9 @@ export default function LoginPage() {
                 <Sparkles className="h-4 w-4" aria-hidden="true" />
                 {t('dashboard.ai_badge')}
               </span>
-              <h1 className="mt-6 text-5xl font-bold tracking-tight text-white">
+              <p className="mt-6 text-5xl font-bold tracking-tight text-white">
                 {t('app.tagline')}
-              </h1>
+              </p>
               <p className="mt-6 text-lg leading-8 text-gray-300">
                 {t('auth.login_subtitle')}
               </p>
@@ -106,7 +106,7 @@ export default function LoginPage() {
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-100">
                 <Brain className="h-8 w-8" aria-hidden="true" />
               </div>
-              <CardTitle className="text-2xl">{t('auth.login_title')}</CardTitle>
+              <CardTitle as="h1" className="text-2xl">{t('auth.login_title')}</CardTitle>
               <p className="mt-2 text-sm text-gray-500">{t('auth.login_subtitle')}</p>
             </CardHeader>
 
@@ -174,7 +174,7 @@ export default function LoginPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

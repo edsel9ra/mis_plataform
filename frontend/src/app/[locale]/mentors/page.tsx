@@ -1,8 +1,8 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -51,9 +51,12 @@ export default function MentorsPage() {
       return normalizePaginatedResponse(response, { page, perPage: 12 });
     },
     enabled: !authLoading,
+    placeholderData: keepPreviousData,
   });
 
-  if (authLoading || isLoading) return user ? <AppShell><PageSpinner /></AppShell> : <PageSpinner />;
+  const frame = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : <main>{content}</main>);
+
+  if (authLoading) return frame(<PageSpinner />);
 
   const mentors = data?.data ?? [];
   const content = (
@@ -72,6 +75,12 @@ export default function MentorsPage() {
 
        {error && <Alert className="mt-6" variant="error">{apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}</Alert>}
 
+      <p role="status" className="sr-only">
+        {isFetching || !data ? '' : mentors.length === 0 ? t('common.no_results') : t('mentors.results_count', { count: data.meta.total })}
+      </p>
+
+      {isLoading && <PageSpinner />}
+
       <div className={`mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3 ${isFetching ? 'opacity-60' : ''}`} aria-busy={isFetching}>
         {mentors.map((mentor) => (
           <Link
@@ -88,7 +97,7 @@ export default function MentorsPage() {
                 className="rounded-2xl bg-primary-100 text-lg font-bold text-primary-700"
               />
               <div>
-                <h3 className="font-semibold text-gray-900">{mentor.full_name}</h3>
+                <h2 className="font-semibold text-gray-900">{mentor.full_name}</h2>
                 <p className="text-sm text-gray-500">{t(`client_types.${mentor.client_type}`)}</p>
               </div>
             </div>
@@ -107,8 +116,8 @@ export default function MentorsPage() {
         ))}
       </div>
 
-      {mentors.length === 0 && (
-        <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
+      {data && mentors.length === 0 && (
+        <p className="mt-8 text-center text-gray-600">{t('common.no_results')}</p>
       )}
 
       {data && (
@@ -129,5 +138,5 @@ export default function MentorsPage() {
     </div>
   );
 
-  return user ? <AppShell>{content}</AppShell> : content;
+  return frame(content);
 }

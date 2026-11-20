@@ -71,7 +71,7 @@ export default function LearningPathsPage() {
                   <CardHeader>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                       <div>
-                        <CardTitle>{localizedText(path.title, locale)}</CardTitle>
+                        <CardTitle as="h2">{localizedText(path.title, locale)}</CardTitle>
                         {path.level && <p className="mt-1 text-sm text-gray-500">{learningLevelLabel(path.level, t)}</p>}
                       </div>
                       <Badge variant={progress >= 100 ? 'success' : progress > 0 ? 'primary' : 'default'}>

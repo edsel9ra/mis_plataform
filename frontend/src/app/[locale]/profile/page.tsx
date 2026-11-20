@@ -11,6 +11,7 @@ import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { localePath } from '@/i18n/paths';
 import { toSkillInputs, type MentorSkillInput } from '@/lib/mentor-skills';
 import { localeOptions } from '@/lib/schemas/auth';
@@ -43,6 +44,7 @@ export default function ProfilePage() {
     try {
       await api.put('/profile/locale', { locale: nextLocale });
       await refreshUser();
+      requestFocusAfterNavigation();
       router.replace(localePath('/profile', nextLocale));
     } catch (error) {
       setLocaleError(error);
@@ -78,7 +80,7 @@ export default function ProfilePage() {
             <div>
               <h2 className="text-xl font-semibold text-gray-950">{user?.name} {user?.last_name}</h2>
               <p className="text-gray-500">{user?.email}</p>
-              <p className="text-sm text-gray-400">
+              <p className="text-sm text-gray-600">
                 {user?.client_type ? clientTypeLabel(user.client_type, t) : t('common.not_applicable')}
                 {' · '}
                 {user?.role ? roleLabel(user.role, t) : t('common.not_applicable')}

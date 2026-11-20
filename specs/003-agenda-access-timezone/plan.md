@@ -1,6 +1,6 @@
 # Plan — Spec 003: Contrato de acceso y zona horaria de agenda
 
-**Estado:** propuesta para aprobación (sin implementación)  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `spec.md`; alcance aprobado como hija de Spec 002 v0.4.0.  
 **Base de diseño:** `specs/002-mentorship-scheduling/plan.md` v1.2.0, subordinada a la spec normativa.  
 **Dependencias:** Spec 002 y definición de responsable de `specs/001-progress-tracking-dashboard/spec.md` §3.1 D10. Es prerrequisito contractual de 004–010.

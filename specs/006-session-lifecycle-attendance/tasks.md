@@ -1,6 +1,6 @@
 # Tareas — Spec 006: Ciclo de vida y asistencia
 
-**Estado:** aprobada; implementación en curso (T006-01–06 completadas).  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/006-session-lifecycle-attendance/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T006-01. Añadir estado terminal y persistencia de asistencia auditada.** RF-006.1, RF-006.6–006.8; CA hija RF-006.1/6–8; CA padre CA-8.3/8.9, CA-11.1/11.6.

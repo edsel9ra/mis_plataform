@@ -144,7 +144,8 @@
     "ocean_chart_label": "OCEAN profile chart",
     "improvement_title": "Areas to improve",
     "improvement_description": "These components have a score below 51. You can focus on strengthening them:",
-    "improvement_score": "Score: {score}"
+    "improvement_score": "Score: {score}",
+    "progress_label": "Test progress"
   },
   "dashboard": {
     "welcome": "Welcome",
@@ -215,7 +216,11 @@
     "relationship_pending": "Your mentorship request is pending review.",
     "relationship_active": "This mentorship is active.",
     "view_sessions": "View sessions",
-    "request_error": "The request could not be sent. Try again."
+    "request_error": "The request could not be sent. Try again.",
+    "results_count": "{count, plural, one {# mentor found} other {# mentors found}}",
+    "not_found_title": "We couldn't find this mentor",
+    "not_found_desc": "The link may be wrong or the profile may no longer be available.",
+    "back_to_list": "Back to mentors"
   },
   "company": {
     "setup_title": "Set up your company",
@@ -567,7 +572,19 @@
     "save_error": "The information could not be saved. Try again.",
     "status_assigned": "Assigned",
     "status_abandoned": "Abandoned",
-    "status_template": "Template"
+    "status_template": "Template",
+    "validation": {
+      "title_min": "The title must be at least 3 characters.",
+      "title_max": "The title can't exceed 160 characters.",
+      "text_max": "The text can't exceed 2,000 characters.",
+      "file_required": "Select a file.",
+      "file_too_large": "The file must be 25 MB or smaller.",
+      "file_unsupported": "Select a supported file type.",
+      "media_unsupported": "Select a supported audio or video file.",
+      "note_or_file": "Enter a note or select a file.",
+      "score_range": "Enter a value between 0 and 100.",
+      "score_invalid": "Enter a number."
+    }
   },
   "admin": {
     "overview": "Admin Dashboard",
@@ -757,7 +774,8 @@
     "not_applicable": "Not applicable",
     "minutes_short": "min",
     "seconds_short": "s",
-    "dismiss": "Dismiss"
+    "dismiss": "Dismiss",
+    "rate_limited": "Too many attempts. Wait a minute and try again."
   },
   "landing": {
     "metric_ocean": "OCEAN profile",
@@ -1118,6 +1136,26 @@
         "competency_key": "competency",
         "other": "other field"
       }
+    },
+    "validation": {
+      "title_min": "The title must be at least 3 characters.",
+      "title_max": "The title can't exceed 200 characters.",
+      "text_required": "This field is required.",
+      "text_max": "The text is too long.",
+      "due_required": "Set a due date.",
+      "date_invalid": "Enter a valid date.",
+      "owner_required": "Select the owner.",
+      "collective_required": "Select the responsible collective.",
+      "individual_no_collective": "An individual objective has no collective type.",
+      "nothing_to_update": "There is nothing to update.",
+      "evidence_required": "Add a note or attach a file.",
+      "status_invalid": "Select a valid status.",
+      "invalid_id": "Invalid identifier."
+    },
+    "feedback": {
+      "objective_created": "Objective created",
+      "evidence_added": "Evidence added",
+      "status_updated": "Status updated: {status}"
     }
   },
   "calendar": {

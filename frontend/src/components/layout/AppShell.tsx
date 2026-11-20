@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { localePath } from '@/i18n/paths';
 import { NotificationBell } from '@/components/layout/NotificationBell';
 import { SessionReminderNotices } from '@/components/layout/SessionReminderNotices';
+import { useMobileNav } from '@/hooks/use-mobile-nav';
 import {
   AlertTriangle,
   Brain,
@@ -28,7 +29,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
   const { user, isLoading, authError, logout } = useAuth();
-  const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
+  const { isOpen: isMobileNavOpen, open: openMobileNav, close: closeMobileNav, menuButtonRef, closeButtonRef, panelRef } = useMobileNav({ pathname, mainId: 'app-content' });
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   const isAdmin = user && (user.role === 'super_admin' || user.role === 'admin');
@@ -43,10 +44,6 @@ export function AppShell({ children }: { children: ReactNode }) {
     }
   }, [authError, isLoading, locale, router, user]);
 
-  useEffect(() => {
-    setIsMobileNavOpen(false);
-  }, [pathname]);
-
   if (authError) {
     return <SessionVerificationFallback />;
   }
@@ -59,12 +56,16 @@ export function AppShell({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-slate-50 lg:flex">
       <a
         href="#app-content"
+        inert={isMobileNavOpen || undefined}
         className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:text-slate-950 focus:shadow-lg"
       >
         {t('common.skip_to_content')}
       </a>
 
-      <header className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-950/10 lg:hidden">
+      <header
+        inert={isMobileNavOpen || undefined}
+        className="sticky top-0 z-40 flex items-center justify-between border-b border-slate-800 bg-slate-950 px-4 py-3 text-white shadow-lg shadow-slate-950/10 lg:hidden"
+      >
         <Link href={localePath('/dashboard', locale)} className="flex items-center gap-2 font-bold">
           <Brain className="h-6 w-6 text-primary-400" aria-hidden="true" />
           MIS
@@ -72,8 +73,9 @@ export function AppShell({ children }: { children: ReactNode }) {
         <div className="flex items-center gap-1">
           <NotificationBell />
           <button
+            ref={menuButtonRef}
             type="button"
-            onClick={() => setIsMobileNavOpen(true)}
+            onClick={openMobileNav}
             className="rounded-lg p-2 text-slate-200 transition hover:bg-slate-800 focus-visible:ring-white"
             aria-label={t('common.open_menu')}
             aria-expanded={isMobileNavOpen}
@@ -88,21 +90,23 @@ export function AppShell({ children }: { children: ReactNode }) {
         type="button"
         className={cn(
           'fixed inset-0 z-40 bg-slate-950/70 backdrop-blur-sm transition-opacity duration-300 ease-out lg:hidden',
-          isMobileNavOpen ? 'opacity-100' : 'pointer-events-none opacity-0',
+          isMobileNavOpen ? 'opacity-100' : 'invisible opacity-0',
         )}
-        onClick={() => setIsMobileNavOpen(false)}
+        onClick={closeMobileNav}
         aria-label={t('common.close')}
-        aria-hidden={!isMobileNavOpen}
-        tabIndex={isMobileNavOpen ? 0 : -1}
+        aria-hidden="true"
+        tabIndex={-1}
       />
 
       <aside
+        ref={panelRef}
         id="app-sidebar"
+        tabIndex={-1}
         className={cn(
-          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/10 bg-slate-950 text-white shadow-2xl transition-[transform,width] duration-300 ease-out',
+          'fixed inset-y-0 left-0 z-50 flex w-72 flex-col border-r border-white/10 bg-slate-950 text-white shadow-2xl transition-[transform,width,visibility] duration-300 ease-out',
           'lg:sticky lg:top-0 lg:z-auto lg:h-screen lg:translate-x-0 lg:shadow-none',
           isSidebarCollapsed ? 'lg:w-20' : 'lg:w-64',
-          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full',
+          isMobileNavOpen ? 'translate-x-0' : '-translate-x-full max-lg:invisible',
         )}
         aria-label={t('nav.dashboard')}
       >
@@ -136,9 +140,10 @@ export function AppShell({ children }: { children: ReactNode }) {
               )}
             </button>
             <button
+              ref={closeButtonRef}
               type="button"
               className="rounded-lg p-2 text-slate-400 transition hover:bg-white/10 hover:text-white lg:hidden"
-              onClick={() => setIsMobileNavOpen(false)}
+              onClick={closeMobileNav}
               aria-label={t('common.close')}
             >
               <X className="h-5 w-5" aria-hidden="true" />
@@ -211,7 +216,7 @@ export function AppShell({ children }: { children: ReactNode }) {
         </div>
       </aside>
 
-      <main id="app-content" tabIndex={-1} className="min-w-0 flex-1 overflow-auto bg-slate-50 p-4 transition-[padding] duration-300 sm:p-6 lg:p-8">
+      <main id="app-content" tabIndex={-1} inert={isMobileNavOpen || undefined} className="min-w-0 flex-1 overflow-auto bg-slate-50 p-4 transition-[padding] duration-300 sm:p-6 lg:p-8">
         <div className="mb-4 hidden justify-end lg:flex">
           <div className="rounded-xl border border-slate-200 bg-white/80 px-1 py-1 shadow-sm [&_button]:text-slate-600 [&_button:hover]:bg-slate-100">
             <NotificationBell />

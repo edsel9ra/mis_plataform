@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { validationMessage } from '@/lib/validation-message';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
@@ -36,16 +37,16 @@ export function MentorChallengeForm({ onCreated }: { onCreated?: () => void }) {
   return (
     <form onSubmit={(event) => void form.handleSubmit(submit)(event)} className="space-y-4">
       <div className="grid gap-4 sm:grid-cols-2">
-        <Input label={t('mentor_workspace.challenge_title')} error={form.formState.errors.title?.message} {...form.register('title')} />
-        <Input label={t('mentor_workspace.challenge_due_date')} type="datetime-local" error={form.formState.errors.due_at?.message} {...form.register('due_at')} />
+        <Input label={t('mentor_workspace.challenge_title')} error={validationMessage(form.formState.errors.title?.message, t)} {...form.register('title')} />
+        <Input label={t('mentor_workspace.challenge_due_date')} type="datetime-local" error={validationMessage(form.formState.errors.due_at?.message, t)} {...form.register('due_at')} />
       </div>
-      <Textarea label={t('mentor_workspace.challenge_description')} rows={4} error={form.formState.errors.description?.message} {...form.register('description')} />
+      <Textarea label={t('mentor_workspace.challenge_description')} rows={4} error={validationMessage(form.formState.errors.description?.message, t)} {...form.register('description')} />
       <div>
         <FileUploadField
           label={t('mentor_workspace.challenge_content_file')}
           hint={selectedFileName || t('mentor_workspace.choose_file')}
           accept=".jpg,.jpeg,.png,.webp,.pdf,.txt,.csv,.doc,.docx,.xls,.xlsx,.mp3,.wav,.m4a,.mp4,.mov,.webm"
-          error={form.formState.errors.content_file?.message}
+          error={validationMessage(form.formState.errors.content_file?.message, t)}
           {...fileRegistration}
           onChange={(event) => {
             fileRegistration.onChange(event);

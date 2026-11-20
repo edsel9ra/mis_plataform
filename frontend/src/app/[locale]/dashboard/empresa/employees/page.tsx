@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -50,11 +50,24 @@ export default function CompanyEmployeesPage() {
         status_counts: response.status_counts ?? { active: 0, invited: 0, inactive: 0 },
       };
     },
+    placeholderData: keepPreviousData,
   });
 
   if (isLoading) return <PageSpinner />;
-  if (!user?.company_id) return <Alert variant="warning">{t('company.company_required')}</Alert>;
-  if (error) return <Alert variant="error">{apiErrorMessage(error, (key) => t(key)) || t('company.employees_error')}</Alert>;
+  if (!user?.company_id)
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{t('company.manage_employees')}</h1>
+        <Alert variant="warning" className="mt-4">{t('company.company_required')}</Alert>
+      </div>
+    );
+  if (error)
+    return (
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900">{t('company.manage_employees')}</h1>
+        <Alert variant="error" className="mt-4">{apiErrorMessage(error, (key) => t(key)) || t('company.employees_error')}</Alert>
+      </div>
+    );
 
   return (
     <div>
@@ -73,7 +86,7 @@ export default function CompanyEmployeesPage() {
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <CardTitle className="text-base">
+                  <CardTitle as="h2" className="text-base">
                     {employee.user?.full_name || `${employee.user?.name ?? ''} ${employee.user?.last_name ?? ''}`.trim()}
                   </CardTitle>
                   <p className="mt-1 text-sm text-gray-500">{employee.user?.email}</p>
@@ -82,12 +95,12 @@ export default function CompanyEmployeesPage() {
               </div>
             </CardHeader>
             <p className="text-sm text-gray-600">{employee.position ?? t('common.pending')}</p>
-            {employee.department && <p className="mt-1 text-xs text-gray-400">{employee.department}</p>}
+            {employee.department && <p className="mt-1 text-xs text-gray-600">{employee.department}</p>}
           </Card>
         ))}
       </div>
       {(!data?.data || data.data.length === 0) && (
-        <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
+        <p className="mt-8 text-center text-gray-600">{t('common.no_results')}</p>
       )}
       {data && (
         <div className="mt-8 rounded-2xl border border-gray-200 bg-white shadow-sm">

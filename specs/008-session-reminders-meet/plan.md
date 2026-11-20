@@ -1,6 +1,6 @@
 # Plan — Spec 008: Recordatorios y Google Meet
 
-**Estado:** aprobado  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/008-session-reminders-meet/spec.md`; scope hijo aprobado.  
 **Base:** Spec 002 v0.4.2 aprobada y plan 002 v1.2.0 aprobado.
 **Dependencias:** 003 zona/privacidad; 004 inscripción; 005 participantes y caso 41; 006 estados; 007 eventos de cambio. Consumidores: 009 calendario/detalle; 010 presentación accesible y consumidor/upsert visible de `SessionReminder` por `notification_id` (RF-010.4). La implementación de 009→010 conserva el orden; la aceptación final de RF-008.2 espera la integración de 010.

@@ -41,11 +41,17 @@ cerrar solo hallazgos verificados y registrar exclusiones para aprobación expl�
 
 No se añade una dependencia de auditoría en esta propuesta: Chrome DevTools ofrece árbol de accesibilidad, Lighthouse y navegación por teclado; se combinarán con pruebas del proyecto. Si durante la ejecución estas herramientas no cubren un requisito o estado, se detendrá esa parte y se propondrá el cambio de herramientas antes de ampliar dependencias.
 
+**Cambio de herramientas (aprobado por el usuario el 2026-11-17).** Chrome DevTools y Lighthouse no se pueden usar: el sistema no tiene Chrome y para instalarlo hace falta `sudo`. Se sustituyen por **Playwright con su Chromium y axe-core en un entorno desechable fuera del repositorio**, el mismo que ya se usó en las specs 010, 015, 016 y 017. No se añade ninguna dependencia a `frontend/package.json`.
+- Cubre la navegación por teclado (Tab, Shift+Tab, Enter, Espacio, Escape y flechas), el foco visible y su retorno, y el árbol accesible (`ariaSnapshot`).
+- Cubre también axe con las reglas WCAG 2.0, 2.1 y 2.2 A/AA, el viewport de 320 CSS px, el zoom al 200 % y la emulación de `prefers-reduced-motion`.
+- Las capturas y los logs se guardan como evidencia en `/tmp/a11y-011/<tarea>/`.
+- **Límite documentado:** no se prueba con un lector de pantalla real (NVDA, VoiceOver). El árbol accesible y los anuncios `role`/`aria-live` se usan como aproximación, y cada hallazgo lo indica.
+
 ## Decisiones y alternativas
 
 1. **Auditar primero y cambiar solo hallazgos reproducibles.** Evita un rediseño general y cambios cosméticos sin beneficio accesible. Alternativa descartada: aplicar reglas genéricas a todas las páginas sin evidencia.
 2. **Corregir componentes compartidos antes de consumidores.** Una causa única corregida en `components/ui`/`AppShell` reduce inconsistencias; después se prueban varias páginas que usan esos controles. Alternativa descartada: duplicar ARIA/estilos por ruta.
-3. **Usar comprobación de navegador y Lighthouse sin instalar nuevas dependencias inicialmente.** Respeta la arquitectura y las herramientas disponibles. Alternativa descartada: introducir Playwright/axe u otra dependencia antes de conocer los estados que necesitan automatización.
+3. **Usar comprobación de navegador y Lighthouse sin instalar nuevas dependencias inicialmente.** Respeta la arquitectura y las herramientas disponibles. Alternativa descartada: introducir Playwright/axe u otra dependencia antes de conocer los estados que necesitan automatización. *Sustituida el 2026-11-17* por Playwright y axe desechables, sin dependencia en el repositorio (ver «Procedimiento de auditoría»).
 4. **Mantener locales es/en/pt y autorización actual.** Solo se modifican nombres, ayudas y errores accesibles donde lo requiera un hallazgo; no se cambian reglas de acceso ni contenido de negocio.
 5. **Dividir la ejecución si el backlog excede diez tareas.** Las 34 rutas y variaciones por rol probablemente superan el límite SDD de 10 tareas; se propone completar inventario/priorización y luego crear specs hijas por grupos de superficies antes de redactar tareas. No se amplía ni se modifica la spec aprobada sin aprobación del usuario.
 

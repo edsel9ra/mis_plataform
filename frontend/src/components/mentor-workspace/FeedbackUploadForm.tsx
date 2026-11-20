@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useTranslations } from 'next-intl';
+import { validationMessage } from '@/lib/validation-message';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
@@ -43,7 +44,7 @@ export function FeedbackUploadForm({
         label={t('mentor_workspace.feedback_file')}
         hint={selectedFileName || t('mentor_workspace.choose_audio_video')}
         accept="audio/mpeg,audio/wav,audio/x-wav,audio/mp4,audio/webm,video/mp4,video/quicktime,video/webm"
-        error={form.formState.errors.feedback_file?.message}
+        error={validationMessage(form.formState.errors.feedback_file?.message, t)}
         {...fileRegistration}
         onChange={(event) => {
           fileRegistration.onChange(event);
@@ -53,7 +54,7 @@ export function FeedbackUploadForm({
         }}
       />
       <p className="text-xs text-slate-500">{t('mentor_workspace.feedback_upload_only_hint')}</p>
-      <Textarea label={t('mentor_workspace.feedback_note')} rows={3} error={form.formState.errors.note?.message} {...form.register('note')} />
+      <Textarea label={t('mentor_workspace.feedback_note')} rows={3} error={validationMessage(form.formState.errors.note?.message, t)} {...form.register('note')} />
       {mutation.error && <Alert variant="error">{t('mentor_workspace.save_error')}</Alert>}
       {mutation.isSuccess && <Alert variant="success">{t('mentor_workspace.feedback_saved')}</Alert>}
       <Button type="submit" loading={mutation.isPending}>{t('mentor_workspace.send_feedback')}</Button>

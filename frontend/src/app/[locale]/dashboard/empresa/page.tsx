@@ -152,7 +152,7 @@ function CompanySetupForm({ refreshUser }: { refreshUser: () => Promise<unknown>
   return (
     <Card className="mx-auto max-w-3xl border-0 shadow-sm">
       <CardHeader>
-        <CardTitle>{t('company.setup_title')}</CardTitle>
+        <CardTitle as="h1">{t('company.setup_title')}</CardTitle>
         <p className="mt-1 text-sm text-gray-500">{t('company.setup_description')}</p>
       </CardHeader>
       <form onSubmit={submit} className="space-y-5" noValidate>

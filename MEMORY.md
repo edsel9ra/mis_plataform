@@ -191,3 +191,111 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **Spec 015 — T015.9 y cierre (2026-11-15): SPEC 015 IMPLEMENTADA (T015.1–T015.9).** Playwright + axe a 320 px en es/en/pt y en la vista del mentor: 0 violaciones, sin scroll horizontal ni claves crudas. Corregido el foco de «Cargar más» (`aria-disabled` en vez de `disabled`). `benchmark.md` definido y no ejecutado. Backend completo **1157/4959**, frontend **350/350**. Datos de prueba creados en dev: 16 objetivos con 32 transiciones y 4 evidencias para `ana.demo@mis.com` (creados por `mentor.bienestar`; un mentee no puede crear objetivos individuales: 403 de `ObjectivePolicy::createIndividual`). OJO entorno: tras `pnpm build` dentro del contenedor, el dev server de Next se rompe → `docker compose restart frontend`; nginx puede quedar parado (exit 127) → `docker compose start nginx`. Despliegue de la 014+015: `php artisan migrate` (2 migraciones nuevas). Nada commiteado.
 - **Spec 015 — PR #6 y T015.10 (2026-11-15)**: rama `feat/015-historial-progreso`, PR #6. La revisión automática encontró 3 fallos reales, corregidos en T015.10: (a) un registro sin fecha (`created_at` nulo, permitido por el esquema) tumbaba todo el historial con un 500 → los adapters separan `dated`/`undated` en SQL; (b) los retiros por borrado anteriores a T015.4 revelaban a quien borró → migración `2026_11_16_000003` que los marca cuando coinciden exactamente con el evento mínimo (mismo `$now`); (c) un fallo de «Cargar más» ocultaba el historial (en TanStack v5, `isError` también se activa al fallar la página siguiente). Despliegue: `php artisan migrate` (3 migraciones: 000001, 000002 y 000003).
 - **Spec 015 — benchmark ejecutado (2026-11-17)**: resultados en `specs/015-historial-progreso/benchmark.md` §Resultados; scripts en `specs/015-historial-progreso/k6/` (`seed-dataset.php`, `progress-history.js`, `explain-page.php`, comandos en la cabecera de cada uno). En el portátil dev (WSL2, 8 vCPU, stack dev levantado) **p95 ≈ 3,4 s > 2 s** en los 5 tags, con 0 errores, 0 duplicados y 17,5 peticiones/s. El SQL no es el cuello de botella: consultas ≤ 2,3 ms con los índices de T015.6. Con 16 workers FPM solo se llega a 21 peticiones/s → límite de CPU del host. Cada conexión PG nueva (scram) cuesta ~22 ms. RNF-015.4 sigue sin verificar: hay que repetir en un entorno dedicado. Hallazgos de la imagen de producción: FPM de serie (`pm.max_children=5`), OPcache activo, `optimize` falla en `view:cache` (no hay vistas). El entorno bench (BD `mis_project_bench`, Redis DB 5–7 con prefijo `mis_bench_`, contenedores, imagen `mis-backend:bench` y `/tmp/mis-bench` con los tokens) se eliminó el 2026-11-17; se recrea con los scripts. Arreglado: el entrypoint (`docker/php/docker-entrypoint.sh`) hacía `chmod -R 775` de `storage`/`bootstrap/cache` en cada arranque como root (backend, queue-worker, scheduler, reverb y cualquier `docker compose run`) y ponía +x a los `.gitkeep` versionados; ahora usa `chmod -R ug+rwX,o+rX` (x solo en directorios). Tras cambiarlo hay que reconstruir las 4 imágenes PHP. Tras recrear `backend`, nginx devuelve 502 porque cachea la IP vieja → `docker compose restart nginx`. Otra: Docker Desktop puede arrancar `backend` con el bind mount vacío tras un reinicio (unhealthy, «Esperando las dependencias») → `docker compose up -d --force-recreate --no-deps backend`.
+- **Spec 011 — retomada; T-011.2 hecha (2026-11-17)**: el usuario aprobó cambiar Chrome DevTools/Lighthouse por Playwright y axe desechables, fuera del repo (plan §Procedimiento), y ampliar el inventario a **44 rutas** (filas 35–44 de `audit.md`, repartidas en T-011.4–7 y reverificadas en su grupo). Resultado de T-011.2 en `audit.md` §T-011.2 (evidencia efímera en `/tmp/a11y-011/T-011.2/`). Barreras altas: **SH-01/SH-04** en los dos shells (`AppShell` y la cabecera propia de `admin/layout.tsx`): el menú móvil cerrado deja 15 paradas de foco fuera de pantalla, el fondo del admin es enfocable, y con el menú abierto no hay trampa de foco, Escape no cierra y el foco no vuelve al botón. Afecta también a escritorio con zoom al 200 % (640 px < `lg`). Prioridad media: SH-05 (el admin no tiene skip link), SH-06 (`Button loading` ⇒ `disabled` ⇒ el foco cae a `body` en 53 usos), SH-08 (`slate-500`/`gray-500` sobre `slate-50/100` dan 4,34–4,41). PG-01: los `<select>` de filtro de `/admin/users` no tienen nombre (axe *critical*). TRAMPA de entorno: Next dev era inutilizable para Playwright (compilaciones de 400 a 3 000 s); se audita sobre un build de producción en un contenedor desechable a partir de una copia en `/tmp/fe-build`, sin tocar el `.next` del dev.
+- **Spec 011 — T-011.2a hecha (2026-11-17, sin commit)**: corrige SH-01, SH-04 y SH-05 en `AppShell` y `admin/layout.tsx` con el hook compartido `hooks/use-mobile-nav.ts` y el helper puro `lib/focus-trap.ts` (7 tests).
+  - Menú cerrado: `max-lg:invisible`; el fondo siempre lleva `aria-hidden` y `tabIndex=-1`.
+  - Menú abierto: `inert` en header, main y skip link; trampa de Tab y Escape; el foco va a «Cerrar» al abrir y vuelve a «Abrir menú» al cerrar, o a `main` si se cierra por navegación o al pasar a ≥1024 px.
+  - El admin tiene skip link y `main#app-content`.
+  - TRAMPA de Chromium: al volverse inerte el header, el hamburguesa pierde el foco de forma asíncrona, después de los `focus()` del efecto. Por eso se reintenta a 50, 150 y 300 ms; el reintento se salta si el foco ya está dentro del panel. Además hay un `focusin` que redirige el foco al panel.
+  - Verificado con Playwright sobre el build de producción (`/tmp/a11y-011/T-011.2a/`), en ambos shells a 375, 320 y 640 px: 0 paradas ocultas, contención, Escape y retorno del foco. El escritorio sigue igual. axe no da violaciones nuevas. Vitest 359, typecheck y lint limpios.
+  - TRAMPA de entorno: con carga alta, `scheduler` acumula `schedule:run` concurrentes (12 a la vez) y `matching` se dispara → `docker compose restart scheduler matching frontend`. Los contenedores desechables necesitan `--init` para poder borrarlos, y `next build` puede colgarse en «Collecting build traces»: se sirve en cuanto existe `.next/BUILD_ID`.
+- **Spec 011 — T-011.3 hecha (2026-11-17, sin commit)**: páginas públicas y de descubrimiento (`audit.md` §T-011.3, evidencia efímera en `/tmp/a11y-011/T-011.3/`). `/` y `/certificates` sin violaciones de axe. **PG-05 (alta)**: en `/mentors`, `if (authLoading || isLoading) return <PageSpinner/>`, y cada búsqueda debounced crea una query nueva sin `placeholderData` → la página entera se desmonta, el input pierde el foco al escribir y «Sin resultados» no se anuncia. PG-06: `/mentors` y `/mentors/[id]` sin sesión se muestran sin shell ni `main`/h1. SH-09: `CardTitle` siempre es `h3` (causa de los `heading-order`). SH-08 ampliado a `text-gray-400`. PG-08: `main` anidado dentro de `AppShell` en `/mentors/[id]` con sesión (por confirmar). El formulario «Solicitar mentoría» no se puede probar porque `ana.demo` ya tiene relación con todos los mentores de desarrollo.
+- **Spec 011 — T-011.3a hecha (2026-11-17, sin commit)**: correcciones de T-011.3.
+  - `Alert`: `role="alert"` solo en `error`; el resto, `status`. Un `role` explícito gana.
+  - `CardTitle` admite `as` (por defecto `h3`).
+  - `/mentors`: `keepPreviousData`; el buscador no se desmonta nunca; región `sr-only role=status` con `mentors.results_count` (ICU).
+  - Mentores: helper `frame()`, `AppShell` con sesión y `<main>` sin ella (nunca `main` anidado).
+  - Texto `gray-400` → `gray-600` (salvo placeholders); X del diálogo en `gray-500`.
+  - `vitest.config.mts` con `oxc.jsx: 'automatic'`, para poder probar componentes `.tsx` con `renderToStaticMarkup` en entorno `node`.
+  - Vitest 368. axe limpio en las 10 corridas.
+- **Spec 011 — T-011.4 hecha (2026-11-17, sin commit)**: acceso, perfil y onboarding (`audit.md` §T-011.4; evidencia efímera en `/tmp/a11y-011/T-011.4/`).
+  - Altas: **PG-15**, `handleAnswer` del test de personalidad avanza al seleccionar y las flechas seleccionan, así que con el teclado solo se elige la primera o la última opción; **PG-12**, los radios de plan de `register/[type]` son `sr-only` y no tienen anillo de foco.
+  - Medias: PG-13 (test sin `main` ni h1), PG-14 (faltan `personality.progress_label` y `personality.select_answer` en los 3 catálogos), PG-10 y PG-02 (páginas de auth sin `main`/h1), PG-11 (error de OAuth o tipo de registro inválido sin enlace de salida), SH-06 (confirmado en 4 flujos) y SH-08 (`register/[type]:284`).
+  - Para probar el test sin enviarlo: `kellie.breitenberg@example.net` (mentee sin evaluación). `ana` ya tiene evaluación y la redirige.
+- **Spec 011 — T-011.4a hecha (2026-11-17, sin commit)**: correcciones de T-011.4.
+  - **`Button` con `loading` ya no pone `disabled`**: usa `aria-disabled` y `aria-busy`, y su `onClick` hace `preventDefault`, lo que también bloquea el envío con Enter. Así el foco no se pierde. Un `disabled` explícito sigue deshabilitándolo de verdad.
+  - Test de personalidad: sin avance automático. Botón «Siguiente» (`common.next`) y estado `finished`. Al cambiar de pregunta, el foco va al radio; al terminar, al h1 de resultados. `legend` con `h2` de la pregunta. Clave `personality.progress_label`.
+  - Auth: todas las páginas en `main`, con un solo h1 visible. Los errores de OAuth y de tipo inválido tienen enlace de salida. Las tarjetas de plan usan `has-[:focus-visible]:ring`.
+  - Vitest 373.
+  - Bajo carga, `vitest` puede fallar con «Timeout waiting for worker»: basta con reintentarlo.
+- **Spec 011 — T-011.5 hecha (2026-11-17, sin commit)**: agenda, evaluaciones y mensajes (`audit.md` §T-011.5; evidencia en `/tmp/a11y-011/T-011.5/`). La agenda y los mensajes cumplen. Altas en `evaluations/[id]`: PG-20 (`answerQuestion` avanza solo y el foco cae a `body`, el mismo patrón que PG-15) y PG-19 (`role=progressbar` sin nombre). Media: PG-21 (opciones sin grupo) y PG-17 (sin h1 en errores y preguntas). Baja: PG-18 y SH-10 (`disabled={isPending}` junto a `loading` anula la corrección de SH-06; confirmado en `sessions/new:587`). Datos de desarrollo: 0 mensajes y ninguna sesión pasada sin completar, así que asistencia y mensajes no se pueden probar.
+- **Spec 011 — T-011.5a, código hecho (2026-11-17, sin commit; falta Playwright)**:
+  - `evaluations/[id]`: sin avance automático, «Siguiente» y foco a la opción; `role=group` con `aria-labelledby`; las barras de progreso tienen nombre; h1 en todos los estados.
+  - `sessions/[id]`: h1 en los errores.
+  - SH-10: solo había un caso (`sessions/new`).
+  - Vitest 373.
+  - **Entorno:** el WSL tiene 5,8 GB de RAM y 4 GB de swap. Con el frontend de desarrollo (1,8 GB), el matching, el scheduler y un build de producción a la vez, se queda sin memoria (carga >300) y el daemon de Docker se bloquea («could not kill container»). Hay que reiniciar Docker Desktop o hacer `wsl --shutdown` desde Windows. En adelante, parar el frontend de desarrollo y el matching antes de lanzar builds de auditoría.
+- **Spec 011 — T-011.5a verificada y T-011.6 hecha (2026-11-17, sin commit)**:
+  - T-011.5a: Playwright y axe limpios tras reiniciar Docker.
+  - T-011.6, paneles y progreso (`audit.md` §T-011.6): sin barreras altas. Media: **SH-11**, los formularios de objetivos y evidencias muestran `errors.X.message` tal cual, así que en la interfaz española salen errores de Zod en inglés; el de empresa usa `validationMessage()`. Media también: PG-23 (empresa sin h1). Bajas: PG-03, PG-22 (`heading-order`) y PG-24 (enlaces de 20 px).
+  - **No hay cuentas `company_admin` ni `employee`.** `felipe` es de empresa, pero sin compañía.
+  - Entorno: con el frontend de desarrollo parado, nginx entra en bucle de reinicio porque resuelve `frontend:3000`. Solución temporal: un contenedor `sleep` en la red de Compose con alias `frontend`. Durante la auditoría se paran el frontend de desarrollo, matching y scheduler, y se vuelven a levantar al terminar.
+- **Spec 011 — T-011.6a, T-011.7 y T-011.8 hechas (2026-11-17, sin commit)**:
+  - T-011.6a: claves `progress.validation.*` y `lib/validation-message.ts`; `ProgressCard` pasa a `h2` por defecto. Vitest 378.
+  - T-011.7: altas abiertas PG-01 (`select-name` en los filtros del admin, 3 rutas) y PG-04 (tabla de `/admin/users` sin desplazamiento con teclado a 320 px). Media: SH-12 (`mentor-workspace.ts` con errores en inglés) y PG-27 (contraste en `mentor/progress/[id]`, 48 nodos, y en admin). Baja: SH-07 (Inicio y Fin), PG-25 (dos h1 en el espacio del mentor), PG-26 y PG-28.
+  - T-011.8 (`audit.md` §T-011.8): 39 IDs, 29 corregidos, 8 abiertos.
+  - **Propuestas pendientes de aprobación:** T-011.7a, para corregir todo lo abierto dentro de la spec 011, y la spec hija **019**: datos de auditoría desechables, pasada con lector de pantalla hecha por una persona, decidir si Playwright y axe pasan al CI (sería una dependencia nueva) y decidir PG-09.
+  - La spec 011 sigue «aprobada»; no se puede pasar a «implementada» con las lagunas de verificación abiertas.
+- **Spec 011 — T-011.7a hecha (2026-11-17, sin commit, en la rama `feat/011-accesibilidad-auditoria` del PR #8)**: ya no queda ninguna barrera alta conocida; 37 de los 39 IDs están corregidos.
+  - `lib/tabs.ts` (`nextTabIndex`, con Inicio y Fin).
+  - Claves `mentor_workspace.validation.*`.
+  - Regiones de tabla del admin enfocables.
+  - El título del shell del mentor pasa a ser un `p`, y cada página del mentor tiene su propio h1.
+  - Vitest 386.
+  - Build desechable: hay que montar el volumen anónimo de `node_modules` del contenedor de desarrollo, porque el bind mount del host lo pisa y falla `laravel-echo`.
+- **Spec 019, borrador de spec.md (2026-11-17)**: `specs/019-verificacion-accesible/spec.md`. Decisiones del usuario: D-1, Playwright y axe en el CI (nuevas dependencias de desarrollo, en vez de la decisión 3 de la 011); D-2, estado «no encontrado» para el mentor; D-3, la prueba con lector de pantalla la hace otra persona del equipo con un guion. Pendiente de aprobar la spec.
+  - D-1: Playwright y axe en el CI, o el arnés manual versionado;
+  - D-2: estado «no encontrado» del mentor (PG-09);
+  - D-3: quién ejecuta las pruebas con NVDA y VoiceOver.
+- **Spec 019, aprobada (2026-11-17); plan y tareas en borrador**: `plan.md` y `tasks.md` (10 tareas).
+  - Seeder `AccessibilityAuditSeeder`, con la guarda pura `AuditTargetGuard`: exige `_audit`, base vacía y que no sea producción.
+  - Suite `frontend/e2e/a11y`: `@playwright/test` **1.65.0** y `@axe-core/playwright` **4.14.0**, con versión exacta (≥7 días el 2026-11-19), axe con WCAG y best-practice, y `focus.spec` por cada unidad T-011.xa.
+  - Job de CI `a11y`: postgres, `artisan serve` y `next start`.
+  - Estado «no encontrado» del mentor (el API da 404 tanto con un id inexistente como con uno mal formado).
+  - T019.10 queda bloqueada hasta que la persona del equipo entregue los resultados con NVDA y VoiceOver.
+- **Spec 019 — T019.1 hecha (2026-11-19, sin commit)**:
+  - `AuditTargetGuard` y `AccessibilityAuditSeeder`; `mis_project_audit` queda creada y sembrada en el Postgres de Compose para las tareas siguientes (procedimiento en `fixtures.md`). Cuentas `*@audit.mis.test`.
+  - `ana.audit`, `kai.audit` (plan sin espacio del mentor y sin test de personalidad), `mentor.audit`, `empresa.admin.audit`, `empleado.audit`, `empresa.setup.audit`, `admin.audit` y 25 de relleno.
+  - **Inestable:** `ProgressHistoryIndexesTest` (EXPLAIN de `challenges_mentee_id_index`) puede fallar en la suite completa por las estadísticas del planificador; si se ejecuta solo, pasa.
+  - `app/Support` es propiedad de root en el host: para escribir ahí hay que usar `docker cp` o el contenedor.
+- **Spec 019 — T019.2 hecha (2026-11-19)**: `guion-lector-pantalla.md` v1.0. Falta que el usuario lo entregue a la persona del equipo, con la URL del entorno de auditoría y la contraseña de prueba (todavía no hay un entorno de auditoría al que pueda acceder esa persona). En la combinación A no se envía el test de `kai`.
+- **Spec 019 — T019.3 hecha (2026-11-19, sin commit)**: estado «no encontrado» en `/mentors/[id]` (`isNotFoundError`, claves `mentors.not_found_*` y `back_to_list`). Vitest 390. El usuario decidió que la persona del lector de pantalla monte el entorno de auditoría en su propio equipo: `fixtures.md` tendrá el procedimiento completo en T019.4.
+- **Spec 019 — T019.4 hecha (2026-11-19, sin commit)**:
+  - Suite `frontend/e2e/a11y` con `pnpm test:a11y` (smoke 3/3).
+  - Runner local: la imagen de Playwright (glibc), porque `mis-frontend:dev` es Alpine y no puede ejecutar Chromium.
+  - Backend de auditoría con `php -S` y el router de Laravel: `artisan serve` no propaga las variables de `docker exec -e`.
+  - Contraseña de prueba de las cuentas `@audit.mis.test`: la fijó el agente en la base desechable y no está en el repo. Para volver a sembrar, `A11Y_SEED_PASSWORD`.
+  - Login: 5 intentos por minuto por IP y email.
+  - Hallazgo nuevo de axe 4.14: PG-29 (logo de la portada), ya corregido.
+  - Vitest 394.
+- **Spec 019 — T019.5 hecha (2026-11-19, sin commit)**: 116 pruebas de axe (58 rutas a 1280 y 320 px). Pasan 109 y tardan 18,2 min. Los fallos son 2 hallazgos nuevos para T019.9: PG-30 (enlace del logo del admin, `label-content-name-mismatch`) y PG-31 (`heading-order` en la lista de empleados). Contexto de Playwright con `locale: 'es'`, porque si no el middleware redirige a `/en`. En el CI hará falta `--shard`.
+- **Spec 019 — T019.6 hecha (2026-11-19, sin commit)**: `focus.spec.ts` con 19 pruebas (pasan 18). Defecto real **PG-32**: en `/dashboard/personal` a 375 px, los bloques que cargan después no tienen altura reservada y, con `scroll-behavior: smooth`, el elemento enfocado se queda fuera de la pantalla si se tabula durante la carga. Quedó demostrado que la suite falla al deshacer correcciones (`select-name` y el `disabled` de `Button`) y que vuelve a pasar al restaurarlas.
+- **Spec 019 — T019.7 hecha (2026-11-19)**:
+  - El job de CI `a11y` va en 3 shards, cada uno de unos 3 min, y pasa en el PR #8.
+  - Si se reintroduce `select-name`, falla, como se comprobó en la rama `tmp/a11y-ci-negative`, pendiente de borrar con confirmación del usuario.
+  - También corregidos PG-30 a PG-33, dentro de T019.9; PG-33 era de contraste, y los cambios en `Badge` success y `Button` danger son globales. Se quitó `scroll-behavior: smooth`.
+  - La suite completa pasa: 135/135.
+  - Notas de configuración: hace falta `fullyParallel: true` para repartir por prueba. Los nombres del seeder son de faker, así que la suite toma los datos dinámicos del login o del API.
+- **Spec 019 — T019.8 hecha (2026-11-19, sin commit)**: re-auditoría con datos de auditoría (`audit.md`, sección de la 019).
+  - Hallazgos nuevos: **PG-34 (alta)**, el campo de mensajes queda `disabled` mientras `isPending` y el foco cae a `body`. Media: PG-35 (paginación del admin sin anuncio ni foco), PG-36 (los éxitos de objetivos y evidencias desmontan el formulario y no anuncian nada), PG-37 (tras los éxitos con redirección, el foco queda en `body`), PG-38 (contraste en el tipo de conversación) y PG-39 (el 429 se clasifica como `unknown`).
+  - Asistencia no probada: los asistentes del seeder están en `not_registered`, hay que ajustar los fixtures.
+  - En la interfaz no existen: invitar empleados, el check-in del mentee, adjuntar ficheros a una evidencia y editar los datos personales.
+  - Con `CACHE_STORE=array`, el rate limiter no acumula intentos.
+  - El `node_modules` del host estaba desactualizado; se reinstaló con `--frozen-lockfile`.
+- **Spec 020, borrador (2026-11-19)**: `specs/020-funciones-interfaz-pendientes/spec.md`, con las 4 funciones que faltan.
+  - Gestión de empleados (los endpoints ya existen) y check-in emocional del mentee (existen `/relationships/{id}/emotional-check-ins` y el entitlement `emotional_check_ins`).
+  - Fichero en una evidencia: necesita un endpoint nuevo de subida para el mentee, porque `/mentor/media` es solo del mentor y de relaciones personales.
+  - Perfil: existen `PUT /profile` (name, last_name, timezone) y `PUT /profile/avatar`.
+  - Dudas pendientes: D-1 a D-4. Mientras tanto, T019.9 está en curso.
+- **Spec 020 aprobada (2026-11-19); plan y tareas en borrador (9 tareas)**:
+  - D-1 a D-4 resueltas: gestión completa de empleados; tarjeta de check-in en el panel; ficheros de evidencia con la misma visibilidad que `ObjectivePolicy::view`, hasta 25 MB e incluidos los colectivos; el avatar solo se puede cambiar.
+  - Hechos: **no existe borrado de evidencias ni de objetivos por API** (solo la cascada al eliminar una cuenta). `RelationshipResource` no expone los entitlements.
+  - Plan: `POST /objectives/{o}/media` y luego `media_asset_id`; una rama de `MediaAssetPolicy` que delega en `ObjectivePolicy::view`; una purga diaria de huérfanos; `features.emotional_check_ins` en `RelationshipResource`.
+- **Spec 019 — T019.9, casi cerrada (2026-11-19)**:
+  - Corregidos PG-34 a PG-40.
+  - `NavigationFocus` y `requestFocusAfterNavigation()` llevan el foco al h1 tras navegar después de un éxito.
+  - `PaginationControls` tiene ahora una región `status` y mueve el foco al botón hermano en los extremos; `/admin/users` usa `keepPreviousData`.
+  - Suite de 143 pruebas, en verde dos veces seguidas. Vitest 400.
+  - **PG-41 abierto:** otros 8 consumidores de la paginación desmontan los controles al recargar.
+  - Entorno: con todo el stack de desarrollo arrancado, el portátil llega a una carga de 40; durante la suite hay que parar scheduler, matching, queue-worker, frontend, meilisearch, reverb y mailpit.
+- **Cabeceras de specs puestas al día (2026-11-20, aprobado por el usuario)**: 001, 003–009, 013 y 014 pasan a «implementada» (todas sus tareas estaban hechas); 015 pone al día el plan y las tareas. La 002 queda implementada a través de sus hijas 003–010 y de 016–018; sus paquetes T001–T010 siguen sin marcar porque no se ejecutaron directamente. Quedan abiertas solo la 011 y la 019, que se cierran con T019.10.

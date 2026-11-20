@@ -1,6 +1,6 @@
 # Tareas — Spec 005: Participación dinámica colectiva
 
-**Estado:** aprobada; T005-01–04 completadas; posteriores pendientes.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/005-collective-participation/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T005-01. Persistir baja y exclusión de participación por sesión.** RF-005.1–005.3; CA hija RF-005.1–3; CA padre CA-13.2–13.4.

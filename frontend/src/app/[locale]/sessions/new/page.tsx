@@ -586,7 +586,6 @@ export default function NewSessionPage() {
                       variant="primary"
                       type="submit"
                       loading={bookSession.isPending}
-                      disabled={bookSession.isPending}
                     >
                       {t('booking.confirm')}
                     </Button>

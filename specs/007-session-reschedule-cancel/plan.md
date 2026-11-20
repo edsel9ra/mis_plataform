@@ -1,6 +1,6 @@
 # Plan — Spec 007: Reprogramación y cancelación
 
-**Estado:** aprobado  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/007-session-reschedule-cancel/spec.md`; alcance hijo aprobado.  
 **Base:** Spec 002 v0.4.1 y plan 002 v1.2.0.
 **Dependencias:** 003 autorización/zona, 004 revalidación de reserva, 006 estado/terminales. 008 consumirá eventos para avisos/Meet.

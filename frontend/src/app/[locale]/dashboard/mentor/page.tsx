@@ -77,7 +77,7 @@ export default function MentorDashboardPage() {
             className={`rounded-2xl border p-4 text-left transition ${planFilter === filter ? 'border-primary-400 bg-primary-50 ring-2 ring-primary-100' : 'border-slate-200 bg-white hover:border-primary-200'}`}
           >
             <div className="flex items-center justify-between gap-3">
-              <span className="text-sm font-medium text-slate-500">{t(`mentor_workspace.plan_filter_${filter}`)}</span>
+              <span className="text-sm font-medium text-slate-600">{t(`mentor_workspace.plan_filter_${filter}`)}</span>
               {filter === 'premium' ? <Crown className="h-4 w-4 text-amber-500" aria-hidden="true" /> : filter === 'locked' ? <LockKeyhole className="h-4 w-4 text-slate-400" aria-hidden="true" /> : <Users className="h-4 w-4 text-primary-600" aria-hidden="true" />}
             </div>
             <span className="mt-2 block text-2xl font-bold text-slate-950">{planCounts[filter]}</span>

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
@@ -33,18 +33,38 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
   const query = useObjectives(subjectId);
   const [showCreate, setShowCreate] = useState(false);
   const [showProposal, setShowProposal] = useState(false);
+  const createButtonRef = useRef<HTMLButtonElement>(null);
+  const proposalButtonRef = useRef<HTMLButtonElement>(null);
+  const [feedback, setFeedback] = useState('');
 
   const objectives = query.data?.data ?? [];
+
+  function onCreated() {
+    setShowCreate(false);
+    setFeedback(t('progress.feedback.objective_created'));
+    createButtonRef.current?.focus();
+  }
+
+  function onProposalDone() {
+    setShowProposal(false);
+    setFeedback(t('progress.form.proposed'));
+    proposalButtonRef.current?.focus();
+  }
+
+  function onProposalCancel() {
+    setShowProposal(false);
+    proposalButtonRef.current?.focus();
+  }
 
   const headerAction = (
     <div className="flex gap-2">
       {block.allow_proposal ? (
-        <Button type="button" size="sm" variant="outline" onClick={() => setShowProposal((open) => !open)}>
+        <Button ref={proposalButtonRef} type="button" size="sm" variant="outline" onClick={() => setShowProposal((open) => !open)}>
           {t('progress.objectives.propose')}
         </Button>
       ) : null}
       {canCreate ? (
-        <Button type="button" size="sm" onClick={() => setShowCreate((open) => !open)}>
+        <Button ref={createButtonRef} type="button" size="sm" onClick={() => setShowCreate((open) => !open)}>
           <Plus className="h-4 w-4" aria-hidden="true" />
           {t('progress.objectives.add')}
         </Button>
@@ -54,12 +74,13 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
 
   return (
     <ProgressCard title={t('progress.objectives.title')} period={period} action={headerAction}>
+      <div role="status" className="sr-only">{feedback}</div>
       {showCreate ? (
         <div className="mb-4 rounded-xl border border-slate-200 p-4">
           <ObjectiveForm
             ownerId={subjectId}
             relationshipId={relationshipId}
-            onDone={() => setShowCreate(false)}
+            onDone={onCreated}
             onCancel={() => setShowCreate(false)}
           />
         </div>
@@ -69,8 +90,8 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
         <div className="mb-4 rounded-xl border border-slate-200 p-4">
           <ObjectiveProposalForm
             relationshipId={relationshipId}
-            onDone={() => setShowProposal(false)}
-            onCancel={() => setShowProposal(false)}
+            onDone={onProposalDone}
+            onCancel={onProposalCancel}
           />
         </div>
       ) : null}
@@ -97,12 +118,28 @@ function ObjectiveRow({ objective }: { objective: Objective }) {
   const locale = useLocale();
   const [editing, setEditing] = useState(false);
   const [addingEvidence, setAddingEvidence] = useState(false);
+  const editButtonRef = useRef<HTMLButtonElement>(null);
+  const evidenceButtonRef = useRef<HTMLButtonElement>(null);
+  const [feedback, setFeedback] = useState('');
+
+  function onEdited() {
+    setEditing(false);
+    setFeedback(t('progress.form.saved'));
+    editButtonRef.current?.focus();
+  }
+
+  function onEvidenceAdded() {
+    setAddingEvidence(false);
+    setFeedback(t('progress.feedback.evidence_added'));
+    evidenceButtonRef.current?.focus();
+  }
 
   const canManage = objective.permissions?.update || objective.permissions?.transition;
   const overdue = isObjectiveOverdue(objective);
 
   return (
     <li className="rounded-xl border border-slate-200 p-4">
+      <div role="status" className="sr-only">{feedback}</div>
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="font-medium text-slate-900">{objective.title}</p>
@@ -125,7 +162,7 @@ function ObjectiveRow({ objective }: { objective: Objective }) {
           <ObjectiveStatusControl objective={objective} />
           {objective.permissions?.update ? (
             <div className="mt-3">
-              <Button type="button" size="sm" variant="ghost" onClick={() => setEditing((open) => !open)}>
+              <Button ref={editButtonRef} type="button" size="sm" variant="ghost" onClick={() => setEditing((open) => !open)}>
                 {t('progress.objectives.edit')}
               </Button>
               {editing ? (
@@ -133,7 +170,7 @@ function ObjectiveRow({ objective }: { objective: Objective }) {
                   <ObjectiveForm
                     ownerId={objective.owner_id}
                     objective={objective}
-                    onDone={() => setEditing(false)}
+                    onDone={onEdited}
                     onCancel={() => setEditing(false)}
                   />
                 </div>
@@ -145,12 +182,12 @@ function ObjectiveRow({ objective }: { objective: Objective }) {
 
       {objective.permissions?.add_evidence ? (
         <div className="mt-3 border-t border-slate-100 pt-3">
-          <Button type="button" size="sm" variant="ghost" onClick={() => setAddingEvidence((open) => !open)}>
+          <Button ref={evidenceButtonRef} type="button" size="sm" variant="ghost" onClick={() => setAddingEvidence((open) => !open)}>
             {t('progress.evidence.title')}
           </Button>
           {addingEvidence ? (
             <div className="mt-2">
-              <ObjectiveEvidenceForm objectiveId={objective.id} onDone={() => setAddingEvidence(false)} />
+              <ObjectiveEvidenceForm objectiveId={objective.id} onDone={onEvidenceAdded} />
             </div>
           ) : null}
         </div>

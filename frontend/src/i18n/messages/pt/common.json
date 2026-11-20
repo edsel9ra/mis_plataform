@@ -144,7 +144,8 @@
     "ocean_chart_label": "Gráfico do perfil OCEAN",
     "improvement_title": "Áreas para melhorar",
     "improvement_description": "Estes componentes têm uma pontuação menor que 51. Você pode se concentrar em fortalecê-los:",
-    "improvement_score": "Pontuação: {score}"
+    "improvement_score": "Pontuação: {score}",
+    "progress_label": "Progresso do teste"
   },
   "dashboard": {
     "welcome": "Bem-vindo",
@@ -215,7 +216,11 @@
     "relationship_pending": "Sua solicitação de mentoria está aguardando análise.",
     "relationship_active": "Esta mentoria está ativa.",
     "view_sessions": "Ver sessões",
-    "request_error": "Não foi possível enviar a solicitação. Tente novamente."
+    "request_error": "Não foi possível enviar a solicitação. Tente novamente.",
+    "results_count": "{count, plural, one {# mentor encontrado} other {# mentores encontrados}}",
+    "not_found_title": "Não encontramos este mentor",
+    "not_found_desc": "O link pode estar incorreto ou o perfil pode não estar mais disponível.",
+    "back_to_list": "Voltar para mentores"
   },
   "company": {
     "setup_title": "Configure sua empresa",
@@ -567,7 +572,19 @@
     "save_error": "Não foi possível salvar as informações. Tente novamente.",
     "status_assigned": "Atribuído",
     "status_abandoned": "Abandonado",
-    "status_template": "Modelo"
+    "status_template": "Modelo",
+    "validation": {
+      "title_min": "O título deve ter pelo menos 3 caracteres.",
+      "title_max": "O título não pode exceder 160 caracteres.",
+      "text_max": "O texto não pode exceder 2.000 caracteres.",
+      "file_required": "Selecione um arquivo.",
+      "file_too_large": "O arquivo deve ter 25 MB ou menos.",
+      "file_unsupported": "Selecione um arquivo de um tipo compatível.",
+      "media_unsupported": "Selecione um arquivo de áudio ou vídeo compatível.",
+      "note_or_file": "Escreva uma nota ou selecione um arquivo.",
+      "score_range": "Informe um valor entre 0 e 100.",
+      "score_invalid": "Informe um número."
+    }
   },
   "admin": {
     "overview": "Painel Administrativo",
@@ -757,7 +774,8 @@
     "not_applicable": "Não se aplica",
     "minutes_short": "min",
     "seconds_short": "s",
-    "dismiss": "Dispensar"
+    "dismiss": "Dispensar",
+    "rate_limited": "Muitas tentativas. Aguarde um minuto e tente novamente."
   },
   "landing": {
     "metric_ocean": "Perfil OCEAN",
@@ -1118,6 +1136,26 @@
         "competency_key": "competência",
         "other": "outro dado"
       }
+    },
+    "validation": {
+      "title_min": "O título deve ter pelo menos 3 caracteres.",
+      "title_max": "O título não pode exceder 200 caracteres.",
+      "text_required": "Este campo é obrigatório.",
+      "text_max": "O texto é muito longo.",
+      "due_required": "Indique a data limite.",
+      "date_invalid": "Indique uma data válida.",
+      "owner_required": "Selecione o titular.",
+      "collective_required": "Selecione o coletivo responsável.",
+      "individual_no_collective": "Um objetivo individual não tem tipo de coletivo.",
+      "nothing_to_update": "Não há alterações para salvar.",
+      "evidence_required": "Adicione uma nota ou anexe um arquivo.",
+      "status_invalid": "Selecione um status válido.",
+      "invalid_id": "Identificador inválido."
+    },
+    "feedback": {
+      "objective_created": "Objetivo criado",
+      "evidence_added": "Evidência adicionada",
+      "status_updated": "Estado atualizado: {status}"
     }
   },
   "calendar": {

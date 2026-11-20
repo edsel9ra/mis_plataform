@@ -1,6 +1,6 @@
 # Tareas — Spec 014: Evidencia de evaluaciones y competencias
 
-**Estado:** aprobado, en implementación (T014.10 sigue bloqueada por la política de retención) · **Spec:** aprobada
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)
 La retención post-eliminación permanece bloqueada hasta documentar la política general; no implementar antes. Tareas activas de 20–30 min; pruebas planificadas, no ejecutadas.
 
 - [x] **T014.1 · Migración y restricciones de vínculos many-to-many** (25 min). RF-014.2–.4, .9. Crear FK discriminadas, checks XOR, índices y constraints parciales para competencias skill/OCEAN. Skills: `sdd`, `laravel-specialist`, `sql-optimization`.

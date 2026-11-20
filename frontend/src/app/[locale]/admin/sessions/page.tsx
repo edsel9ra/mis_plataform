@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useInfiniteQuery, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api, ApiError } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -113,6 +113,7 @@ export default function AdminSessions() {
 
       return normalizePaginatedResponse(response, { page, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const relationshipsQuery = useInfiniteQuery({
@@ -294,7 +295,7 @@ export default function AdminSessions() {
           <Card key={label} className="border-0 shadow-sm ring-1 ring-slate-100">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm text-gray-500">{label}</p>
+                <p className="text-sm text-gray-600">{label}</p>
                 <p className="mt-2 text-2xl font-bold text-gray-950">{value}</p>
               </div>
               <span className={`rounded-2xl p-3 ${color}`}>
@@ -325,10 +326,10 @@ export default function AdminSessions() {
           </Alert>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" tabIndex={0} role="region" aria-label={t('admin.sessions')}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-600">
                 <th className="px-4 py-3 font-medium">{t('sessions.title')}</th>
                 <th className="px-4 py-3 font-medium">{t('admin.mentor')}</th>
                 <th className="px-4 py-3 font-medium">{t('common.status')}</th>

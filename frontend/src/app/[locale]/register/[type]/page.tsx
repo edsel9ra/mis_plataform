@@ -11,6 +11,7 @@ import { clientTypeOptions, registerSchema, type RegisterFormData } from '@/lib/
 import { useAuth } from '@/components/auth/AuthProvider';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
@@ -112,11 +113,17 @@ export default function RegisterFormPage() {
 
   if (!isClientType(clientType)) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
+      <main className="flex min-h-screen items-center justify-center">
         <Card>
+          <h1 className="mb-4 text-center text-xl font-bold">{t('auth.register_title')}</h1>
           <Alert variant="error">{t('auth.invalid_client_type')}</Alert>
+          <p className="mt-4 text-center text-sm">
+            <Link href={localePath('/register', locale)} className="font-semibold text-primary-600 hover:text-primary-500">
+              {t('auth.register_title')}
+            </Link>
+          </p>
         </Card>
-      </div>
+      </main>
     );
   }
 
@@ -124,6 +131,7 @@ export default function RegisterFormPage() {
     setServerError('');
     try {
       await authRegister(data);
+      requestFocusAfterNavigation();
       router.push(localePath('/onboarding/test-personalidad', locale));
     } catch (err) {
       setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
@@ -131,7 +139,7 @@ export default function RegisterFormPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
+    <main className="min-h-screen bg-gray-50 px-4 py-10 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-6xl">
         <Link href={localePath('/register', locale)} className="inline-flex items-center gap-2 text-sm font-semibold text-gray-600 hover:text-gray-900">
           <ArrowLeft className="h-4 w-4" aria-hidden="true" />
@@ -171,7 +179,7 @@ export default function RegisterFormPage() {
                   <Brain className="h-6 w-6" aria-hidden="true" />
                 </span>
                 <div>
-                  <CardTitle>{t('auth.basic_information')}</CardTitle>
+                  <CardTitle as="h2">{t('auth.basic_information')}</CardTitle>
                   <p className="mt-1 text-sm text-gray-500">{t('auth.register_subtitle')}</p>
                 </div>
               </div>
@@ -238,6 +246,7 @@ export default function RegisterFormPage() {
                 <div className="space-y-1">
                   <Select
                     label={t('auth.sex')}
+                    autoComplete="sex"
                     placeholder="--"
                     options={[
                       { value: 'M', label: t('auth.sex_m') },
@@ -251,6 +260,7 @@ export default function RegisterFormPage() {
                 <Input
                   label={t('auth.birth_date')}
                   type="date"
+                  autoComplete="bday"
                   error={errors.birth_date && t(errors.birth_date.message!)}
                   {...register('birth_date')}
                 />
@@ -272,16 +282,19 @@ export default function RegisterFormPage() {
                     return (
                       <label
                         key={plan.id}
-                        className={`cursor-pointer rounded-2xl border p-4 transition ${
+                        className={`cursor-pointer rounded-2xl border p-4 transition has-[:focus-visible]:ring-2 has-[:focus-visible]:ring-primary-500 has-[:focus-visible]:ring-offset-2 ${
                           isSelected ? 'border-primary-500 bg-primary-50 shadow-sm' : 'border-gray-200 bg-white hover:border-primary-200'
                         }`}
                       >
                         <input type="radio" value={plan.id} className="sr-only" {...register('plan_id')} />
                         <span className="flex items-start justify-between gap-3">
                           <span>
-                            <span className="block font-semibold text-gray-950">{localizedText(plan.name, locale)}</span>
+                            <span className="flex items-center gap-2 font-semibold text-gray-950">
+                              {localizedText(plan.name, locale)}
+                              {isSelected && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary-600" aria-hidden="true" />}
+                            </span>
                             {plan.description && (
-                              <span className="mt-1 block text-sm leading-6 text-gray-500">{localizedText(plan.description, locale)}</span>
+                              <span className="mt-1 block text-sm leading-6 text-gray-600">{localizedText(plan.description, locale)}</span>
                             )}
                           </span>
                           <span className="rounded-full bg-white px-3 py-1 text-sm font-semibold text-primary-700 shadow-sm">
@@ -330,7 +343,7 @@ export default function RegisterFormPage() {
           </Card>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

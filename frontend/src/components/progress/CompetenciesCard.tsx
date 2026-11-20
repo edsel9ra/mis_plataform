@@ -170,7 +170,7 @@ export function CompetenciesCard({
     <ProgressCard title={t('progress.competencies.title')}>
       <div className="grid gap-5 sm:grid-cols-2">
         <section aria-label={t('progress.competencies.skills_title')}>
-          <h4 className="text-sm font-semibold text-slate-900">{t('progress.competencies.skills_title')}</h4>
+          <h3 className="text-sm font-semibold text-slate-900">{t('progress.competencies.skills_title')}</h3>
           <p className="mt-0.5 text-xs text-slate-500">{t('progress.competencies.source_skills')}</p>
           {block.skills.length > 0 ? (
             <ul className="mt-2 space-y-2">
@@ -190,7 +190,7 @@ export function CompetenciesCard({
         </section>
 
         <section aria-label={t('progress.competencies.personality_title')}>
-          <h4 className="text-sm font-semibold text-slate-900">{t('progress.competencies.personality_title')}</h4>
+          <h3 className="text-sm font-semibold text-slate-900">{t('progress.competencies.personality_title')}</h3>
           <p className="mt-0.5 text-xs text-slate-500">{t('progress.competencies.source_personality')}</p>
 
           {ocean.state === 'value' && ocean.factors ? (
@@ -242,9 +242,9 @@ export function CompetenciesCard({
 
       {canManage ? (
         <div className="mt-4 border-t border-slate-100 pt-3">
-          <h4 className="text-sm font-semibold text-slate-900">
+          <h3 className="text-sm font-semibold text-slate-900">
             {t('progress.competencies.evidence.manage_title')}
-          </h4>
+          </h3>
           <div className="mt-2 grid items-end gap-2 sm:grid-cols-[1fr_1fr_auto]">
             <Select
               label={t('progress.competencies.evidence.select_competency')}

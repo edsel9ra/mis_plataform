@@ -14,13 +14,15 @@ export default function MentorChallengesPage() {
   const query = useMentorChallenges();
 
   return (
-    <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
+    <div className="space-y-6">
+      <h1 className="text-3xl font-bold text-slate-950">{t('mentor_workspace.challenges_title')}</h1>
+      <div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_minmax(360px,0.8fr)]">
       <Card>
         <CardHeader>
           <div className="flex items-center gap-3">
             <LibraryBig className="h-6 w-6 text-primary-600" aria-hidden="true" />
             <div>
-              <CardTitle>{t('mentor_workspace.challenge_library')}</CardTitle>
+              <CardTitle as="h2">{t('mentor_workspace.challenge_library')}</CardTitle>
               <p className="mt-1 text-sm text-slate-500">{t('mentor_workspace.challenge_library_description')}</p>
             </div>
           </div>
@@ -34,11 +36,12 @@ export default function MentorChallengesPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>{t('mentor_workspace.create_challenge')}</CardTitle>
+          <CardTitle as="h2">{t('mentor_workspace.create_challenge')}</CardTitle>
           <p className="mt-1 text-sm text-slate-500">{t('mentor_workspace.create_challenge_description')}</p>
         </CardHeader>
         <MentorChallengeForm />
       </Card>
+      </div>
     </div>
   );
 }

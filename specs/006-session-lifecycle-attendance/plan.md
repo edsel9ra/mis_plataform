@@ -1,6 +1,6 @@
 # Plan — Spec 006: Ciclo de vida y asistencia de sesiones
 
-**Estado:** propuesta para aprobación (sin implementación)  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/006-session-lifecycle-attendance/spec.md`; scope aprobado.  
 **Base:** Spec 002 v0.4.0, plan 002 v1.2.0 y compatibilidad de Spec 001 §3.1.3.  
 **Dependencias:** 003 acceso/tiempo, 004 sesiones y participantes iniciales, 005 pertenencia/ancla. 007 consumirá terminales; 008 consumirá transiciones como eventos.

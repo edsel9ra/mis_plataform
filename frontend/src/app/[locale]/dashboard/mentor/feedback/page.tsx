@@ -40,14 +40,14 @@ export default function MentorFeedbackPage() {
       <Card className="border-primary-100 bg-primary-50/50">
         <div className="flex items-start gap-3">
           <MessageSquare className="mt-0.5 h-5 w-5 shrink-0 text-primary-700" aria-hidden="true" />
-          <div><h2 className="font-semibold text-primary-950">{t('mentor_workspace.feedback_page_title')}</h2><p className="mt-1 text-sm leading-6 text-primary-800">{t('mentor_workspace.feedback_page_description')}</p></div>
+          <div><h1 className="font-semibold text-primary-950">{t('mentor_workspace.feedback_page_title')}</h1><p className="mt-1 text-sm leading-6 text-primary-800">{t('mentor_workspace.feedback_page_description')}</p></div>
         </div>
       </Card>
       {usersQuery.error && <Alert variant="error">{t('mentor_dashboard.load_error')}</Alert>}
       {!usersQuery.isLoading && !usersQuery.error && eligibleUsers.length === 0 && <Alert>{t('mentor_workspace.no_feedback_recipients')}</Alert>}
       <div className="grid gap-6 xl:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)]">
         <Card>
-          <CardHeader><CardTitle>{t('mentor_workspace.select_feedback_recipient')}</CardTitle></CardHeader>
+          <CardHeader><CardTitle as="h2">{t('mentor_workspace.select_feedback_recipient')}</CardTitle></CardHeader>
           <div className="space-y-4">
             <Select label={t('mentor_workspace.mentee')} value={selectedUserId} onChange={(event) => selectUser(event.target.value)} options={userOptions} placeholder={t('mentor_workspace.select_mentee')} />
             {selectedUserId && <Select label={t('mentor_workspace.assignment')} value={selectedRelationshipId} onChange={(event) => setSelectedRelationshipId(event.target.value)} options={relationshipOptions} />}
@@ -55,7 +55,7 @@ export default function MentorFeedbackPage() {
           </div>
         </Card>
         <Card>
-          <CardHeader><CardTitle>{t('mentor_workspace.feedback_history')}</CardTitle></CardHeader>
+          <CardHeader><CardTitle as="h2">{t('mentor_workspace.feedback_history')}</CardTitle></CardHeader>
           {!selectedUserId || !selectedRelationshipId ? <p className="text-sm text-slate-500">{t('mentor_workspace.select_mentee_hint')}</p> : feedbackQuery.isLoading ? <p className="text-sm text-slate-500">{t('common.loading')}</p> : feedbackQuery.error ? <Alert variant="error">{t('mentor_workspace.feature_load_error')}</Alert> : feedbackQuery.data?.length ? <div className="space-y-3">{feedbackQuery.data.map((feedback) => <FeedbackRow key={feedback.id} feedback={feedback} />)}</div> : <p className="text-sm text-slate-500">{t('mentor_workspace.no_feedback')}</p>}
         </Card>
       </div>

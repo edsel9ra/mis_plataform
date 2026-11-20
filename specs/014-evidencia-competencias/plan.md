@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 014: Evidencia de evaluaciones y competencias
 
-**Estado:** aprobado para implementación (2026-11-14) · **Spec:** aprobada
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)
 **Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 implementado.
 **Dependencia:** independiente de 012/013; 015 consumirá los eventos que esta ampliación produzca.
 **Bloqueo explícito:** la retención de evento mínimo tras eliminación NO se implementa hasta que la política general de conservación/eliminación esté identificada y documentada. No se fija plazo ni se propone una política aquí.

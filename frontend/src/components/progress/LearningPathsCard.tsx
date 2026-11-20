@@ -38,7 +38,7 @@ export function LearningPathsCard({ query, mapHref }: { query: LearningPathsQuer
       action={mapHref ? (
         <Link
           href={mapHref}
-          className="text-sm font-semibold text-primary-700 hover:text-primary-800"
+          className="inline-flex items-center py-1 text-sm font-semibold text-primary-700 hover:text-primary-800"
         >
           {t('progress.map.view_map')}
         </Link>

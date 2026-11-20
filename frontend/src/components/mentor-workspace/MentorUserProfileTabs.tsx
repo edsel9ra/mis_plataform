@@ -165,7 +165,7 @@ function OceanPanel({ assessment }: { assessment: OceanAssessment | null }) {
         <CardHeader>
           <div className="flex items-center gap-2">
             <Brain className="h-5 w-5 text-primary-600" aria-hidden="true" />
-            <CardTitle>{t('mentor_dashboard.ocean_title')}</CardTitle>
+            <CardTitle as="h2">{t('mentor_dashboard.ocean_title')}</CardTitle>
           </div>
         </CardHeader>
         <div className="h-[360px]"><OceanRadarChart data={radarData} /></div>
@@ -226,7 +226,7 @@ function NeurocognitivePanel({ userId, relationshipId, entitlements }: { userId:
         <CardHeader>
           <div className="flex items-center gap-2">
             <ClipboardList className="h-5 w-5 text-primary-600" aria-hidden="true" />
-            <CardTitle>{t('mentor_workspace.emotional_check_ins')}</CardTitle>
+            <CardTitle as="h2">{t('mentor_workspace.emotional_check_ins')}</CardTitle>
           </div>
         </CardHeader>
          {!canViewEmotionalCheckIns ? <SubfeatureLock title={t('mentor_workspace.emotional_check_ins')} /> : checkInsQuery.isLoading ? <p className="text-sm text-slate-500">{t('common.loading')}</p> : checkInsQuery.error ? <ErrorCard /> : checkInsQuery.data?.length ? (
@@ -267,7 +267,7 @@ function AlertsPanel({ alerts, isLoading, hasError }: { alerts?: MentorAlert[]; 
       <CardHeader>
         <div className="flex items-center gap-2">
           <AlertTriangle className="h-5 w-5 text-amber-600" aria-hidden="true" />
-          <CardTitle>{t('mentor_workspace.alerts_title')}</CardTitle>
+          <CardTitle as="h2">{t('mentor_workspace.alerts_title')}</CardTitle>
         </div>
       </CardHeader>
       {isLoading ? <p className="text-sm text-slate-500">{t('common.loading')}</p> : hasError ? <ErrorCard /> : alerts?.length ? (
@@ -452,14 +452,14 @@ function FeedbackPanel({ userId, relationshipId }: { userId: string; relationshi
         <CardHeader>
           <div className="flex items-center gap-2">
             <Send className="h-5 w-5 text-primary-600" aria-hidden="true" />
-            <CardTitle>{t('mentor_workspace.feedback_history')}</CardTitle>
+            <CardTitle as="h2">{t('mentor_workspace.feedback_history')}</CardTitle>
           </div>
         </CardHeader>
         {feedbackQuery.error ? <ErrorCard /> : feedbackQuery.data?.length ? <div className="space-y-3">{feedbackQuery.data.map((feedback) => <FeedbackItem key={feedback.id} feedback={feedback} />)}</div> : <p className="text-sm text-slate-500">{t('mentor_workspace.no_feedback')}</p>}
       </Card>
       <Card>
         <CardHeader>
-          <div className="flex items-center gap-2"><Send className="h-5 w-5 text-primary-600" aria-hidden="true" /><CardTitle>{t('mentor_workspace.new_feedback')}</CardTitle></div>
+          <div className="flex items-center gap-2"><Send className="h-5 w-5 text-primary-600" aria-hidden="true" /><CardTitle as="h2">{t('mentor_workspace.new_feedback')}</CardTitle></div>
         </CardHeader>
         <p className="mb-4 text-sm text-slate-500">{t('mentor_workspace.feedback_description')}</p>
         <FeedbackUploadForm userId={userId} relationshipId={relationshipId} />

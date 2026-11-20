@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { AppShell } from '@/components/layout/AppShell';
 import { useAuth } from '@/components/auth/AuthProvider';
@@ -42,6 +42,7 @@ export default function CertificatesPage() {
       return normalizePaginatedResponse(response, { page, perPage });
     },
     enabled: !!user,
+    placeholderData: keepPreviousData,
   });
 
   const certificates = data?.data ?? [];
@@ -71,7 +72,7 @@ export default function CertificatesPage() {
                 <CardHeader>
                     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
-                      <CardTitle>{certificate.title}</CardTitle>
+                      <CardTitle as="h2">{certificate.title}</CardTitle>
                       <p className="mt-1 text-sm text-gray-500">{formatDate(certificate.issued_at, locale)}</p>
                     </div>
                     <Badge variant={certificateStatus(certificate) === 'revoked' ? 'danger' : certificateStatus(certificate) === 'expired' ? 'warning' : 'success'}>

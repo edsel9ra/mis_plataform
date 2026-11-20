@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,6 +17,7 @@ import { Select } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { PageSpinner } from '@/components/ui/spinner';
+import { PaginationControls } from '@/components/ui/pagination';
 import { Alert } from '@/components/ui/alert';
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { clientTypeOptions, sexOptions } from '@/lib/schemas/auth';
@@ -134,6 +135,7 @@ export default function AdminUsers() {
 
       return normalizePaginatedResponse(response, { page, perPage: 20 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
@@ -213,7 +215,7 @@ export default function AdminUsers() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900">{t('admin.users')}</h1>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{data?.meta.total ?? 0} {t('common.total')}</span>
+          <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
@@ -226,11 +228,11 @@ export default function AdminUsers() {
                 onChange={(e) => { setSearch(e.target.value); setPage(1); }} />
             </div>
              <div className="w-40">
-               <Select options={roleOptions} value={roleFilter}
+               <Select aria-label={t('admin.role')} options={roleOptions} value={roleFilter}
                 onChange={(e) => { setRoleFilter(e.target.value); setPage(1); }} />
             </div>
              <div className="w-40">
-               <Select options={typeOptions} value={typeFilter}
+               <Select aria-label={t('admin.client_type')} options={typeOptions} value={typeFilter}
                 onChange={(e) => { setTypeFilter(e.target.value); setPage(1); }} />
             </div>
           </div>
@@ -242,10 +244,10 @@ export default function AdminUsers() {
           </Alert>
         )}
 
-        <div className="overflow-x-auto">
+        <div className="overflow-x-auto focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500" tabIndex={0} role="region" aria-label={t('admin.users')}>
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left text-gray-500">
+              <tr className="border-b text-left text-gray-600">
                 <th className="px-4 py-3 font-medium">{t('auth.name')}</th>
                 <th className="px-4 py-3 font-medium">{t('auth.email')}</th>
                 <th className="px-4 py-3 font-medium">{t('admin.role')}</th>
@@ -279,16 +281,18 @@ export default function AdminUsers() {
           </table>
         </div>
 
-        {data && data.meta.last_page > 1 && (
-          <div className="flex items-center justify-between border-t px-4 py-3">
-            <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
-              {t('common.previous')}
-            </Button>
-            <span className="text-sm text-gray-600">{t('common.page')} {data.meta.current_page} {t('common.of')} {data.meta.last_page}</span>
-            <Button variant="outline" size="sm" disabled={page >= data.meta.last_page || isFetching} onClick={() => setPage(p => p + 1)}>
-              {t('common.next')}
-            </Button>
-          </div>
+        {data && (
+          <PaginationControls
+            meta={data.meta}
+            page={page}
+            onPageChange={setPage}
+            isLoading={isFetching}
+            ariaLabel={t('common.pagination')}
+            previousLabel={t('common.previous')}
+            nextLabel={t('common.next')}
+            pageLabel={t('common.page')}
+            ofLabel={t('common.of')}
+          />
         )}
       </Card>
 
@@ -310,7 +314,7 @@ export default function AdminUsers() {
                  {isPlatformAdminRole(selectedRole) ? (
                    <div className="space-y-1">
                      <span className="block text-sm font-medium text-gray-700">{t('admin.type')}</span>
-                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-500">
+                    <div className="rounded-lg border border-gray-200 bg-gray-50 px-3 py-2 text-sm text-gray-600">
                       {t('common.not_applicable')}
                     </div>
                   </div>

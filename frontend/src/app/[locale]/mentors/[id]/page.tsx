@@ -1,12 +1,12 @@
 'use client';
 
-import { type ReactNode, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { useLocale, useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
-import { apiErrorMessage } from '@/lib/errors';
+import { apiErrorMessage, isNotFoundError } from '@/lib/errors';
 import { localePath } from '@/i18n/paths';
 import { useCreateRelationship, useRelationshipContexts } from '@/hooks/use-relationships';
 import { AppShell } from '@/components/layout/AppShell';
@@ -19,7 +19,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { PageSpinner } from '@/components/ui/spinner';
 import { Avatar } from '@/components/ui/avatar';
-import { Brain, Users } from 'lucide-react';
+import { ArrowLeft, Brain, Users } from 'lucide-react';
 import type { UserSkill } from '@/lib/mentor-skills';
 
 interface Mentor {
@@ -66,21 +66,47 @@ export default function MentorDetailPage() {
     ? createRelationship.data
     : null;
   const relationship = selectedContext?.relationship ?? createdForSelectedContext;
+  const [requestSent, setRequestSent] = useState(false);
 
-  const withShell = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : content);
+  // After a successful request, focus the "pending" alert that replaces the
+  // form so the change of state is announced and focus is not lost to <body>.
+  useEffect(() => {
+    if (requestSent && relationship?.status === 'pending') {
+      document.getElementById('mentorship-pending')?.focus();
+    }
+  }, [requestSent, relationship?.status]);
 
-  if (isLoading) return withShell(<PageSpinner />);
+  const frame = (content: ReactNode) => (user ? <AppShell>{content}</AppShell> : <main>{content}</main>);
+
+  if (isLoading) return frame(<PageSpinner />);
 
   if (error || !mentor) {
-    return withShell(
-      <Alert variant="error" className="mx-auto max-w-3xl">
-        {error ? apiErrorMessage(error, (key) => t(key)) || t('common.load_error') : t('common.no_results')}
-      </Alert>,
+    const notFound = !error || isNotFoundError(error);
+    return frame(
+      <div className="mx-auto max-w-3xl px-4 py-10 space-y-4">
+        <h1 className="text-2xl font-bold text-gray-900">
+          {notFound ? t('mentors.not_found_title') : t('nav.mentors')}
+        </h1>
+        {notFound ? (
+          <p className="text-gray-600">{t('mentors.not_found_desc')}</p>
+        ) : (
+          <Alert variant="error">
+            {apiErrorMessage(error, (key) => t(key)) || t('common.load_error')}
+          </Alert>
+        )}
+        <Link
+          href={localePath('/mentors', locale)}
+          className="inline-flex items-center gap-2 py-1 text-sm font-semibold text-primary-600 hover:text-primary-700"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          {t('mentors.back_to_list')}
+        </Link>
+      </div>,
     );
   }
 
-  return withShell(
-    <main className="mx-auto max-w-3xl px-4 py-10">
+  return frame(
+    <div className="mx-auto max-w-3xl px-4 py-10">
       <Card className="border-0 shadow-xl shadow-gray-200">
         <CardHeader>
           <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
@@ -93,7 +119,7 @@ export default function MentorDetailPage() {
                 className="rounded-2xl bg-primary-100 text-xl font-bold text-primary-700"
               />
               <div>
-                <CardTitle>{mentor.full_name}</CardTitle>
+                <CardTitle as="h1">{mentor.full_name}</CardTitle>
                 <div className="mt-2 flex flex-wrap gap-2">
                   <Badge variant="success">{t(`client_types.${mentor.client_type}`)}</Badge>
                   {'personality_assessment' in mentor && (
@@ -115,15 +141,15 @@ export default function MentorDetailPage() {
         </CardHeader>
         {mentor.bio && <p className="text-sm leading-6 text-gray-600">{mentor.bio}</p>}
         <div className="mt-6 rounded-2xl border bg-gray-50 p-4">
-          <div className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+          <h2 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
             <Brain className="h-4 w-4 text-primary-600" aria-hidden="true" />
             {t('mentors.skills')}
-          </div>
+          </h2>
           <div className="mt-3 flex flex-wrap gap-2">
             {(mentor.skills ?? []).map((skill, index) => (
               <span key={skill.id ?? index} className="rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm">
                 {skill.skill?.name}
-                <span className="ml-1 text-gray-400">· {t(`learning_levels.${skill.level}`)}</span>
+                <span className="ml-1 text-gray-600">· {t(`learning_levels.${skill.level}`)}</span>
               </span>
             ))}
             {(mentor.skills ?? []).length === 0 && (
@@ -182,7 +208,9 @@ export default function MentorDetailPage() {
                     </div>
                   </Alert>
                 ) : relationship?.status === 'pending' ? (
-                  <Alert variant="info">{t('mentors.relationship_pending')}</Alert>
+                  <Alert variant="info" id="mentorship-pending" tabIndex={-1} className="outline-none">
+                    {t('mentors.relationship_pending')}
+                  </Alert>
                 ) : (
                   <>
                     <Textarea
@@ -204,7 +232,7 @@ export default function MentorDetailPage() {
                         source_id: selectedContext.source_id,
                         mentor_id: mentor.id,
                         objectives: objectives.trim() || undefined,
-                      })}
+                      }, { onSuccess: () => setRequestSent(true) })}
                     >
                       {t('mentors.request_cta')}
                     </Button>
@@ -216,7 +244,7 @@ export default function MentorDetailPage() {
           </section>
         )}
       </Card>
-    </main>
+    </div>
   );
 }
 

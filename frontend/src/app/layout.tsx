@@ -4,6 +4,7 @@ import { Fraunces, Instrument_Sans } from 'next/font/google';
 import { NextIntlClientProvider } from 'next-intl';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { AuthProvider } from '@/components/auth/AuthProvider';
+import { NavigationFocus } from '@/components/NavigationFocus';
 import { RealtimeProvider } from '@/components/realtime/RealtimeProvider';
 import { QueryProvider } from '@/lib/query-provider';
 import { getSiteUrl } from '@/lib/site-url';
@@ -110,6 +111,7 @@ export default async function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-paper font-sans text-ink antialiased">
+        <NavigationFocus />
         <NextIntlClientProvider>
           <QueryProvider>
             <AuthProvider initialHasAuthCookie={initialHasAuthCookie}>

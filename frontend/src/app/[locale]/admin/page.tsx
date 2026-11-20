@@ -79,7 +79,7 @@ export default function AdminDashboard() {
             <Card className="h-full border-0 bg-white/95 shadow-sm ring-1 ring-slate-100 transition-all duration-300 group-hover:-translate-y-1 group-hover:shadow-xl group-hover:shadow-slate-200/80">
               <CardHeader>
               <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-medium text-gray-500">{label}</CardTitle>
+                <CardTitle as="h2" className="text-sm font-medium text-gray-600">{label}</CardTitle>
                 <div className={`rounded-2xl bg-gradient-to-br ${color} p-3 shadow-lg shadow-slate-200`}>
                   <Icon className="h-5 w-5 text-white" aria-hidden="true" />
                 </div>
@@ -97,7 +97,7 @@ export default function AdminDashboard() {
       <div className="grid gap-6 lg:grid-cols-[1fr_0.85fr]">
         <Card className="border-0 shadow-sm ring-1 ring-slate-100">
           <CardHeader>
-            <CardTitle>{t('admin.users_by_type')}</CardTitle>
+            <CardTitle as="h2">{t('admin.users_by_type')}</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {reports?.users_by_type?.map((item) => (
@@ -115,14 +115,14 @@ export default function AdminDashboard() {
               </div>
             ))}
             {(!reports?.users_by_type || reports.users_by_type.length === 0) && (
-              <p className="text-sm text-gray-400">{t('common.no_results')}</p>
+              <p className="text-sm text-gray-600">{t('common.no_results')}</p>
             )}
           </div>
         </Card>
 
         <Card className="border-0 shadow-sm ring-1 ring-slate-100">
           <CardHeader>
-             <CardTitle>{t('admin.role_distribution')}</CardTitle>
+             <CardTitle as="h2">{t('admin.role_distribution')}</CardTitle>
           </CardHeader>
           <div className="space-y-3">
             {reports?.users_by_role?.map((item) => (

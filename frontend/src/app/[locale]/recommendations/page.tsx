@@ -133,7 +133,7 @@ export default function RecommendationsPage() {
           <CardHeader>
             <div className="flex items-center gap-3">
               <Brain className="h-6 w-6 text-primary-600" aria-hidden="true" />
-              <CardTitle>{t('dashboard.ocean_profile')}</CardTitle>
+              <CardTitle as="h2">{t('dashboard.ocean_profile')}</CardTitle>
             </div>
           </CardHeader>
           <div className="grid gap-4 sm:grid-cols-5">
@@ -162,7 +162,7 @@ export default function RecommendationsPage() {
           </div>
 
           {!hasData(data.recommended_mentors) ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-600">
               {t('recommendations.no_mentors')}
             </p>
           ) : (
@@ -224,7 +224,7 @@ export default function RecommendationsPage() {
           </div>
 
           {!hasData(data.recommended_sessions) ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-600">
               {t('recommendations.no_sessions')}
             </p>
           ) : (
@@ -267,7 +267,7 @@ export default function RecommendationsPage() {
           </div>
 
           {!hasData(data.recommended_evaluations) ? (
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-gray-600">
               {t('recommendations.no_evaluations')}
             </p>
           ) : (

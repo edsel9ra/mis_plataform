@@ -1,6 +1,6 @@
 # Tareas — Spec 003: Contrato de acceso y zona horaria
 
-**Estado:** aprobada; T003-01, T003-02 y T003-03 completadas; las demás tareas pendientes.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/003-agenda-access-timezone/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T003-01. Añadir zona horaria persistida y fallback para sesiones heredadas.** RF-003.1; CA hija: RF-003.1; CA padre: CA-3.1, 3.3, 3.4.

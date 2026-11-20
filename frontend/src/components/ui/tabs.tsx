@@ -10,6 +10,7 @@ import {
   type HTMLAttributes,
 } from 'react';
 import { cn } from '@/lib/utils';
+import { nextTabIndex } from '@/lib/tabs';
 
 interface TabsContextValue {
   id: string;
@@ -90,7 +91,7 @@ export function TabsTrigger({ className, value, children, onClick, onKeyDown, id
       id={triggerId}
       role="tab"
       aria-selected={isSelected}
-      aria-controls={panelId}
+      aria-controls={isSelected ? panelId : undefined}
       tabIndex={isSelected ? 0 : -1}
       data-state={isSelected ? 'active' : 'inactive'}
       onClick={(event) => {
@@ -101,20 +102,13 @@ export function TabsTrigger({ className, value, children, onClick, onKeyDown, id
         onKeyDown?.(event);
         if (event.defaultPrevented) return;
 
-        const direction = event.key === 'ArrowRight' || event.key === 'ArrowDown'
-          ? 1
-          : event.key === 'ArrowLeft' || event.key === 'ArrowUp'
-            ? -1
-            : 0;
-        if (direction === 0) return;
-
         const tabList = event.currentTarget.closest('[role="tablist"]');
         const tabs = tabList ? Array.from(tabList.querySelectorAll<HTMLButtonElement>('[role="tab"]')) : [];
         const currentIndex = tabs.indexOf(event.currentTarget);
-        if (currentIndex < 0 || tabs.length === 0) return;
+        const nextIndex = currentIndex < 0 ? null : nextTabIndex(event.key, currentIndex, tabs.length);
+        if (nextIndex === null) return;
 
         event.preventDefault();
-        const nextIndex = (currentIndex + direction + tabs.length) % tabs.length;
         tabs[nextIndex]?.focus();
         tabs[nextIndex]?.click();
       }}
@@ -123,7 +117,7 @@ export function TabsTrigger({ className, value, children, onClick, onKeyDown, id
         'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500 focus-visible:ring-offset-2',
         isSelected
           ? 'bg-white text-gray-900 shadow-sm'
-          : 'text-gray-500 hover:text-gray-700',
+          : 'text-gray-600 hover:text-gray-700',
         className,
       )}
       {...props}

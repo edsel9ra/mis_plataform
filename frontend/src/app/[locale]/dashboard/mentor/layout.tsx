@@ -40,7 +40,7 @@ export default function MentorWorkspaceLayout({ children }: { children: ReactNod
               <Activity className="h-4 w-4" aria-hidden="true" />
               {t('mentor_workspace.eyebrow')}
             </div>
-            <h1 className="mt-2 text-2xl font-bold sm:text-3xl">{t('mentor_workspace.title')}</h1>
+            <p className="mt-2 text-2xl font-bold sm:text-3xl">{t('mentor_workspace.title')}</p>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-300">{t('mentor_workspace.subtitle')}</p>
           </div>
           <div className="flex items-center gap-2 rounded-2xl border border-white/10 bg-white/10 px-4 py-3 text-sm text-slate-200 backdrop-blur">

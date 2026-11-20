@@ -14,11 +14,11 @@ export default function GrupalDashboard() {
 
       <div className="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-500">{t('dashboard.group_active_cohorts')}</h3>
+          <h2 className="text-sm font-medium text-gray-500">{t('dashboard.group_active_cohorts')}</h2>
           <p className="mt-2 text-2xl font-bold text-gray-900">0</p>
         </div>
         <div className="rounded-xl border bg-white p-6 shadow-sm">
-          <h3 className="text-sm font-medium text-gray-500">{t('dashboard.group_total_members')}</h3>
+          <h2 className="text-sm font-medium text-gray-500">{t('dashboard.group_total_members')}</h2>
           <p className="mt-2 text-2xl font-bold text-gray-900">0</p>
         </div>
       </div>

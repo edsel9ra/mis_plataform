@@ -1,6 +1,6 @@
 # Plan — Spec 004: Disponibilidad y reserva de sesiones
 
-**Estado:** propuesta para aprobación (sin implementación)  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/004-availability-booking/spec.md`; scope hijo aprobado.  
 **Base:** Spec 002 v0.4.0 y `specs/002-mentorship-scheduling/plan.md` v1.2.0.  
 **Dependencias:** 003 fija acceso/zona. La resolución inicial de miembros activos se apoya en relaciones y colectivos existentes. 005 heredará solo los cambios prospectivos posteriores a la reserva.

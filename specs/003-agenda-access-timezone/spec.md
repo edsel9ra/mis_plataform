@@ -1,6 +1,6 @@
 # Spec 003 — Contrato de acceso y zona horaria de agenda
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.0, aprobada; fuente normativa de producto.
 **Dependencias:** Spec 002; para la definición de responsable colectivo, `specs/001-progress-tracking-dashboard/spec.md` §3.1 D10. No depende de otra hija.

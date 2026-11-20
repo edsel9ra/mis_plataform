@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslations } from 'next-intl';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
@@ -81,6 +81,7 @@ export default function AdminMentors() {
 
       return normalizePaginatedResponse(response, { page, perPage: 12 });
     },
+    placeholderData: keepPreviousData,
   });
 
   const createMutation = useMutation({
@@ -154,10 +155,10 @@ export default function AdminMentors() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-950">{t('admin.mentors')}</h1>
-           <p className="mt-1 text-sm text-gray-500">{t('admin.mentors_description')}</p>
+           <p className="mt-1 text-sm text-gray-600">{t('admin.mentors_description')}</p>
         </div>
         <div className="flex items-center gap-4">
-          <span className="text-sm text-gray-500">{data?.meta.total ?? 0} {t('common.total')}</span>
+          <span className="text-sm text-gray-600">{data?.meta.total ?? 0} {t('common.total')}</span>
           <Button onClick={openCreate}>+ {t('common.create')}</Button>
         </div>
       </div>
@@ -168,7 +169,7 @@ export default function AdminMentors() {
             <Input aria-label={t('common.search')} placeholder={t('common.search')} value={search} onChange={(e) => setSearch(e.target.value)} />
           </div>
           <div className="w-44">
-             <Select options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} />
+             <Select aria-label={t('admin.client_type')} options={typeOptions} value={typeFilter} onChange={(e) => setTypeFilter(e.target.value)} />
           </div>
         </div>
       </Card>
@@ -187,9 +188,9 @@ export default function AdminMentors() {
             <CardHeader>
               <div className="flex items-start justify-between">
                 <div>
-                  <CardTitle className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
-                  <p className="mt-1 text-sm text-gray-500">{mentor.email}</p>
-                  <p className="text-xs text-gray-400">{t(`client_types.${mentor.client_type}`)}</p>
+                  <CardTitle as="h2" className="text-base">{mentor.name} {mentor.last_name}</CardTitle>
+                  <p className="mt-1 text-sm text-gray-600">{mentor.email}</p>
+                  <p className="text-xs text-gray-600">{t(`client_types.${mentor.client_type}`)}</p>
                 </div>
                  <Badge variant="success">{t('admin.active_mentees_count', { count: mentor.active_mentees_count })}</Badge>
               </div>
@@ -197,7 +198,7 @@ export default function AdminMentors() {
 
             <div className="space-y-2">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">{t('sessions.title')}</span>
+                <span className="text-gray-600">{t('sessions.title')}</span>
                 <span className="font-medium text-gray-900">
                    {t('admin.active_relationships_count', { count: mentor.mentor_relationships?.filter(r => r.status === 'active').length ?? 0 })}
                 </span>
@@ -243,7 +244,7 @@ export default function AdminMentors() {
       </div>
 
       {(!data?.data || data.data.length === 0) && (
-        <p className="mt-8 text-center text-gray-400">{t('common.no_results')}</p>
+        <p className="mt-8 text-center text-gray-600">{t('common.no_results')}</p>
       )}
 
       {data && (

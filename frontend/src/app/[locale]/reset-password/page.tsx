@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { resetPasswordSchema, type ResetPasswordFormData } from '@/lib/schemas/auth';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
+import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -54,6 +55,7 @@ function ResetPasswordForm() {
         password_confirmation: data.password_confirmation,
       });
       setDone(true);
+      requestFocusAfterNavigation();
       router.push(localePath('/login', locale));
     } catch (err) {
       setServerError(apiErrorMessage(err, (key) => t(key)) || t('common.error'));
@@ -61,13 +63,13 @@ function ResetPasswordForm() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
+    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:px-6 lg:px-8">
       <Card className="w-full max-w-md p-6 sm:p-8">
         <CardHeader className="mb-6 text-center">
           <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary-600 text-white shadow-lg shadow-primary-100">
             <Brain className="h-8 w-8" aria-hidden="true" />
           </div>
-          <CardTitle className="text-2xl">{t('auth.reset_password_title')}</CardTitle>
+          <CardTitle as="h1" className="text-2xl">{t('auth.reset_password_title')}</CardTitle>
           <p className="mt-2 text-sm text-gray-500">{t('auth.reset_password_subtitle')}</p>
         </CardHeader>
 
@@ -124,7 +126,7 @@ function ResetPasswordForm() {
           </form>
         )}
       </Card>
-    </div>
+    </main>
   );
 }
 

@@ -10,6 +10,7 @@ import { Select } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { apiIsoToDatetimeLocal, datetimeLocalToApiIso } from '@/lib/datetime';
 import { useCreateObjective, useUpdateObjective } from '@/hooks/use-progress';
+import { validationMessage } from '@/lib/validation-message';
 import { objectiveSchema, objectiveUpdateSchema } from '@/lib/schemas/objective';
 import type { CollectiveSubjectType, Objective, ObjectiveScope } from '@/types/progress';
 
@@ -104,7 +105,7 @@ export function ObjectiveForm({
               { value: 'individual', label: t('progress.form.scope_individual') },
               { value: 'collective', label: t('progress.form.scope_collective') },
             ]}
-            error={errors.scope?.message}
+            error={validationMessage(errors.scope?.message, t)}
             {...form.register('scope', {
               onChange: (event) => {
                 if (event.target.value !== 'collective') form.setValue('owner_type', undefined);
@@ -120,30 +121,30 @@ export function ObjectiveForm({
                 { value: 'cohort', label: t('progress.form.owner_type_cohort') },
                 { value: 'company', label: t('progress.form.owner_type_company') },
               ]}
-              error={errors.owner_type?.message}
+              error={validationMessage(errors.owner_type?.message, t)}
               {...form.register('owner_type')}
             />
           ) : null}
         </div>
       ) : null}
 
-      <Input label={t('progress.form.title_label')} error={errors.title?.message} {...form.register('title')} />
+      <Input label={t('progress.form.title_label')} error={validationMessage(errors.title?.message, t)} {...form.register('title')} />
       <Textarea
         label={t('progress.form.success_criteria_label')}
         rows={3}
-        error={errors.success_criteria?.message}
+        error={validationMessage(errors.success_criteria?.message, t)}
         {...form.register('success_criteria')}
       />
       <Textarea
         label={t('progress.form.description_label')}
         rows={3}
-        error={errors.description?.message}
+        error={validationMessage(errors.description?.message, t)}
         {...form.register('description')}
       />
       <Input
         label={t('progress.form.due_at_label')}
         type="datetime-local"
-        error={errors.due_at?.message}
+        error={validationMessage(errors.due_at?.message, t)}
         {...form.register('due_at')}
       />
 

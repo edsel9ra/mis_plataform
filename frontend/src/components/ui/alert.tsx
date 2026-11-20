@@ -19,7 +19,7 @@ export function Alert({ className, variant = 'info', children, ...props }: Alert
   return (
     <div
       className={cn('flex items-start gap-3 rounded-lg border p-4 text-sm', classes, className)}
-      role="alert"
+      role={variant === 'error' ? 'alert' : 'status'}
       {...props}
     >
       <Icon className="mt-0.5 h-5 w-5 shrink-0" aria-hidden="true" />

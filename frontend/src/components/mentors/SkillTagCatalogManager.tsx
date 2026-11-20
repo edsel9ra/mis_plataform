@@ -71,8 +71,8 @@ export function SkillTagCatalogManager() {
       <CardHeader>
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <CardTitle className="text-base">{t('admin.specialties_catalog')}</CardTitle>
-            <p className="mt-1 text-sm text-gray-500">{t('admin.specialties_catalog_description')}</p>
+            <CardTitle as="h2" className="text-base">{t('admin.specialties_catalog')}</CardTitle>
+            <p className="mt-1 text-sm text-gray-600">{t('admin.specialties_catalog_description')}</p>
           </div>
           <Button type="button" size="sm" onClick={openCreate}>+ {t('admin.add_specialty')}</Button>
         </div>
@@ -89,7 +89,7 @@ export function SkillTagCatalogManager() {
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
                   <p className="truncate text-sm font-semibold text-gray-900">{tag.name}</p>
-                  <p className="mt-1 truncate text-xs text-gray-500">{tag.category || t('common.not_applicable')}</p>
+                  <p className="mt-1 truncate text-xs text-gray-600">{tag.category || t('common.not_applicable')}</p>
                 </div>
                 <Badge variant={tag.is_active ? 'success' : 'default'}>
                   {tag.is_active ? t('common.active') : t('common.inactive')}
@@ -103,7 +103,7 @@ export function SkillTagCatalogManager() {
               </div>
             </div>
           ))}
-          {tags.length === 0 && <p className="text-sm text-gray-500">{t('common.no_results')}</p>}
+          {tags.length === 0 && <p className="text-sm text-gray-600">{t('common.no_results')}</p>}
         </div>
       )}
 

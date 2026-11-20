@@ -34,10 +34,14 @@ export function CardHeader({ className, children, ...props }: HTMLAttributes<HTM
   );
 }
 
-export function CardTitle({ className, children, ...props }: HTMLAttributes<HTMLHeadingElement>) {
+interface CardTitleProps extends HTMLAttributes<HTMLHeadingElement> {
+  as?: 'h1' | 'h2' | 'h3' | 'h4';
+}
+
+export function CardTitle({ as: Tag = 'h3', className, children, ...props }: CardTitleProps) {
   return (
-    <h3 className={cn('text-lg font-semibold text-gray-900', className)} {...props}>
+    <Tag className={cn('text-lg font-semibold text-gray-900', className)} {...props}>
       {children}
-    </h3>
+    </Tag>
   );
 }

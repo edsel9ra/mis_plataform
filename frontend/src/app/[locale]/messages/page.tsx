@@ -106,6 +106,8 @@ function MessagesContent() {
   };
 
   const onSubmit = handleSubmit((values) => {
+    if (sendMessage.isPending) return;
+
     sendMessage.mutate(values.content, {
       onSuccess: () => reset({ content: '' }),
     });
@@ -160,7 +162,7 @@ function MessagesContent() {
             </span>
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold text-gray-950">{name}</span>
-              <span className="block truncate text-xs text-gray-500">
+              <span className="block truncate text-xs text-gray-600">
                 {t(`client_types.${relationship.type}`)}
               </span>
             </span>
@@ -169,6 +171,10 @@ function MessagesContent() {
       })}
     </div>
   );
+
+  const counterpartLabel = selectedRelationship
+    ? counterpartName(selectedRelationship, viewerIsMentor, t('messages.unknown_participant'))
+    : t('messages.unknown_participant');
 
   const conversationPanel = selectedId ? (
     <Card className="flex min-h-[60vh] flex-col gap-0 overflow-hidden p-0 lg:min-h-[70vh]">
@@ -182,9 +188,7 @@ function MessagesContent() {
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-950">
-          {selectedRelationship
-            ? counterpartName(selectedRelationship, viewerIsMentor, t('messages.unknown_participant'))
-            : t('messages.conversations')}
+          {selectedRelationship ? counterpartLabel : t('messages.conversations')}
         </h2>
       </div>
 
@@ -216,8 +220,13 @@ function MessagesContent() {
                     : 'rounded-bl-md bg-white text-gray-950 ring-1 ring-gray-200',
                 )}
               >
-                <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
-                <p className={cn('mt-1 text-[10px]', own ? 'text-primary-100' : 'text-gray-400')}>
+                <p className="whitespace-pre-wrap break-words text-sm">
+                  <span className="sr-only">
+                    {own ? `${t('messages.you')}: ` : `${message.sender?.full_name ?? counterpartLabel}: `}
+                  </span>
+                  {message.content}
+                </p>
+                <p className={cn('mt-1 text-[10px]', own ? 'text-primary-100' : 'text-gray-600')}>
                   {formatTime(message.created_at, locale)}
                   {own && message.read_at !== null ? ' · ✓' : ''}
                 </p>
@@ -248,9 +257,8 @@ function MessagesContent() {
           }}
           placeholder={t('messages.composer_placeholder')}
           className="min-h-11 flex-1 resize-none rounded-xl border border-gray-200 bg-white px-3 py-2.5 text-sm text-gray-950 placeholder:text-gray-400 focus:border-primary-400 focus:outline-none focus:ring-2 focus:ring-primary-200 disabled:opacity-50"
-          disabled={sendMessage.isPending}
         />
-        <Button type="submit" disabled={sendMessage.isPending || !formState.isValid} aria-label={t('messages.composer_send')}>
+        <Button type="submit" disabled={!formState.isValid} loading={sendMessage.isPending} aria-label={t('messages.composer_send')}>
           <Send className="h-4 w-4" aria-hidden="true" />
           <span className="hidden sm:inline">{sendMessage.isPending ? t('messages.composer_sending') : t('messages.composer_send')}</span>
         </Button>

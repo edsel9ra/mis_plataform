@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 015: Historial verificable de progreso
 
-**Estado:** aprobado para implementación (revisión 2026-11-15, aprobada 2026-11-15) · **Spec:** aprobada
+**Estado:** implementado (T015.1–T015.10; cabecera puesta al día el 2026-11-20)
 **Base:** Spec 001 v0.5.1 aprobada; specs 012, 013 y 014 implementadas en `main` (PR #4).
 **Dependencias:** satisfechas. La 012 produce los eventos de retos, vínculo reto-módulo y completitud; la 014 produce los eventos de vínculo resultado-competencia, de estado de fuente y el evento mínimo de eliminación.
 **Retención (RF-015.9):** desbloqueada. `docs/politica-retencion.md` v1.0.0 está vigente y la Spec 014 (T014.10–T014.13) ya conserva el evento mínimo, su correspondencia audit-only y la purga a 12 meses. Esta spec solo **lee** ese evento: no crea almacenamiento, seudónimos ni plazos.
