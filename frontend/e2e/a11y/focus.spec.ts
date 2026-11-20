@@ -625,6 +625,10 @@ test('T020.8 · check-in: envío por teclado anuncia, conserva el foco y encabez
   const card = checkInCard(page);
   await expect(card).toBeVisible();
 
+  // T020.9: la nota usa el useId de la tarjeta (sin duplicados entre tarjetas).
+  const titleId = await card.getByRole('heading', { name: '¿Cómo te sientes hoy?' }).getAttribute('id');
+  expect(await card.getByLabel('Nota (opcional)').getAttribute('id')).toBe(`${titleId}-note`);
+
   // Teclado: flechas dentro del grupo de radios eligen ánimo y estrés.
   await card.getByRole('radio', { name: 'Muy mal' }).focus();
   await page.keyboard.press('ArrowRight');
@@ -703,6 +707,23 @@ test('T020.8 · evidencia: adjunta un .txt, anuncia y devuelve el foco; .html es
   await objective.getByRole('button', { name: 'Adjuntar evidencia' }).click();
   await expect(objective.getByText('Selecciona un archivo de un tipo admitido.')).toBeVisible({ timeout: 5_000 });
   expect(evidencePosts).toBe(0);
+});
+
+test('T020.9 · evidencia solo con nota: se acepta, anuncia y devuelve el foco', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto('/dashboard/progreso');
+  await waitForPage(page);
+
+  const objective = page.locator('li').filter({ has: page.getByRole('button', { name: 'Aportar evidencia' }) }).first();
+  const addButton = objective.getByRole('button', { name: 'Aportar evidencia' });
+  await addButton.click();
+
+  // Sin fichero: RHF entrega una FileList vacía, que el esquema normaliza.
+  await objective.getByLabel('Nota').fill('Evidencia solo con nota T020.9');
+  await objective.getByRole('button', { name: 'Adjuntar evidencia' }).click();
+
+  await expect(objective.locator('[role="status"]').filter({ hasText: 'Evidencia añadida' })).toHaveCount(1, { timeout: 20_000 });
+  expect(await addButton.evaluate((el) => el === document.activeElement), `focus should return to Aportar evidencia (${await describeFocused(page)})`).toBe(true);
 });
 
 // — T020.8 · invitar empleado —

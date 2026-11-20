@@ -171,6 +171,7 @@ export function EmotionalCheckInCard({ relationship }: EmotionalCheckInCardProps
           </fieldset>
 
           <Textarea
+            id={`${titleId}-note`}
             label={t('mentee.check_in.note')}
             rows={3}
             error={validationMessage(errors.note?.message, t)}
