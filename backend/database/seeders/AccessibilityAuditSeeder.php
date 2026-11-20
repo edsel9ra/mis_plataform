@@ -17,12 +17,15 @@ use App\Models\FamilyGroup;
 use App\Models\FamilyMember;
 use App\Models\FeedbackEntry;
 use App\Models\FeedbackThread;
+use App\Models\LearningPath;
 use App\Models\MediaAsset;
+use App\Models\MentorAvailabilityWindow;
 use App\Models\MentorshipRelationship;
 use App\Models\Message;
 use App\Models\NeurocognitiveObservation;
 use App\Models\Objective;
 use App\Models\ObjectiveEvidence;
+use App\Models\PathModule;
 use App\Models\PersonalityAssessment;
 use App\Models\Plan;
 use App\Models\Session;
@@ -33,7 +36,9 @@ use App\Models\SystemicMap;
 use App\Models\SystemicMapEdge;
 use App\Models\SystemicMapNode;
 use App\Models\User;
+use App\Models\UserLearningProgress;
 use App\Models\UserSkill;
+use App\Services\Scheduling\Rules\TimezoneRules;
 use App\Support\AuditTargetGuard;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Seeder;
@@ -355,6 +360,83 @@ class AccessibilityAuditSeeder extends Seeder
 
         $created['objectives'] = Objective::query()->count();
         $created['objective_evidences'] = ObjectiveEvidence::query()->count();
+
+        // ── Mentor availability for the booking flow ─────────────────────
+        // Weekday windows in the mentor's profile timezone, no end date, so
+        // ana's booking page finds free slots in the first week it scans.
+        $mentorTimezone = TimezoneRules::resolveProfileTimezone(
+            $mentor->timezone,
+            (string) config('scheduling.default_timezone'),
+        );
+        foreach (range(1, 5) as $dayOfWeek) { // PHP 'w': 0 = Sunday … 6 = Saturday
+            foreach ([['09:00:00', '13:00:00'], ['15:00:00', '18:00:00']] as [$start, $end]) {
+                MentorAvailabilityWindow::create([
+                    'user_id' => $mentor->id,
+                    'day_of_week' => $dayOfWeek,
+                    'start_time' => $start,
+                    'end_time' => $end,
+                    'timezone' => $mentorTimezone,
+                ]);
+            }
+        }
+        $created['mentor_availability_windows'] = MentorAvailabilityWindow::query()->count();
+
+        // ── Learning path assigned to ana (progress map states) ──────────
+        // One consultable path whose modules produce the three completion
+        // states the screen-reader script expects to hear on the map.
+        $auditPath = LearningPath::create([
+            'title' => [
+                'es' => 'Ruta de auditoría de accesibilidad',
+                'en' => 'Accessibility audit path',
+                'pt' => 'Rota de auditoria de acessibilidade',
+            ],
+            'description' => ['es' => 'Ruta sembrada para la auditoría de accesibilidad.'],
+            'client_type' => 'personal',
+            'level' => 'beginner',
+            'is_active' => true,
+        ]);
+        [$moduleNoData, $moduleInProgress, $moduleUnknown] = collect([
+            'Módulo de auditoría sin datos',
+            'Módulo de auditoría en curso',
+            'Módulo de auditoría con estado desconocido',
+        ])->map(fn (string $title, int $index): PathModule => PathModule::create([
+            'learning_path_id' => $auditPath->id,
+            'title' => $title,
+            'order' => $index + 1,
+        ]))->all();
+
+        UserLearningProgress::create([
+            'user_id' => $ana->id,
+            'learning_path_id' => $auditPath->id,
+            'current_module_id' => $moduleInProgress->id,
+            'progress' => 34,
+            'status' => 'in_progress',
+            'started_at' => $now->subDays(12),
+        ]);
+
+        // Eligible, not completed → «No completado» on the map.
+        $inProgressModuleChallenge = Challenge::factory()->forRelationship($anaRel)->create([
+            'mentor_id' => $mentor->id,
+            'mentee_id' => $ana->id,
+            'title' => 'Reto del módulo en curso',
+            'status' => 'in_progress',
+        ]);
+        $inProgressModuleChallenge->forceFill(['path_module_id' => $moduleInProgress->id])->save();
+
+        // A legacy status the calculator does not recognize → «Incompleto…».
+        $unknownModuleChallenge = Challenge::factory()->forRelationship($anaRel)->create([
+            'mentor_id' => $mentor->id,
+            'mentee_id' => $ana->id,
+            'title' => 'Reto del módulo con estado heredado',
+            'status' => 'paused',
+        ]);
+        $unknownModuleChallenge->forceFill(['path_module_id' => $moduleUnknown->id])->save();
+
+        // $moduleNoData keeps no linked challenges → «Sin datos» on the map.
+
+        $created['challenges'] = Challenge::query()->count();
+        $created['learning_paths'] = LearningPath::query()->count();
+        $created['user_learning_progress'] = UserLearningProgress::query()->count();
 
         // ── Competency link + answered/available evaluations ─────────────
         CompetencyAssessmentLink::factory()
