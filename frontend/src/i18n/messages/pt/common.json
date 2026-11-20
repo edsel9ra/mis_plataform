@@ -362,7 +362,35 @@
     "subtitle": "Informações básicas da conta e tipo de cliente.",
     "language": "Idioma",
     "language_description": "Escolha o idioma usado pela interface e pelas suas avaliações.",
-    "language_error": "Não foi possível atualizar o idioma. Tente novamente."
+    "language_error": "Não foi possível atualizar o idioma. Tente novamente.",
+    "details": {
+      "title": "Dados pessoais",
+      "description": "Atualize o seu nome e fuso horário.",
+      "name": "Nome",
+      "last_name": "Apelido",
+      "timezone": "Fuso horário",
+      "submit": "Guardar dados",
+      "saved": "Dados guardados.",
+      "error": "Não foi possível guardar os dados. Tente novamente."
+    },
+    "avatar": {
+      "title": "Foto de perfil",
+      "description": "A sua foto aparece no seu perfil e na barra lateral.",
+      "label": "Nova foto",
+      "hint": "JPG, PNG, GIF ou WebP, até 2 MB.",
+      "submit": "Alterar foto",
+      "saved": "Foto atualizada.",
+      "error": "Não foi possível atualizar a foto. Tente novamente."
+    },
+    "validation": {
+      "name_required": "Indique o seu nome.",
+      "name_max": "O nome não pode exceder 100 caracteres.",
+      "last_name_max": "O apelido não pode exceder 100 caracteres.",
+      "timezone_required": "Selecione um fuso horário.",
+      "avatar_required": "Selecione uma imagem.",
+      "avatar_type": "Selecione uma imagem JPG, PNG, GIF ou WebP.",
+      "avatar_size": "A imagem deve ter 2 MB ou menos."
+    }
   },
   "mentor_dashboard": {
     "nav": "Usuários atribuídos",

@@ -362,7 +362,35 @@
     "subtitle": "Información básica de tu cuenta y tipo de cliente.",
     "language": "Idioma",
     "language_description": "Elige el idioma que se usará en la interfaz y en tus evaluaciones.",
-    "language_error": "No se pudo actualizar el idioma. Inténtalo de nuevo."
+    "language_error": "No se pudo actualizar el idioma. Inténtalo de nuevo.",
+    "details": {
+      "title": "Datos personales",
+      "description": "Actualiza tu nombre y tu zona horaria.",
+      "name": "Nombre",
+      "last_name": "Apellidos",
+      "timezone": "Zona horaria",
+      "submit": "Guardar datos",
+      "saved": "Datos guardados.",
+      "error": "No se pudieron guardar los datos. Inténtalo de nuevo."
+    },
+    "avatar": {
+      "title": "Foto de perfil",
+      "description": "Tu foto se muestra en tu perfil y en la barra lateral.",
+      "label": "Nueva foto",
+      "hint": "JPG, PNG, GIF o WebP, hasta 2 MB.",
+      "submit": "Cambiar foto",
+      "saved": "Foto actualizada.",
+      "error": "No se pudo actualizar la foto. Inténtalo de nuevo."
+    },
+    "validation": {
+      "name_required": "Indica tu nombre.",
+      "name_max": "El nombre no puede superar los 100 caracteres.",
+      "last_name_max": "Los apellidos no pueden superar los 100 caracteres.",
+      "timezone_required": "Selecciona una zona horaria.",
+      "avatar_required": "Selecciona una imagen.",
+      "avatar_type": "Selecciona una imagen JPG, PNG, GIF o WebP.",
+      "avatar_size": "La imagen debe pesar 2 MB o menos."
+    }
   },
   "mentor_dashboard": {
     "nav": "Usuarios asignados",

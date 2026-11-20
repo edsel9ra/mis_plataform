@@ -6,6 +6,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { SessionVerificationFallback } from '@/components/auth/SessionVerificationFallback';
+import { Avatar } from '@/components/ui/avatar';
 import { PageSpinner } from '@/components/ui/spinner';
 import { cn } from '@/lib/utils';
 import { localePath } from '@/i18n/paths';
@@ -197,9 +198,13 @@ export function AppShell({ children }: { children: ReactNode }) {
 
         <div className={cn('border-t border-white/10 p-4 transition-[padding] duration-300', isSidebarCollapsed && 'lg:p-3')}>
           <div className={cn('flex items-center gap-3 rounded-2xl bg-white/5 p-3 transition-all duration-300', isSidebarCollapsed && 'lg:flex-col lg:justify-center lg:gap-2 lg:px-2')}>
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary-500 to-violet-500 text-sm font-bold">
-              {fullName.charAt(0)}
-            </div>
+            <Avatar
+              src={user.avatar}
+              size="md"
+              alt=""
+              className="shrink-0 bg-gradient-to-br from-primary-500 to-violet-500 text-sm font-bold text-white"
+              fallback={<span>{fullName.charAt(0)}</span>}
+            />
             <div className={cn('min-w-0 flex-1 transition-opacity duration-200', isSidebarCollapsed && 'lg:hidden')}>
               <span className="block truncate text-sm font-medium text-white">{fullName}</span>
               <span className="block truncate text-xs text-slate-400">{user.email}</span>

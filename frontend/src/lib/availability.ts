@@ -187,7 +187,7 @@ export interface FieldErrorMap {
   formError: string | null;
 }
 
-function mapServerFieldErrors(
+export function mapServerFieldErrors(
   fieldErrors: Record<string, string[]>,
   knownKeys: ReadonlySet<string>,
 ): FieldErrorMap {

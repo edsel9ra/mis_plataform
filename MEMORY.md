@@ -307,3 +307,7 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **Spec 020 — T020.3 hecha (2026-11-19)**: evidencia con fichero, subido en dos pasos; `FileUploadField` está ahora en `components/ui/`. Vitest 406.
   - Entorno: `next dev` y `next start` comparten el volumen `.next`, así que hay que parar el frontend de desarrollo antes de un build de producción, o este se rompe.
   - Con `php -S` sin opcache, las peticiones tardan 2–5 s. Para pruebas largas, mejor php-fpm a través de nginx.
+- **Spec 020 — T020.4 hecha (2026-11-20)**: datos personales y foto en `/profile`. Vitest 437.
+  - Zonas horarias: ICU devuelve 19 nombres antiguos (`America/Buenos_Aires`, `Asia/Calcutta`, `Europe/Kiev`…) que `timezone:all` de PHP rechaza con 422. `lib/time-zones.ts` los traduce. **Pendiente fuera de alcance:** `buildTimeZoneOptions` (disponibilidad y reprogramar, spec 016) sigue ofreciéndolos.
+  - Foto: `PUT` multipart no llega a PHP, así que se envía `POST` con `_method=PUT`. `Avatar` convierte las URLs `/storage/avatars/` en relativas y Next las reenvía a nginx. Hace falta `php artisan storage:link` (lo hace `setup.sh`).
+  - Entorno: para las pruebas en el navegador en este host conviene construir con `NEXT_PUBLIC_API_TIMEOUT_MS=30000`; con 5 s se cortan peticiones.

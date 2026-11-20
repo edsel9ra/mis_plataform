@@ -8,7 +8,10 @@ import { AppShell } from '@/components/layout/AppShell';
 import { Card } from '@/components/ui/card';
 import { Select } from '@/components/ui/select';
 import { Alert } from '@/components/ui/alert';
+import { Avatar } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
+import { ProfileDetailsForm } from '@/components/profile/ProfileDetailsForm';
+import { AvatarField } from '@/components/profile/AvatarField';
 import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
 import { requestFocusAfterNavigation } from '@/lib/navigation-focus';
@@ -74,9 +77,13 @@ export default function ProfilePage() {
         </div>
         <Card className="border-0 shadow-sm">
           <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary-100 text-2xl font-bold text-primary-700">
-              {user?.name?.charAt(0)}
-            </div>
+            <Avatar
+              src={user?.avatar}
+              size="lg"
+              alt=""
+              className="h-16 w-16 rounded-2xl bg-primary-100 text-2xl font-bold text-primary-700"
+              fallback={<span>{user?.name?.charAt(0)}</span>}
+            />
             <div>
               <h2 className="text-xl font-semibold text-gray-950">{user?.name} {user?.last_name}</h2>
               <p className="text-gray-500">{user?.email}</p>
@@ -88,6 +95,12 @@ export default function ProfilePage() {
             </div>
           </div>
         </Card>
+        {user && (
+          <ProfileDetailsForm
+            initialValues={{ name: user.name, last_name: user.last_name, timezone: user.timezone ?? null }}
+          />
+        )}
+        {user && <AvatarField currentAvatar={user.avatar} initial={user.name?.charAt(0) ?? ''} />}
         <Card className="border-0 shadow-sm">
           <h2 className="text-lg font-semibold text-gray-950">{t('profile.language')}</h2>
           <p className="mt-1 text-sm text-gray-500">{t('profile.language_description')}</p>

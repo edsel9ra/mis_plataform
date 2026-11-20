@@ -362,7 +362,35 @@
     "subtitle": "Basic account information and client type.",
     "language": "Language",
     "language_description": "Choose the language used by the interface and your assessments.",
-    "language_error": "The language could not be updated. Please try again."
+    "language_error": "The language could not be updated. Please try again.",
+    "details": {
+      "title": "Personal details",
+      "description": "Update your name and time zone.",
+      "name": "First name",
+      "last_name": "Last name",
+      "timezone": "Time zone",
+      "submit": "Save details",
+      "saved": "Details saved.",
+      "error": "Your details could not be saved. Please try again."
+    },
+    "avatar": {
+      "title": "Profile photo",
+      "description": "Your photo appears on your profile and in the sidebar.",
+      "label": "New photo",
+      "hint": "JPG, PNG, GIF or WebP, up to 2 MB.",
+      "submit": "Change photo",
+      "saved": "Photo updated.",
+      "error": "The photo could not be updated. Please try again."
+    },
+    "validation": {
+      "name_required": "Enter your name.",
+      "name_max": "Name must be 100 characters or fewer.",
+      "last_name_max": "Last name must be 100 characters or fewer.",
+      "timezone_required": "Select a time zone.",
+      "avatar_required": "Select an image.",
+      "avatar_type": "Select a JPG, PNG, GIF or WebP image.",
+      "avatar_size": "The image must be 2 MB or smaller."
+    }
   },
   "mentor_dashboard": {
     "nav": "Assigned users",

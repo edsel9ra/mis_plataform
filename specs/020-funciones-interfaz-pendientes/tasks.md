@@ -50,7 +50,18 @@ Plan: `plan.md`. En orden de dependencia.
     - si la subida falla, se conserva la nota;
     - typecheck y lint pasan.
 
-- [ ] **T020.4. Datos personales en el perfil.** RF-020.11, RF-020.12
+- [x] **T020.4. Datos personales en el perfil.** RF-020.11, RF-020.12
+  - Resultado (2026-11-20):
+    - Código:
+      - `ProfileDetailsForm` (nombre, apellidos y zona horaria, con RHF) y `AvatarField` (foto, sin opción de quitarla), en `components/profile/`;
+      - `lib/time-zones.ts` traduce los 19 nombres antiguos de ICU que `timezone:all` rechaza (plan, decisión 5);
+      - `hooks/use-profile.ts`; la foto se sube con `POST` y `_method=PUT` (decisión 6);
+      - `lib/avatar-src.ts` y el rewrite `/storage/avatars/*` en `next.config.ts` (decisión 7); `Avatar` muestra la foto en la tarjeta del perfil y en el lateral;
+      - los errores 422 se colocan en su campo con `mapServerFieldErrors` (ahora exportado desde `lib/availability.ts`); confirmaciones en regiones `role="status"` siempre montadas.
+    - En la revisión se quitó el `disabled` del botón «Cambiar foto»: al vaciar el fichero tras el éxito, el botón se desactivaba con el foco encima y el foco se perdía.
+    - Vitest 437 (31 nuevos, 13 en rojo primero), typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 23/23: el nombre nuevo aparece en el lateral y en la tarjeta sin recargar, con el foco en «Guardar datos»; `Asia/Kolkata` y `America/Argentina/Buenos_Aires` se guardan (200) y la lista no ofrece los nombres antiguos; un 422 simulado aparece bajo la zona horaria con `aria-invalid` y el foco en el campo; un PNG se sube y se ve desde `/storage/avatars/`; un `.txt` o un fichero de más de 2 MB se rechazan sin petición; axe sin violaciones a 1280 y 320 px.
+    - Entorno: el build de prueba se hizo con `NEXT_PUBLIC_API_TIMEOUT_MS=30000` porque el host tardaba 2–6 s por petición. `.env.backend` se restauró y `mis_project` se comprobó sin cambios.
   - Formulario de nombre, apellidos y zona horaria, y campo de foto.
   - Hecho cuando:
     - Vitest cubre el esquema y el helper de zonas horarias;
