@@ -12,6 +12,7 @@ import { useRelationships } from '@/hooks/use-relationships';
 import { useSessions } from '@/hooks/use-sessions';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
 import { PersonalPlansSection } from '@/components/mentor-workspace/PersonalPlansSection';
+import { EmotionalCheckInCard } from '@/components/mentee/EmotionalCheckInCard';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
@@ -111,6 +112,9 @@ export default function PersonalDashboard() {
   const dashboardError = sessionsError ?? relationshipsError ?? learningPathsError ?? personalityError ?? recommendationsError;
   const learningPaths = Array.isArray(learningPathsData) ? learningPathsData : learningPathsData?.data ?? [];
   const activeRelationships = relationships.filter((relationship: RelationshipSummary) => relationship.status === 'active');
+  const checkInRelationships = relationships.filter(
+    (relationship) => relationship.status === 'active' && relationship.features?.emotional_check_ins,
+  );
   const nextSession = sessions.find((session: SessionSummary) => ['scheduled', 'in_progress'].includes(session.status));
   const interpretation = personalityReport?.interpretation ?? {};
   const oceanChartData = OCEAN_ORDER.map((key) => {
@@ -217,6 +221,10 @@ export default function PersonalDashboard() {
       </section>
 
       <PersonalPlansSection />
+
+      {checkInRelationships.map((relationship) => (
+        <EmotionalCheckInCard key={relationship.id} relationship={relationship} />
+      ))}
 
       <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr]">
         <div className="space-y-6">

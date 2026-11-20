@@ -6,6 +6,7 @@ use App\Actions\CreateRelationshipAction;
 use App\Http\Requests\Relationship\StoreRelationshipRequest;
 use App\Http\Requests\Relationship\UpdateRelationshipStatusRequest;
 use App\Http\Resources\RelationshipResource;
+use App\Http\Resources\ViewerRelationshipResource;
 use App\Models\MentorshipRelationship;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -31,7 +32,7 @@ class RelationshipController
             ->latest()
             ->paginate($perPage);
 
-        return RelationshipResource::collection($relationships)->response();
+        return ViewerRelationshipResource::collection($relationships)->response();
     }
 
     public function store(StoreRelationshipRequest $request): JsonResponse
@@ -70,7 +71,7 @@ class RelationshipController
 
         Gate::authorize('view', $relationship);
 
-        return response()->json(new RelationshipResource($relationship));
+        return response()->json(new ViewerRelationshipResource($relationship));
     }
 
     public function updateStatus(UpdateRelationshipStatusRequest $request, string $id): JsonResponse

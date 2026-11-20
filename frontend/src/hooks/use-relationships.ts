@@ -12,6 +12,7 @@ export interface Relationship {
   mentor: { id: string; full_name: string; avatar: string | null };
   source?: { id: string; type: string; name: string | null } | null;
   created_at: string;
+  features?: { emotional_check_ins: boolean };
 }
 
 export function useRelationships(page = 1, perPage = 20, enabled = true) {

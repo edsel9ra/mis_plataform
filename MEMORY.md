@@ -311,3 +311,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - Zonas horarias: ICU devuelve 19 nombres antiguos (`America/Buenos_Aires`, `Asia/Calcutta`, `Europe/Kiev`…) que `timezone:all` de PHP rechaza con 422. `lib/time-zones.ts` los traduce. **Pendiente fuera de alcance:** `buildTimeZoneOptions` (disponibilidad y reprogramar, spec 016) sigue ofreciéndolos.
   - Foto: `PUT` multipart no llega a PHP, así que se envía `POST` con `_method=PUT`. `Avatar` convierte las URLs `/storage/avatars/` en relativas y Next las reenvía a nginx. Hace falta `php artisan storage:link` (lo hace `setup.sh`).
   - Entorno: para las pruebas en el navegador en este host conviene construir con `NEXT_PUBLIC_API_TIMEOUT_MS=30000`; con 5 s se cortan peticiones.
+- **Spec 020 — T020.5 hecha (2026-11-20)**: tarjeta «¿Cómo te sientes hoy?» en `/dashboard/personal`, una por relación con `features.emotional_check_ins`. Backend 1206, Vitest 449.
+  - `features` solo existe en `GET /relationships` y `GET /relationships/{id}` (`ViewerRelationshipResource`); repite las condiciones de `menteeRelationship()` y `requireEntitlement`, así que `true` implica 200 en `/relationships/{id}/emotional-check-ins`.
+  - Cuentas de auditoría: `ana.audit` tiene el entitlement y `kai.audit` no.

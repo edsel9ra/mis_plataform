@@ -614,6 +614,44 @@
       "score_invalid": "Informe um número."
     }
   },
+  "mentee": {
+    "check_in": {
+      "title": "Como se sente hoje?",
+      "with_mentor": "Com {name}",
+      "mood": "O seu ânimo",
+      "mood_levels": {
+        "1": "Muito mal",
+        "2": "Mal",
+        "3": "Normal",
+        "4": "Bem",
+        "5": "Muito bem"
+      },
+      "stress": "O seu nível de estresse (opcional)",
+      "stress_none": "Não indicado",
+      "stress_levels": {
+        "1": "Muito baixo",
+        "2": "Baixo",
+        "3": "Médio",
+        "4": "Alto",
+        "5": "Muito alto"
+      },
+      "note": "Nota (opcional)",
+      "submit": "Guardar check-in",
+      "saved": "Check-in guardado.",
+      "error": "Não foi possível guardar o check-in. Tente novamente.",
+      "recent": "Os seus últimos check-ins",
+      "empty": "Ainda não registou nenhum check-in.",
+      "loading": "A carregar check-ins…",
+      "mood_value": "Ânimo: {level}",
+      "stress_value": "Estresse: {level}",
+      "stress_not_set": "Estresse não indicado"
+    },
+    "validation": {
+      "mood_required": "Escolha como se sente.",
+      "stress_invalid": "O nível de estresse não é válido.",
+      "note_max": "A nota não pode exceder os 10 000 caracteres."
+    }
+  },
   "admin": {
     "overview": "Painel Administrativo",
     "users": "Usuários",

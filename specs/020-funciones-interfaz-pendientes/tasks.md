@@ -68,7 +68,14 @@ Plan: `plan.md`. En orden de dependencia.
     - al guardar, el nombre nuevo se ve en la cabecera y en el lateral sin recargar;
     - un error del servidor aparece en su campo.
 
-- [ ] **T020.5. Check-in emocional del mentee.** RF-020.4, RF-020.5, RF-020.6
+- [x] **T020.5. Check-in emocional del mentee.** RF-020.4, RF-020.5, RF-020.6
+  - Resultado (2026-11-20):
+    - `menteeRelationship()` solo admite relaciones personales activas cuyo `source` es la propia persona, así que la tarjeta va solo en `/dashboard/personal` (plan, decisión 4).
+    - Backend: `RelationshipViewerFeatures` (servicio `scoped`, que resuelve el plan de quien consulta una vez por petición) y `ViewerRelationshipResource`, usado solo en `GET /relationships` y `GET /relationships/{id}`. `RelationshipResource`, anidado en sesiones y certificados, no cambia.
+    - Frontend: `EmotionalCheckInCard` (radios nativos con texto en `fieldset`/`legend`, estrés opcional con «Sin indicar», nota, estado `role="status"` siempre montado, botón que nunca se desactiva), `hooks/use-emotional-check-ins.ts` (`per_page=5`, `keepPreviousData`), `lib/emotional-check-in.ts` y `lib/schemas/mentee.ts`. `aria-invalid` va en un contenedor `role="radiogroup"`, porque ARIA no lo admite en los radios.
+    - Pest: 9 tests nuevos (7 en rojo primero); suite del backend 1206. Vitest 449 (12 nuevos); typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 15/15: ana registra un check-in solo con teclado (201, se anuncia, el foco se queda en «Guardar check-in» y aparece el primero de la lista con «Ánimo: Bien · Estrés: Alto»); sin ánimo, error en el grupo y ninguna petición; kai (plan bloqueado) no ve la tarjeta y no hay ninguna llamada a `/emotional-check-ins`; axe sin violaciones a 1280 y 320 px, sin scroll horizontal.
+    - Entorno restaurado; `mis_project` sin cambios.
   - `features.emotional_check_ins` en `RelationshipResource`, con test en Pest; comprobar qué tipos de relación admite `menteeRelationship()`; la tarjeta y su hook.
   - Hecho cuando:
     - con un plan sin el entitlement no hay tarjeta ni llamada que dé 403;

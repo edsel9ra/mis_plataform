@@ -614,6 +614,44 @@
       "score_invalid": "Enter a number."
     }
   },
+  "mentee": {
+    "check_in": {
+      "title": "How are you feeling today?",
+      "with_mentor": "With {name}",
+      "mood": "Your mood",
+      "mood_levels": {
+        "1": "Very bad",
+        "2": "Bad",
+        "3": "Okay",
+        "4": "Good",
+        "5": "Very good"
+      },
+      "stress": "Your stress level (optional)",
+      "stress_none": "Not specified",
+      "stress_levels": {
+        "1": "Very low",
+        "2": "Low",
+        "3": "Medium",
+        "4": "High",
+        "5": "Very high"
+      },
+      "note": "Note (optional)",
+      "submit": "Save check-in",
+      "saved": "Check-in saved.",
+      "error": "The check-in could not be saved. Please try again.",
+      "recent": "Your recent check-ins",
+      "empty": "You haven't recorded any check-ins yet.",
+      "loading": "Loading check-ins…",
+      "mood_value": "Mood: {level}",
+      "stress_value": "Stress: {level}",
+      "stress_not_set": "Stress not specified"
+    },
+    "validation": {
+      "mood_required": "Choose how you feel.",
+      "stress_invalid": "The stress level is not valid.",
+      "note_max": "The note cannot exceed 10,000 characters."
+    }
+  },
   "admin": {
     "overview": "Admin Dashboard",
     "users": "Users",

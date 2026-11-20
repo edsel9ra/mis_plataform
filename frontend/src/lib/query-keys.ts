@@ -78,6 +78,11 @@ export const queryKeys = {
     userId ?? 'all',
     relationshipId ?? 'all',
   ] as const,
+  menteeEmotionalCheckIns: (relationshipId: string) => [
+    'mentee',
+    'emotional-check-ins',
+    relationshipId,
+  ] as const,
   mentorEmotionalCheckIns: (userId: string, relationshipId: string) => [
     'mentor-workspace',
     'users',
