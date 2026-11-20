@@ -12,7 +12,7 @@ import { useSubmitObjectiveEvidence } from '@/hooks/use-progress';
 import { apiErrorMessage } from '@/lib/errors';
 import { SUPPORTED_MEDIA_TYPES } from '@/lib/media-types';
 import { validationMessage } from '@/lib/validation-message';
-import { objectiveEvidenceSchema, type ObjectiveEvidenceFormValues } from '@/lib/schemas/objective';
+import { objectiveEvidenceSchema, type ObjectiveEvidenceFormInput, type ObjectiveEvidenceFormValues } from '@/lib/schemas/objective';
 
 const ACCEPT = Array.from(SUPPORTED_MEDIA_TYPES).join(',');
 
@@ -31,7 +31,7 @@ export function ObjectiveEvidenceForm({
   const t = useTranslations();
   const mutation = useSubmitObjectiveEvidence(objectiveId);
   const [selectedFileName, setSelectedFileName] = useState('');
-  const form = useForm<ObjectiveEvidenceFormValues>({
+  const form = useForm<ObjectiveEvidenceFormInput, unknown, ObjectiveEvidenceFormValues>({
     resolver: zodResolver(objectiveEvidenceSchema),
     defaultValues: { note: '' },
   });

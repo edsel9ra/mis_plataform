@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_MEDIA_FILE_SIZE_BYTES, SUPPORTED_MEDIA_TYPES } from '@/lib/media-types';
+import { optionalFileInput } from '@/lib/schemas/file-input';
 
 const V = (key: string) => `mentor_workspace.validation.${key}`;
 
@@ -25,7 +26,7 @@ export const mentorChallengeSchema = z.object({
 
 export const mentorFeedbackSchema = z.object({
   note: z.string().trim().max(2000, { error: V('text_max') }).optional(),
-  feedback_file: uploadedFile.optional().refine(
+  feedback_file: optionalFileInput(uploadedFile).refine(
     (file) => !file || (
       supportedMentorMediaTypes.has(file.type)
       && (file.type.startsWith('audio/') || file.type.startsWith('video/'))
@@ -51,6 +52,7 @@ export const mentorObservationSchema = z.object({
 });
 
 export type MentorChallengeFormValues = z.infer<typeof mentorChallengeSchema>;
+export type MentorFeedbackFormInput = z.input<typeof mentorFeedbackSchema>;
 export type MentorFeedbackFormValues = z.infer<typeof mentorFeedbackSchema>;
 export type MentorObservationFormInput = z.input<typeof mentorObservationSchema>;
 export type MentorObservationFormValues = z.output<typeof mentorObservationSchema>;

@@ -105,6 +105,31 @@ describe('objective schemas emit progress.validation.* keys', () => {
     expectKeyMessages(objectiveEvidenceSchema.safeParse({ file: big }));
   });
 
+  // RHF stores input.files (a FileList) on submit; an empty one must not
+  // block a note-only evidence (Devin Review PR #9).
+  it('objectiveEvidenceSchema accepts a note with an empty FileList', () => {
+    const emptyList = { length: 0 };
+    const result = objectiveEvidenceSchema.safeParse({ note: 'solo nota', file: emptyList });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.file).toBeUndefined();
+  });
+
+  it('objectiveEvidenceSchema reports evidence_required (not file) with an empty FileList and no note', () => {
+    const emptyList = { length: 0 };
+    const result = objectiveEvidenceSchema.safeParse({ file: emptyList });
+    expect(result.success).toBe(false);
+    const noteIssue = result.error?.issues.find((issue) => issue.path[0] === 'note');
+    expect(noteIssue?.message).toBe(`${PREFIX}evidence_required`);
+  });
+
+  it('objectiveEvidenceSchema unwraps the File out of a FileList', () => {
+    const file = fileOf(64, 'text/plain', 'note.txt');
+    const list = { 0: file, length: 1 };
+    const result = objectiveEvidenceSchema.safeParse({ note: 'x', file: list });
+    expect(result.success).toBe(true);
+    expect(result.success && result.data.file).toBe(file);
+  });
+
   it('objectiveStatusSchema: invalid status reports a key', () => {
     expectKeyMessages(objectiveStatusSchema.safeParse({ status: 'bogus' }));
   });

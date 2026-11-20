@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { MAX_MEDIA_FILE_SIZE_BYTES, SUPPORTED_MEDIA_TYPES } from '@/lib/media-types';
+import { optionalFileInput } from '@/lib/schemas/file-input';
 
 /**
  * Objective form schemas (spec 001, T-093, RF-1).
@@ -109,7 +110,7 @@ export const objectiveEvidenceSchema = z
   .object({
     note: optionalText(20_000),
     media_asset_id: z.guid({ error: V('invalid_id') }).optional(),
-    file: evidenceFile.optional(),
+    file: optionalFileInput(evidenceFile),
   })
   .refine(({ note, media_asset_id, file }) => Boolean(note?.trim() || media_asset_id || file), {
     path: ['note'],
@@ -123,5 +124,6 @@ export const objectiveStatusSchema = z.object({
 export type ObjectiveFormValues = z.infer<typeof objectiveSchema>;
 export type ObjectiveUpdateFormValues = z.infer<typeof objectiveUpdateSchema>;
 export type ObjectiveProposalFormValues = z.infer<typeof objectiveProposalSchema>;
+export type ObjectiveEvidenceFormInput = z.input<typeof objectiveEvidenceSchema>;
 export type ObjectiveEvidenceFormValues = z.infer<typeof objectiveEvidenceSchema>;
 export type ObjectiveStatusFormValues = z.infer<typeof objectiveStatusSchema>;
