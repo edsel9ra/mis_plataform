@@ -34,6 +34,7 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
   const [showCreate, setShowCreate] = useState(false);
   const [showProposal, setShowProposal] = useState(false);
   const createButtonRef = useRef<HTMLButtonElement>(null);
+  const proposalButtonRef = useRef<HTMLButtonElement>(null);
   const [feedback, setFeedback] = useState('');
 
   const objectives = query.data?.data ?? [];
@@ -44,10 +45,21 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
     createButtonRef.current?.focus();
   }
 
+  function onProposalDone() {
+    setShowProposal(false);
+    setFeedback(t('progress.form.proposed'));
+    proposalButtonRef.current?.focus();
+  }
+
+  function onProposalCancel() {
+    setShowProposal(false);
+    proposalButtonRef.current?.focus();
+  }
+
   const headerAction = (
     <div className="flex gap-2">
       {block.allow_proposal ? (
-        <Button type="button" size="sm" variant="outline" onClick={() => setShowProposal((open) => !open)}>
+        <Button ref={proposalButtonRef} type="button" size="sm" variant="outline" onClick={() => setShowProposal((open) => !open)}>
           {t('progress.objectives.propose')}
         </Button>
       ) : null}
@@ -78,8 +90,8 @@ export function ObjectivesBlock({ subjectId, block, period, canCreate = false, r
         <div className="mb-4 rounded-xl border border-slate-200 p-4">
           <ObjectiveProposalForm
             relationshipId={relationshipId}
-            onDone={() => setShowProposal(false)}
-            onCancel={() => setShowProposal(false)}
+            onDone={onProposalDone}
+            onCancel={onProposalCancel}
           />
         </div>
       ) : null}
