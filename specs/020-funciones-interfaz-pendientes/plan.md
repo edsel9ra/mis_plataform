@@ -1,6 +1,6 @@
 # Plan — Spec 020, funciones de interfaz pendientes
 
-Estado: aprobado
+Estado: implementado
 
 Base: `spec.md` (aprobada el 2026-11-19, decisiones D-1 a D-4).
 

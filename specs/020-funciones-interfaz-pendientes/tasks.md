@@ -1,6 +1,6 @@
 # Tareas — Spec 020, funciones de interfaz pendientes
 
-Estado: aprobado
+Estado: completado (T020.1–T020.9)
 
 Plan: `plan.md`. En orden de dependencia.
 
@@ -121,8 +121,8 @@ Plan: `plan.md`. En orden de dependencia.
   - Diálogo de edición, acciones de activar y desactivar, y confirmación de la desactivación.
   - Hecho cuando: cada acción actualiza la lista y anuncia el resultado, el foco vuelve a la fila y Vitest pasa.
 
-- [ ] **T020.8. Fixtures y suite de accesibilidad de las pantallas nuevas.** RNF-020.3
-  - Resultado (2026-11-20): criterio local cumplido; falta el CI, que no ha corrido porque la rama no está subida.
+- [x] **T020.8. Fixtures y suite de accesibilidad de las pantallas nuevas.** RNF-020.3
+  - Resultado (2026-11-20): pasa en local y en el CI del PR #9 (154 pruebas en 3 shards).
     - Seeder: tres empleados nuevos en Audit Corp (5 en total): `invitado.audit` (`invited`), `inactivo.audit` (`inactive`) y `rotativo.audit` («Rotativo Audit», `active`), que la prueba desactiva y vuelve a activar. ana ya tenía relación con el check-in emocional y un check-in sembrado.
     - `routes.ts`: nueva ruta `kai-dashboard`, el panel sin la tarjeta de check-in. Ya estaban `ana-dashboard`, `ana-profile` y `empresa-admin-employees`.
     - `focus.spec.ts`: 9 pruebas nuevas: perfil (guardar, 422 de zona horaria, foto), check-in (teclado, envío vacío, kai sin tarjeta), evidencia con fichero, invitar (teclado, duplicado, éxito, axe del diálogo a 1280 y 320 px) y el ciclo editar/desactivar/activar con axe del diálogo de confirmación.
@@ -135,6 +135,14 @@ Plan: `plan.md`. En orden de dependencia.
     - la suite completa pasa dos veces seguidas en local sin volver a sembrar;
     - el CI pasa.
 
-- [ ] **T020.9. Cierre.**
+- [x] **T020.9. Cierre.**
+  - Resultado (2026-11-20):
+    - Local sobre `ca11c7b`: backend 1215 tests (5274 assertions), esta vez sin fallos de `ProgressHistoryIndexesTest`; Vitest 464, typecheck y lint limpios.
+    - Devin Review encontró 4 problemas en el PR #9 y los corregí con tests que fallaban antes:
+      - **Evidencia solo con nota bloqueada (alta):** `register('file')` entrega un FileList vacío que el esquema rechazaba. `lib/schemas/file-input.ts` lo normaliza (`optionalFileInput`) en la evidencia y también en el feedback del mentor, que tenía el mismo fallo desde antes. Prueba e2e nueva de evidencia solo con nota.
+      - **Activar una suscripción no refrescaba las relaciones**, así que la tarjeta de check-in no aparecía hasta recargar. Ahora también se invalida `relationshipsRoot`.
+      - **La purga borraba la fila aunque no pudiera borrar el fichero.** Ahora conserva la fila, registra los ids y termina con FAILURE.
+      - **La nota del check-in tenía un id repetido entre tarjetas.** Ahora usa `useId`.
+    - Tras las correcciones (`a1e8e3e`): Vitest 470, typecheck y lint limpios; Pest de la purga y de los ficheros de evidencia 24/24; en el navegador, 11/11 en las pruebas afectadas. El CI del PR #9 pasa entero, incluidos los 3 shards de accesibilidad, en el push y en el pull_request.
   - Suites completas del backend y del frontend, CI, `fixtures.md` y `MEMORY.md`, y la spec marcada como implementada.
   - Hecho cuando: todo está en verde y la documentación, actualizada.

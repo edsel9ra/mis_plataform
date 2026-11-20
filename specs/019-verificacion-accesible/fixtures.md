@@ -38,6 +38,11 @@ Además, `AdminUserSeeder` crea `admin@mis.com` (super_admin) con la contraseña
 | Colectivos | `Familia Audit` (+miembro), `Cohorte Audit` (+miembro), `Audit Corp` (5 empleados: 3 `active` —empleado, empleado2 y Rotativo Audit—, 1 `invited`, 1 `inactive`) |
 | Planes | Los reales de `PlanSeeder` + `audit_personal_locked` (`entitlements.mentor_workspace=false`) |
 
+**Lo que cambia cada pasada de la suite (spec 020).** Se puede repetir sin volver a sembrar:
+- se añade un empleado invitado (`invite.t0208.*`) a Audit Corp; el plan startup admite 20 y se siembran 5;
+- ana acumula check-ins y evidencias, con y sin fichero, y se le sustituye la foto;
+- «Rotativo Audit» se desactiva y se vuelve a activar, así que termina `active`.
+
 **No creado:** «bio» del mentor — no existe columna `bio` en `users` ni perfil de mentor (`MentorResource.bio` siempre resuelve `null`); solo las skills reales quedan sembradas.
 
 ## Procedimiento local

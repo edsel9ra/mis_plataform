@@ -319,7 +319,11 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
   - En la suite de axe hay que esperar a que termine la animación del `Dialog` antes de medir, o da falsos positivos de contraste.
 - **Spec 020 — T020.7 hecha (2026-11-20)**: editar, activar y desactivar empleados (confirmación al desactivar). Backend 1215, Vitest 461.
   - Patrón de foco cuando la acción quita el botón pulsado: guardar un `pendingFocusId` y, al actualizarse los datos, enfocar el título de la fila (`tabIndex=-1`). Ese efecto se ejecuta después de que el `Dialog` devuelva el foco al cerrarse.
-- **Spec 020 — T020.8 en local (2026-11-20)**: suite a11y de 154 pruebas, 2 pasadas seguidas en verde sin resembrar; falta el CI. `buildTimeZoneOptions` también usa `canonicalTimeZone`. Vitest 464.
+- **Spec 020 — T020.8 hecha (2026-11-20)**: suite a11y de 154 pruebas, 2 pasadas seguidas en verde sin resembrar y CI del PR #9 en verde. `buildTimeZoneOptions` también usa `canonicalTimeZone`. Vitest 464.
   - Para correr la suite en este portátil: parar frontend dev, matching, scheduler, reverb y queue-worker (el correo de invitación es síncrono, basta Mailpit), un solo contenedor Playwright y `--workers=1`. Con todo el stack levantado y varios contenedores Playwright, la carga llegó a ~500, se agotó el swap y Docker dejó de responder.
   - En Playwright, `getByRole(..., { name })` hace coincidencia parcial: «Bien» encaja con «Muy bien». Usar `exact: true`.
   - Cada pasada de la suite añade un empleado invitado a Audit Corp (plan startup, máximo 20).
+- **Spec 020 — implementada (T020.9, 2026-11-20)**: PR #9 (base `feat/011-accesibilidad-auditoria`, encima del PR #8) con el CI en verde. Backend 1215, Vitest 470.
+  - `register('file')` de RHF entrega un FileList (vacío si no se elige nada) en vez de `undefined`. Los campos de fichero opcionales deben pasar por `optionalFileInput` (`lib/schemas/file-input.ts`). El feedback del mentor solo con nota estaba roto por esto desde antes de la spec 020.
+  - Toda mutación que cambie el plan del usuario debe invalidar también `relationshipsRoot`, porque `features.*` de las relaciones depende del plan.
+  - `media:purge-orphan-evidence` termina con FAILURE y conserva la fila si no puede borrar el fichero (el disco tiene `throw => false`).

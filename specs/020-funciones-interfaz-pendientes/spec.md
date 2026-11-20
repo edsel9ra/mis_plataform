@@ -1,6 +1,6 @@
 # Spec 020 — Funciones de interfaz pendientes
 
-Estado: aprobada
+Estado: implementada
 
 **Origen:** la re-auditoría de la spec 019 (T019.8, `specs/011-frontend-accessibility/audit.md`) encontró cuatro funciones que la interfaz no ofrece. El usuario pidió implementarlas el 2026-11-19.
 **Relación:** son funciones de producto, fuera del alcance de las specs 011 y 019 (RNF-011.3). Su accesibilidad se verifica con la suite de la 019.
