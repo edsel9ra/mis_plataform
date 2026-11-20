@@ -4,7 +4,6 @@ namespace App\Http\Requests\Objective;
 
 use App\Models\MediaAsset;
 use App\Models\Objective;
-use App\Models\ObjectiveEvidence;
 use Illuminate\Foundation\Http\FormRequest;
 
 class StoreObjectiveEvidenceRequest extends FormRequest
@@ -38,14 +37,12 @@ class StoreObjectiveEvidenceRequest extends FormRequest
 
             $objective = $this->route('objective');
             $asset = MediaAsset::find($assetId);
+            $actor = $this->user();
 
             $valid = $asset !== null
                 && $objective instanceof Objective
-                && $asset->purpose === 'objective_evidence'
-                && $asset->mediaable instanceof Objective
-                && $asset->mediaable->id === $objective->id
-                && $asset->uploaded_by === $this->user()?->id
-                && !ObjectiveEvidence::where('media_asset_id', $asset->id)->exists();
+                && $actor !== null
+                && $asset->isAttachableAsEvidence($objective, $actor);
 
             if (!$valid) {
                 $validator->errors()->add('media_asset_id', __('progress.messages.invalid_media_asset'));

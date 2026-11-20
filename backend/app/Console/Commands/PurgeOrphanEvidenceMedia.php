@@ -2,11 +2,10 @@
 
 namespace App\Console\Commands;
 
+use App\Actions\PurgeOrphanEvidenceMediaAssetAction;
 use App\Models\MediaAsset;
-use App\Models\ObjectiveEvidence;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Daily purge of objective-evidence media orphans (RF-020.10): assets whose
@@ -21,28 +20,12 @@ class PurgeOrphanEvidenceMedia extends Command
 
     protected $description = 'Delete objective evidence media not linked to any evidence past the grace window';
 
-    public function handle(): int
+    public function handle(PurgeOrphanEvidenceMediaAssetAction $purgeAsset): int
     {
         $hours = max(0, (int) $this->option('hours'));
-        $evidenceMorph = (new ObjectiveEvidence)->getMorphClass();
+        $cutoff = now()->subHours($hours);
 
-        $orphans = MediaAsset::query()
-            ->where('purpose', 'objective_evidence')
-            ->where('created_at', '<', now()->subHours($hours))
-            ->whereNotExists(function ($query) {
-                $query->selectRaw('1')
-                    ->from('objective_evidences')
-                    ->whereColumn('objective_evidences.media_asset_id', 'media_assets.id');
-            })
-            ->where(function ($query) use ($evidenceMorph) {
-                $query->where('mediaable_type', '!=', $evidenceMorph)
-                    ->orWhereNull('mediaable_type')
-                    ->orWhereNotExists(function ($sub) {
-                        $sub->selectRaw('1')
-                            ->from('objective_evidences')
-                            ->whereColumn('objective_evidences.id', 'media_assets.mediaable_id');
-                    });
-            });
+        $orphans = MediaAsset::query()->orphanEvidence($cutoff);
 
         if ($this->option('dry-run')) {
             $count = $orphans->count();
@@ -54,23 +37,28 @@ class PurgeOrphanEvidenceMedia extends Command
 
         $purged = [];
         $failed = [];
-        $orphans->chunkById(500, function ($assets) use (&$purged, &$failed) {
+        $skipped = 0;
+        $orphans->chunkById(500, function ($assets) use (&$purged, &$failed, &$skipped, $purgeAsset, $cutoff) {
             foreach ($assets as $asset) {
-                $disk = Storage::disk($asset->disk);
-                // A file already gone counts as purged; a failed deletion
-                // keeps the row so the next run can retry it.
-                if ($disk->delete($asset->path) || ! $disk->exists($asset->path)) {
-                    $asset->delete();
+                $result = $purgeAsset->execute($asset->id, $cutoff);
+                if ($result === PurgeOrphanEvidenceMediaAssetAction::PURGED) {
                     $purged[] = $asset->id;
-                } else {
+                } elseif ($result === PurgeOrphanEvidenceMediaAssetAction::FAILED) {
                     $failed[] = $asset->id;
+                } else {
+                    $skipped++;
                 }
             }
         });
 
-        $this->info(sprintf('Purged %d orphan evidence media assets.', count($purged)));
+        $this->info(sprintf(
+            'Purged %d orphan evidence media assets; %d skipped.',
+            count($purged),
+            $skipped,
+        ));
         Log::info('media:purge-orphan-evidence purged assets', [
             'count' => count($purged),
+            'skipped' => $skipped,
             'asset_ids' => $purged,
         ]);
 

@@ -184,3 +184,45 @@ it('only reports the count with --dry-run', function () {
     expect(MediaAsset::whereIn('id', [$second->id])->count())->toBe(1)
         ->and(MediaAsset::where('purpose', 'objective_evidence')->count())->toBe(2);
 });
+
+it('skips an asset that was attached to an evidence before the purge re-checks', function () {
+    $asset = purgeEvidenceAsset($this->objective, $this->mentee, 25);
+
+    // The link wins the race: the upload is attached before the purge runs.
+    // The factory attributes user-source uploads to the mentor, so the
+    // mentor is the actor that passes the uploaded_by check.
+    $evidence = app(\App\Actions\AttachObjectiveEvidenceAction::class)->execute(
+        $this->mentor,
+        $this->objective,
+        ['media_asset_id' => $asset->id, 'note' => 'enlazado antes de la purga'],
+    );
+
+    $result = app(\App\Actions\PurgeOrphanEvidenceMediaAssetAction::class)
+        ->execute($asset->id, now()->subHours(24));
+
+    expect($result)->toBe('skipped')
+        ->and(MediaAsset::find($asset->id))->not->toBeNull()
+        ->and(Storage::disk('local')->exists($asset->path))->toBeTrue()
+        ->and($evidence->refresh()->media_asset_id)->toBe($asset->id);
+});
+
+it('skips an asset id that no longer exists', function () {
+    $result = app(\App\Actions\PurgeOrphanEvidenceMediaAssetAction::class)
+        ->execute((string) \Illuminate\Support\Str::uuid(), now()->subHours(24));
+
+    expect($result)->toBe('skipped');
+});
+
+it('counts assets that stop being orphans as skipped, not as failures', function () {
+    $asset = purgeEvidenceAsset($this->objective, $this->mentee, 25);
+
+    app(\App\Actions\AttachObjectiveEvidenceAction::class)->execute(
+        $this->mentor,
+        $this->objective,
+        ['media_asset_id' => $asset->id, 'note' => 'enlazado'],
+    );
+
+    $this->artisan('media:purge-orphan-evidence')->assertSuccessful();
+
+    expect(MediaAsset::find($asset->id))->not->toBeNull();
+});

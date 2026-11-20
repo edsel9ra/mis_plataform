@@ -306,3 +306,47 @@ it('keeps mentor feedback media visibility unchanged', function () {
     $this->actingAs($this->mentor)->getJson("/api/v1/media/{$asset->id}")->assertOk();
     $this->actingAs(evidenceMediaUser())->getJson("/api/v1/media/{$asset->id}")->assertForbidden();
 });
+
+it('returns 422 when the asset was deleted between validation and attach', function () {
+    $asset = assertStoredEvidenceAsset(uploadEvidenceFile($this->mentee, $this->objective), $this->objective, $this->mentee);
+
+    expect($asset->isAttachableAsEvidence($this->objective, $this->mentee))->toBeTrue();
+
+    $asset->delete();
+
+    try {
+        app(\App\Actions\AttachObjectiveEvidenceAction::class)->execute(
+            $this->mentee,
+            $this->objective,
+            ['media_asset_id' => $asset->id, 'note' => 'tarde'],
+        );
+        $this->fail('Expected ValidationException');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        expect($e->errors())->toHaveKey('media_asset_id');
+    }
+
+    expect(ObjectiveEvidence::count())->toBe(0);
+});
+
+it('returns 422 when the asset was linked to another evidence before attach', function () {
+    $asset = assertStoredEvidenceAsset(uploadEvidenceFile($this->mentee, $this->objective), $this->objective, $this->mentee);
+
+    ObjectiveEvidence::create([
+        'objective_id' => $this->objective->id,
+        'user_id' => $this->mentee->id,
+        'media_asset_id' => $asset->id,
+    ]);
+
+    try {
+        app(\App\Actions\AttachObjectiveEvidenceAction::class)->execute(
+            $this->mentee,
+            $this->objective,
+            ['media_asset_id' => $asset->id, 'note' => 'tarde'],
+        );
+        $this->fail('Expected ValidationException');
+    } catch (\Illuminate\Validation\ValidationException $e) {
+        expect($e->errors())->toHaveKey('media_asset_id');
+    }
+
+    expect(ObjectiveEvidence::count())->toBe(1);
+});
