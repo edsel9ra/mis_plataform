@@ -24,12 +24,13 @@ class PurgeOrphanEvidenceMediaAssetAction
     public function execute(string $assetId, CarbonInterface $cutoff): string
     {
         return DB::transaction(function () use ($assetId, $cutoff) {
-            $asset = MediaAsset::whereKey($assetId)
-                ->orphanEvidence($cutoff)
-                ->lockForUpdate()
-                ->first();
+            // Lock first, then re-check in a separate statement: under READ
+            // COMMITTED a FOR UPDATE that waited on a concurrent attach
+            // re-evaluates its subqueries against the old snapshot, so the
+            // orphan check must run after the lock with a fresh one.
+            $asset = MediaAsset::whereKey($assetId)->lockForUpdate()->first();
 
-            if ($asset === null) {
+            if ($asset === null || ! MediaAsset::whereKey($assetId)->orphanEvidence($cutoff)->exists()) {
                 return self::SKIPPED;
             }
 
