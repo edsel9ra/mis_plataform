@@ -923,6 +923,9 @@
       "title": "Aportar evidencia",
       "note_label": "Nota",
       "note_placeholder": "Describe tu avance…",
+      "file_label": "Archivo (opcional)",
+      "file_hint": "Imágenes, PDF, documentos, audio o vídeo, hasta 25 MB.",
+      "file_link": "Descargar {name}",
       "submit": "Adjuntar evidencia",
       "saved": "Evidencia añadida",
       "error": "No se pudo añadir la evidencia"
@@ -1150,7 +1153,9 @@
       "nothing_to_update": "No hay cambios que guardar.",
       "evidence_required": "Añade una nota o adjunta un archivo.",
       "status_invalid": "Selecciona un estado válido.",
-      "invalid_id": "Identificador no válido."
+      "invalid_id": "Identificador no válido.",
+      "file_too_large": "El archivo debe pesar 25 MB o menos.",
+      "file_unsupported": "Selecciona un archivo de un tipo admitido."
     },
     "feedback": {
       "objective_created": "Objetivo creado",

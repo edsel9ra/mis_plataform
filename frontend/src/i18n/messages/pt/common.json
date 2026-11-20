@@ -923,6 +923,9 @@
       "title": "Adicionar evidência",
       "note_label": "Nota",
       "note_placeholder": "Descreva seu avanço…",
+      "file_label": "Arquivo (opcional)",
+      "file_hint": "Imagens, PDF, documentos, áudio ou vídeo, até 25 MB.",
+      "file_link": "Baixar {name}",
       "submit": "Anexar evidência",
       "saved": "Evidência adicionada",
       "error": "Não foi possível adicionar a evidência"
@@ -1150,7 +1153,9 @@
       "nothing_to_update": "Não há alterações para salvar.",
       "evidence_required": "Adicione uma nota ou anexe um arquivo.",
       "status_invalid": "Selecione um status válido.",
-      "invalid_id": "Identificador inválido."
+      "invalid_id": "Identificador inválido.",
+      "file_too_large": "O arquivo deve ter 25 MB ou menos.",
+      "file_unsupported": "Selecione um arquivo de um tipo compatível."
     },
     "feedback": {
       "objective_created": "Objetivo criado",

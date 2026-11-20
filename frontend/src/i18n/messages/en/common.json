@@ -923,6 +923,9 @@
       "title": "Add evidence",
       "note_label": "Note",
       "note_placeholder": "Describe your progress…",
+      "file_label": "File (optional)",
+      "file_hint": "Images, PDF, documents, audio or video, up to 25 MB.",
+      "file_link": "Download {name}",
       "submit": "Attach evidence",
       "saved": "Evidence added",
       "error": "Could not add the evidence"
@@ -1150,7 +1153,9 @@
       "nothing_to_update": "There is nothing to update.",
       "evidence_required": "Add a note or attach a file.",
       "status_invalid": "Select a valid status.",
-      "invalid_id": "Invalid identifier."
+      "invalid_id": "Invalid identifier.",
+      "file_too_large": "The file must be 25 MB or smaller.",
+      "file_unsupported": "Select a supported file type."
     },
     "feedback": {
       "objective_created": "Objective created",

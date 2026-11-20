@@ -1,6 +1,7 @@
 import { infiniteQueryOptions, useInfiniteQuery, useMutation, useQuery, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { unwrapCollection, unwrapData } from '@/lib/mentor-workspace';
+import { MEDIA_UPLOAD_TIMEOUT_MS } from '@/hooks/use-mentor-workspace';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
 import { HISTORY_PAGE_SIZE } from '@/lib/progress-history';
 import {
@@ -315,6 +316,66 @@ export function useAddObjectiveEvidence() {
     mutationFn: async ({ id, payload }: { id: string; payload: ObjectiveEvidencePayload }) =>
       api.post(PROGRESS_ENDPOINTS.objectiveEvidences(id), payload),
     onSuccess: (_evidence, variables) => invalidateProgress(queryClient, variables.id),
+  });
+}
+
+interface UploadedObjectiveEvidenceMedia {
+  id: string;
+  purpose: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+}
+
+/** Two-step upload: the file goes first, the evidence links the returned asset. */
+export async function uploadObjectiveEvidenceMedia(objectiveId: string, file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  const asset = unwrapData<UploadedObjectiveEvidenceMedia>(
+    await api.post(PROGRESS_ENDPOINTS.objectiveMedia(objectiveId), formData, {
+      timeoutMs: MEDIA_UPLOAD_TIMEOUT_MS,
+    }),
+  );
+
+  return asset.id;
+}
+
+export interface ObjectiveEvidenceSubmitValues {
+  note?: string | null;
+  file?: File;
+}
+
+/**
+ * Submits an evidence: when a file is present it is uploaded first and the
+ * returned `media_asset_id` is sent with the note. If the upload fails the
+ * evidence request is never made.
+ */
+export async function submitObjectiveEvidence(
+  objectiveId: string,
+  values: ObjectiveEvidenceSubmitValues,
+): Promise<unknown> {
+  const mediaAssetId = values.file
+    ? await uploadObjectiveEvidenceMedia(objectiveId, values.file)
+    : undefined;
+
+  return api.post(PROGRESS_ENDPOINTS.objectiveEvidences(objectiveId), {
+    note: values.note?.trim() || null,
+    media_asset_id: mediaAssetId,
+  });
+}
+
+export function useUploadObjectiveEvidenceMedia(objectiveId: string) {
+  return useMutation({
+    mutationFn: (file: File) => uploadObjectiveEvidenceMedia(objectiveId, file),
+  });
+}
+
+export function useSubmitObjectiveEvidence(objectiveId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (values: ObjectiveEvidenceSubmitValues) => submitObjectiveEvidence(objectiveId, values),
+    onSuccess: () => invalidateProgress(queryClient, objectiveId),
   });
 }
 

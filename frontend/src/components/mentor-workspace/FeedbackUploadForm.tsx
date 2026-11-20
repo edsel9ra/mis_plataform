@@ -8,7 +8,7 @@ import { useForm } from 'react-hook-form';
 import { Alert } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { FileUploadField } from '@/components/mentor-workspace/FileUploadField';
+import { FileUploadField } from '@/components/ui/file-upload-field';
 import { useCreateMentorFeedback } from '@/hooks/use-mentor-workspace';
 import { mentorFeedbackSchema, type MentorFeedbackFormValues } from '@/lib/schemas/mentor-workspace';
 

@@ -329,6 +329,15 @@ export interface MenteeProgressFlag {
 // Objectives (RF-1, RF-2)
 // ---------------------------------------------------------------------------
 
+export interface ObjectiveEvidenceMedia {
+  id: string;
+  purpose: string;
+  original_name: string;
+  mime_type: string;
+  size: number;
+  created_at: string | null;
+}
+
 export interface ObjectiveEvidence {
   id: string;
   objective_id: string;
@@ -337,7 +346,7 @@ export interface ObjectiveEvidence {
   media_asset_id: string | null;
   created_at: string | null;
   user?: { id: string; name: string } | null;
-  media_asset?: Record<string, unknown> | null;
+  media_asset?: ObjectiveEvidenceMedia | null;
 }
 
 export interface ObjectiveHistoryEntry {

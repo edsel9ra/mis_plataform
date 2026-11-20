@@ -19,7 +19,7 @@ import type {
   WorkspacePlan,
 } from '@/types/mentor-workspace';
 
-const MEDIA_UPLOAD_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_MEDIA_UPLOAD_TIMEOUT_MS ?? 120_000);
+export const MEDIA_UPLOAD_TIMEOUT_MS = Number(process.env.NEXT_PUBLIC_MEDIA_UPLOAD_TIMEOUT_MS ?? 120_000);
 
 export interface MentorChallengePayload {
   title: string;

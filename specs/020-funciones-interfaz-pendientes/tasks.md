@@ -31,7 +31,19 @@ Plan: `plan.md`. En orden de dependencia.
     - en la cascada de borrar una cuenta, `GET /media/{id}` da 403 y la purga elimina el fichero;
     - los eventos y el historial de la spec 014 no cambian.
 
-- [ ] **T020.3. Evidencia con fichero en la interfaz.** RF-020.8
+- [x] **T020.3. Evidencia con fichero en la interfaz.** RF-020.8
+  - Resultado (2026-11-19):
+    - Código:
+      - `lib/media-types.ts`, con los tipos admitidos compartidos con el mentor;
+      - el esquema acepta fichero, nota o los dos, con las claves `file_too_large` y `file_unsupported`;
+      - `submitObjectiveEvidence`, que sube primero el fichero y luego crea la evidencia; si la subida falla, no la crea;
+      - `FileUploadField` pasa a `components/ui/`;
+      - el enlace «Descargar {name}» en `ObjectivesBlock` mide 24 px.
+    - El recurso del backend ya incluía `media_asset` sin `path` ni `disk`, así que no se tocó.
+    - En la revisión se añadió el texto de reserva `progress.evidence.error` para cuando el error no trae mensaje.
+    - Vitest 406, typecheck y lint limpios.
+    - En el navegador, con el build de producción y `mis_project_audit`, 9/9: ana adjunta un `.txt` y lo descarga (200); un `.html` muestra el error en el campo; `mentor.audit` descarga (200) y `kai` recibe 403.
+    - Entorno: durante la prueba se apuntó `.env.backend` temporalmente a la base de auditoría y después se restauró (`mis_project` se comprobó sin cambios). El build de producción no puede convivir con `next dev`, porque comparten el volumen `.next`.
   - `ObjectiveEvidenceForm` con el fichero opcional, la subida en dos pasos y el enlace al fichero en las vistas de evidencias del titular y del mentor.
   - Hecho cuando:
     - Vitest cubre el esquema (nota o fichero) y el hook;

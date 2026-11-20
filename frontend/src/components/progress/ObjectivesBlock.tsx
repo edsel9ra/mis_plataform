@@ -2,7 +2,7 @@
 
 import { useRef, useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
-import { Plus } from 'lucide-react';
+import { Download, Plus } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Spinner } from '@/components/ui/spinner';
@@ -166,6 +166,26 @@ function ObjectiveRow({ objective }: { objective: Objective }) {
             </div>
           ) : null}
         </div>
+      ) : null}
+
+      {objective.evidences && objective.evidences.length > 0 ? (
+        <ul className="mt-3 space-y-2 border-t border-slate-100 pt-3">
+          {objective.evidences.map((evidence) => (
+            <li key={evidence.id} className="text-sm text-slate-700">
+              {evidence.note ? <p className="whitespace-pre-wrap">{evidence.note}</p> : null}
+              {evidence.media_asset ? (
+                <a
+                  href={`/api/v1/media/${evidence.media_asset.id}`}
+                  aria-label={t('progress.evidence.file_link', { name: evidence.media_asset.original_name })}
+                  className="mt-1 inline-flex min-h-6 items-center gap-1.5 text-primary-700 underline decoration-primary-300 underline-offset-2 hover:text-primary-800"
+                >
+                  <Download className="h-4 w-4 shrink-0" aria-hidden="true" />
+                  <span className="truncate">{evidence.media_asset.original_name}</span>
+                </a>
+              ) : null}
+            </li>
+          ))}
+        </ul>
       ) : null}
 
       {objective.permissions?.add_evidence ? (

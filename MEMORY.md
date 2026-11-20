@@ -304,3 +304,6 @@ Memoria del proyecto entre sesiones. Máximo ~50 líneas: resume o elimina lo qu
 - **Spec 020 — T020.2 hecha (2026-11-19)**:
   - `media:purge-orphan-evidence`, diario; suite del backend 1197.
   - **Limitación conocida:** `media_assets.uploaded_by` y `relationship_id` tienen `cascadeOnDelete`, así que un hard delete deja ficheros en el disco sin su fila. Pasa también con los ficheros del mentor y no está cubierto.
+- **Spec 020 — T020.3 hecha (2026-11-19)**: evidencia con fichero, subido en dos pasos; `FileUploadField` está ahora en `components/ui/`. Vitest 406.
+  - Entorno: `next dev` y `next start` comparten el volumen `.next`, así que hay que parar el frontend de desarrollo antes de un build de producción, o este se rompe.
+  - Con `php -S` sin opcache, las peticiones tardan 2–5 s. Para pruebas largas, mejor php-fpm a través de nginx.
