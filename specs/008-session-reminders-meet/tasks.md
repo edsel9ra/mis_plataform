@@ -1,6 +1,6 @@
 # Tareas — Spec 008: Recordatorios y Meet
 
-**Estado:** aprobado; implementación/revalidación en curso; T008-01–07 completadas; aceptación de RF-008.2 superada vía T010-07.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/008-session-reminders-meet/spec.md` (RF-008.2/caso 43, cambio propuesto en padre) · **Plan:** `plan.md`.
 
 - [x] **T008-01. Añadir estado de entrega y probar claves idempotentes.** RF-008.1–008.2; CA hija RF-008.1/2; CA padre CA-5.1–5.3/5.6.

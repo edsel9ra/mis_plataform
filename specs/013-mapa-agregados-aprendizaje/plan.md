@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 013: Mapa y agregados de aprendizaje
 
-**Estado:** aprobado con el ajuste de la sección 0 (usuario, 2026-11-14); en implementación · **Spec:** aprobada
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)
 **Base:** Spec 001 v0.5.1 aprobada; baseline v0.3.0 implementado.
 **Dependencia obligatoria:** Spec 012 antes de integrar tasas de reto/módulo. Spec 015 consume sus eventos, pero no es requisito para esta vista.
 

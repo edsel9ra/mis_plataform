@@ -1,6 +1,6 @@
 # Tareas — Spec 013: Mapa y agregados de aprendizaje
 
-**Estado:** aprobado (usuario, 2026-11-14); en implementación · **Spec:** aprobada
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)
 **Dependencia:** completar Spec 012 antes de integrar métricas fuente. Cada tarea está acotada a 20–30 min. Tests planificados, no ejecutados.
 
 - [x] **T013.1 · Contrato tipado del mapa y motivos de supresión** (25 min). RF-013.1–.9. Definir DTOs de ruta/módulo/elemento/métrica y códigos separados de supresión sin conteos. Skills: `sdd`, `laravel-patterns`.

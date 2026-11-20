@@ -1,6 +1,6 @@
 # Spec 007 — Reprogramación y cancelación de sesiones
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.1, aprobada.
 **Dependencias:** hijas 003 (acceso/zona), 004 (revalidación completa de reservas) y 006 (estados/transiciones terminales). 008 consume los eventos de cambio establecidos aquí.

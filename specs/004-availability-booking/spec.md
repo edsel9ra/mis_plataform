@@ -1,6 +1,6 @@
 # Spec 004 — Disponibilidad y reserva de sesiones
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.0, aprobada.
 **Dependencias:** hija 003 (`specs/003-agenda-access-timezone/spec.md`); definición de miembros activos según la relación/colectivo existente.

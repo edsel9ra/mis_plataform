@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 002: Agenda y gestión de mentorías
 
-**Estado:** aprobado
+**Estado:** implementado a través de las specs hijas 003–010 y 016–018 (cabecera puesta al día el 2026-11-20)
 **Versión:** 1.2.0
 **Fecha:** 2026-10-12
 **Spec de referencia:** `specs/002-mentorship-scheduling/spec.md` (v0.4.2, aprobada)

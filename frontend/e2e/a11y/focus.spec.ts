@@ -413,6 +413,59 @@ test('T019.9 · PG-36 · progreso: crear objetivo anuncia el éxito y devuelve e
     .toBeFocused();
 });
 
+test('T019.9 · PG-42 · progreso: proponer objetivo anuncia el éxito y devuelve el foco', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto('/dashboard/progreso');
+  await waitForPage(page);
+
+  const proposeButton = page.getByRole('button', { name: 'Proponer objetivo' });
+  await proposeButton.click();
+  await page.getByLabel('Título').fill(`Propuesta de foco T019.9 ${Date.now()}`);
+  await page.getByLabel('Criterio de logro').fill('El guion del lector queda verificado');
+  await page.getByLabel('Fecha límite').fill('2027-12-31T10:00');
+  await page.getByRole('button', { name: 'Enviar propuesta' }).click();
+
+  const status = page.locator('div[role="status"]');
+  await expect(status.filter({ hasText: 'Propuesta enviada' }), 'the block status region should announce the proposal').toHaveCount(1);
+  await expect(proposeButton, `focus should return to "Proponer objetivo" (got ${await describeFocused(page)})`)
+    .toBeFocused();
+});
+
+test('T019.9 · PG-43 · mensajes: cada mensaje anuncia su autor', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto(`/messages?relationship=${fixtures.relationshipId}`);
+  await waitForPage(page);
+
+  const log = page.locator('div[role="log"]');
+  const counterpart = (await page.locator('h2').first().textContent())?.trim() ?? '';
+  expect(counterpart, 'the conversation header should name the counterpart').not.toBe('');
+
+  await expect(log, 'a message from the counterpart should announce its author')
+    .toContainText(`${counterpart}:`);
+  await expect(log, 'an own message should announce "Tú"').toContainText('Tú:');
+
+  const composer = page.locator('#message-composer');
+  const content = `Autor T019.9 ${Date.now()}`;
+  await composer.fill(content);
+  await composer.press('Enter');
+
+  await expect(log.locator('div').filter({ hasText: `Tú: ${content}` }).last(),
+    'a message sent in the test should announce its author',
+  ).toBeVisible();
+});
+
+test('T019.9 · reserva: los días con huecos son botones pulsables', async ({ browser }) => {
+  const page = await newPage(browser, 'ana', WIDTHS.desktop);
+  await page.goto('/sessions/new');
+  await waitForPage(page);
+
+  const dayButtons = page.getByRole('group', { name: '2. Elige un hueco' }).locator('button[aria-pressed]');
+  await expect(dayButtons.first(), 'seeded availability should offer at least one day with slots')
+    .toBeVisible({ timeout: 20_000 });
+  await dayButtons.first().click();
+  await expect(dayButtons.first(), 'the chosen day should announce pressed').toHaveAttribute('aria-pressed', 'true');
+});
+
 test('T019.9 · PG-37 · evaluación: el foco va al h1 del resultado', async ({ browser }) => {
   test.slow(); // answering every question of a catalog evaluation takes a while
   const page = await newPage(browser, 'ana', WIDTHS.desktop);

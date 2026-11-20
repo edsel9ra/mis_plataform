@@ -1,6 +1,6 @@
 # Plan — Spec 005: Participación dinámica en sesiones colectivas
 
-**Estado:** propuesta para aprobación (sin implementación)  
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)  
 **Spec:** `specs/005-collective-participation/spec.md`; hija aprobada como scope.  
 **Base:** Spec 002 v0.4.0 y plan 002 v1.2.0.  
 **Dependencias:** 003 (autorización/tiempo) y 004 (inscripción inicial y miembro activo). Es contrato obligatorio de 006 y 008.

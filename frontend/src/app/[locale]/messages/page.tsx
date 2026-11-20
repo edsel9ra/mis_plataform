@@ -172,6 +172,10 @@ function MessagesContent() {
     </div>
   );
 
+  const counterpartLabel = selectedRelationship
+    ? counterpartName(selectedRelationship, viewerIsMentor, t('messages.unknown_participant'))
+    : t('messages.unknown_participant');
+
   const conversationPanel = selectedId ? (
     <Card className="flex min-h-[60vh] flex-col gap-0 overflow-hidden p-0 lg:min-h-[70vh]">
       <div className="flex items-center gap-3 border-b border-gray-100 px-4 py-3">
@@ -184,9 +188,7 @@ function MessagesContent() {
           <ArrowLeft className="h-5 w-5" aria-hidden="true" />
         </button>
         <h2 className="min-w-0 flex-1 truncate text-sm font-semibold text-gray-950">
-          {selectedRelationship
-            ? counterpartName(selectedRelationship, viewerIsMentor, t('messages.unknown_participant'))
-            : t('messages.conversations')}
+          {selectedRelationship ? counterpartLabel : t('messages.conversations')}
         </h2>
       </div>
 
@@ -218,7 +220,12 @@ function MessagesContent() {
                     : 'rounded-bl-md bg-white text-gray-950 ring-1 ring-gray-200',
                 )}
               >
-                <p className="whitespace-pre-wrap break-words text-sm">{message.content}</p>
+                <p className="whitespace-pre-wrap break-words text-sm">
+                  <span className="sr-only">
+                    {own ? `${t('messages.you')}: ` : `${message.sender?.full_name ?? counterpartLabel}: `}
+                  </span>
+                  {message.content}
+                </p>
                 <p className={cn('mt-1 text-[10px]', own ? 'text-primary-100' : 'text-gray-600')}>
                   {formatTime(message.created_at, locale)}
                   {own && message.read_at !== null ? ' · ✓' : ''}

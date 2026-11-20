@@ -1,6 +1,6 @@
 # Guion de prueba con lector de pantalla — Spec 019 (RF-019.4)
 
-Versión 1.0 · 2026-11-19
+Versión 1.1 · 2026-11-20
 
 Este guion es para la persona del equipo que hace la prueba (decisión D-3 de `spec.md`). Para cada flujo describe los pasos y lo que **debería** anunciar el lector de pantalla. El objetivo es comprobar que lo corregido en la spec 011 funciona con lectores reales. Hay que anotar **lo que se oye de verdad**, aunque parezca correcto.
 
@@ -25,6 +25,7 @@ Este guion es para la persona del equipo que hace la prueba (decisión D-3 de `s
   - `ana.audit@audit.mis.test`: mentee con datos de sesiones, evaluaciones, mensajes y progreso;
   - `kai.audit@audit.mis.test`: mentee sin test de personalidad.
 - Si una cuenta ya no está en el estado que se describe (por ejemplo, el test de personalidad ya enviado), avisa al equipo técnico para que vuelva a sembrar la base. No improvises con otra cuenta.
+- Usa una base **recién sembrada**. La suite de regresión de accesibilidad y las sesiones anteriores dejan datos: evidencias y check-ins nuevos de `ana`, una invitación de empleado por pasada en la empresa, una evaluación de `ana` ya respondida, mensajes nuevos y cuentas `registro.*`. Si la base ya se usó, pide al equipo técnico que la vuelva a sembrar antes de empezar.
 
 ### Teclas de referencia
 
@@ -54,7 +55,8 @@ Este guion es para la persona del equipo que hace la prueba (decisión D-3 de `s
 
 - Haz primero la combinación A completa y después la B.
 - **Test de personalidad (flujo 3):** en la combinación A **no** pulses «Ver mis resultados»; envíalo solo en la combinación B. Al enviarlo, `kai` deja de poder hacer el test.
-- El resto de los envíos (registro, reserva, evaluación, mensaje y objetivo) se pueden repetir. Usa los datos que indica cada flujo.
+- **Evaluación (flujo 5):** `ana` solo tiene 3 evaluaciones sin responder y la suite de regresión consume una por pasada. Elige una distinta en cada combinación.
+- El resto de los envíos (registro, reserva, mensaje y objetivo) se pueden repetir. Usa los datos que indica cada flujo.
 
 ## 2. Flujos
 
@@ -111,8 +113,10 @@ Cuenta: `kai.audit`. URL: `<URL>/onboarding/test-personalidad`.
 
 Cuenta: `ana.audit`. URL: `<URL>/sessions/new`.
 
+*Este flujo necesita los huecos de disponibilidad sembrados de `mentor.audit` (lunes a viernes). Si tras el aviso «Buscando la primera semana con huecos…» aparece «No hay huecos libres en las próximas 8 semanas.», avisa al equipo técnico para que vuelva a sembrar la base.*
+
 1. **Esperado:** h1 y la relación con `mentor.audit` ya elegida, anunciada.
-2. Ve a los días. **Esperado:** cada día es un botón con la fecha y el número de huecos, y su estado de pulsado («pulsado» o «no pulsado»). Elige un día que tenga huecos.
+2. Ve a los días. **Esperado:** cada día con huecos es un botón con la fecha y el número de huecos, y su estado de pulsado («pulsado» o «no pulsado»); los días sin huecos son solo texto. Elige un día que tenga huecos.
 3. Ve a los huecos. **Esperado:** cada hueco anuncia la hora de inicio y fin, el día, la fecha y la zona horaria, y su estado de pulsado. Elige uno. **Esperado:** se anuncia la selección (un mensaje de estado), sin mover el foco.
 4. En el formulario, deja el título vacío y activa «Confirmar reserva». **Esperado:** se anuncia el error y el foco va al campo «Título».
 5. Escribe el título «Prueba lector A» (o «B») y confirma. **Esperado:** se anuncia que la reserva se ha hecho y el foco va al mensaje de éxito.
@@ -147,7 +151,7 @@ Cuenta: `ana.audit`. URL: `<URL>/messages`.
    - el mensaje se envía;
    - el lector **anuncia el mensaje nuevo** sin mover el foco;
    - el foco sigue en el campo.
-5. Opcional, si el equipo técnico puede responder desde `mentor.audit` en ese momento: **esperado**, el mensaje que llega se anuncia sin interrumpir lo que estás haciendo.
+5. Opcional, si el equipo técnico puede responder desde `mentor.audit` en ese momento **y** la difusión en vivo está activa: **esperado**, el mensaje que llega se anuncia sin interrumpir lo que estás haciendo. En la configuración documentada de `fixtures.md` la difusión va a un registro interno y no llegará nada: marca «No probado».
 6. A pantalla estrecha (móvil o ventana pequeña), comprueba el botón «Volver a conversaciones».
 
 ### Flujo 7 — Panel de progreso e historial
@@ -162,7 +166,7 @@ Cuenta: `ana.audit`. URL: `<URL>/dashboard/progreso`.
    - los eventos agrupados por días, cada día con su encabezado;
    - quién hizo cada acción («Sistema», una persona o «Actor oculto»), anunciado como texto.
 5. Si aparece «Cargar más», actívalo. **Esperado:** el foco se queda en el botón mientras carga y los eventos nuevos se pueden leer a continuación.
-6. Vuelve al panel y activa «Ver mapa». **Esperado:** los estados de los módulos («Sin datos», «Incompleto…», «No completado») se anuncian como texto.
+6. Vuelve al panel y activa «Ver mapa» (dentro de la tarjeta «Rutas de aprendizaje»). **Esperado:** los estados de los módulos («Sin datos», «Incompleto…», «No completado») se anuncian como texto. Si la tarjeta no aparece, avisa al equipo técnico para que vuelva a sembrar la base.
 
 ## 3. Resultados
 
@@ -189,3 +193,13 @@ Rellena una fila por flujo y combinación. Pon la fecha, las versiones (sistema,
 | 7. Progreso e historial | B | | | |
 
 Entrega la tabla rellena al equipo técnico. Se copiará en `specs/011-frontend-accessibility/audit.md` (T019.10) y cada problema se clasificará según la spec 011.
+
+## Cambios en la v1.1
+
+- §1: se pide una base recién sembrada. La suite de regresión y las sesiones previas dejan datos (evidencias y check-ins de `ana`, una invitación por pasada, la evaluación respondida que usa `evaluationSubmitId`, mensajes y cuentas `registro.*`). Ver `fixtures.md`, «Lo que cambia cada pasada de la suite».
+- §1: la evaluación del flujo 5 solo se puede repetir mientras queden sin responder (3 sembradas; la suite consume una por pasada). Dato del `AccessibilityAuditSeeder`.
+- Flujo 4: nota nueva. La reserva necesita huecos sembrados; el seeder crea ahora las ventanas de `mentor.audit` (lunes a viernes, mañana y tarde en su zona). Si la búsqueda acaba en «No hay huecos libres…», hay que resembrar.
+- Flujo 4, paso 2: los días sin huecos se pintan como texto, no como botón (`sessions/new/page.tsx`).
+- Flujo 6, paso 5: la llegada en vivo necesita difusión real; la configuración documentada usa `BROADCAST_CONNECTION=log` y no entrega el evento (límite ya registrado en `specs/011-frontend-accessibility/audit.md`).
+- Flujo 7, paso 6: «Ver mapa» solo aparece si hay rutas de aprendizaje; el seeder crea ahora una con los tres estados que se escuchan en el mapa. Si la tarjeta no sale, hay que resembrar.
+- Flujo 7, paso 3: sin cambios en el guion; el fallo que encontraba (la propuesta no se anunciaba y el foco se perdía) está corregido (PG-42).

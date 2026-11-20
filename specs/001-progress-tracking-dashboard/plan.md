@@ -1,6 +1,6 @@
 # Plan de implementación — Spec 001: Panel de progreso y seguimiento
 
-**Estado:** propuesta para revisión (no se ha tocado código)
+**Estado:** implementado (cabecera puesta al día el 2026-11-20: todas las tareas de `tasks.md` están completadas)
 **Versión:** 1.0.0
 **Fecha:** 2026-10-11
 **Spec de referencia:** `specs/001-progress-tracking-dashboard/spec.md` (v0.2.0)

@@ -1,6 +1,6 @@
 # Spec 006 — Ciclo de vida y asistencia de sesiones
 
-Estado: aprobada
+Estado: implementada
 
 **Spec padre:** `specs/002-mentorship-scheduling/spec.md` v0.4.0, aprobada.
 **Dependencias:** hijas 003 (acceso/tiempo), 004 (sesión creada y tipos de participante) y 005 (participación prospectiva y ancla de hora de fin); `specs/001-progress-tracking-dashboard/spec.md` §3.1.3 para la regla vinculante de sesión realizada.

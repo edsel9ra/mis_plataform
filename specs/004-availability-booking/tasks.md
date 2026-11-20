@@ -1,6 +1,6 @@
 # Tareas — Spec 004: Disponibilidad y reserva
 
-**Estado:** aprobada; T004-01–07 completadas.  
+**Estado:** completado (todas las tareas marcadas; cabecera puesta al día el 2026-11-20)  
 **Spec:** `specs/004-availability-booking/spec.md` · **Plan:** `plan.md`.
 
 - [x] **T004-01. Crear modelos y migraciones aditivas de disponibilidad.** RF-004.4; CA hija RF-004.4; CA padre CA-2.1/2.2.
