@@ -8,7 +8,7 @@ import { api } from '@/lib/api';
 import { apiErrorMessage } from '@/lib/errors';
 import { queryKeys } from '@/lib/query-keys';
 import { localePath } from '@/i18n/paths';
-import { useRelationships } from '@/hooks/use-relationships';
+import { useAllRelationships } from '@/hooks/use-relationships';
 import { useSessions } from '@/hooks/use-sessions';
 import { OceanRadarChart } from '@/components/charts/ocean-radar-chart';
 import { PersonalPlansSection } from '@/components/mentor-workspace/PersonalPlansSection';
@@ -90,7 +90,7 @@ export default function PersonalDashboard() {
   const { user } = useAuth();
   const hasCompletedPersonality = Boolean(user?.personality_assessment?.completed_at);
   const { data: sessionsData, isLoading: sessionsLoading, error: sessionsError } = useSessions();
-  const { data: relationshipsData, error: relationshipsError } = useRelationships();
+  const { data: relationshipsData, error: relationshipsError } = useAllRelationships();
   const { data: learningPathsData, error: learningPathsError } = useQuery<LearningPath[] | { data: LearningPath[] }>({
     queryKey: ['learning-paths', user?.client_type],
     queryFn: ({ signal }) => api.get<LearningPath[] | { data: LearningPath[] }>('/learning-paths', { client_type: user?.client_type || undefined }, { signal }),
@@ -108,7 +108,7 @@ export default function PersonalDashboard() {
   });
 
   const sessions = sessionsData?.data ?? [];
-  const relationships = relationshipsData?.data ?? [];
+  const relationships = relationshipsData ?? [];
   const dashboardError = sessionsError ?? relationshipsError ?? learningPathsError ?? personalityError ?? recommendationsError;
   const learningPaths = Array.isArray(learningPathsData) ? learningPathsData : learningPathsData?.data ?? [];
   const activeRelationships = relationships.filter((relationship: RelationshipSummary) => relationship.status === 'active');

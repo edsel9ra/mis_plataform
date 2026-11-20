@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { fetchAllCollection, type CollectionResponse } from '@/lib/mentor-workspace';
 import { normalizePaginatedResponse, type PaginatedResponse, type RawPaginatedResponse } from '@/lib/pagination';
 import { queryKeys } from '@/lib/query-keys';
 
@@ -28,6 +29,27 @@ export function useRelationships(page = 1, perPage = 20, enabled = true) {
     },
     enabled,
   });
+}
+
+/**
+ * Every relationship of the viewer, not just the first page: the personal
+ * dashboard needs all of them so an old active mentorship still offers its
+ * emotional check-in card.
+ */
+export function allRelationshipsQueryOptions(enabled = true) {
+  return {
+    queryKey: queryKeys.allRelationships,
+    queryFn: ({ signal }: { signal?: AbortSignal }) =>
+      fetchAllCollection<Relationship>((page) =>
+        api.get<CollectionResponse<Relationship>>('/relationships', { page, per_page: 100 }, { signal }),
+      ),
+    enabled,
+    staleTime: 30_000,
+  };
+}
+
+export function useAllRelationships(enabled = true) {
+  return useQuery(allRelationshipsQueryOptions(enabled));
 }
 
 export function useRelationship(id: string) {

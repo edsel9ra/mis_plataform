@@ -17,6 +17,7 @@ export const queryKeys = {
   sessions: (page: number, perPage: number) => ['sessions', { page, per_page: perPage }] as const,
   relationshipsRoot: ['relationships'] as const,
   relationships: (page: number, perPage: number) => ['relationships', { page, per_page: perPage }] as const,
+  allRelationships: ['relationships', 'all', { per_page: 100 }] as const,
   mentorRecommendationsRoot: ['mentor', 'users'] as const,
   mentorRecommendations: (userId: string, relationshipId: string) => [
     'mentor',
